@@ -1,8 +1,8 @@
 
 This is the GWT Exporter module courtesy of Timepedia.org.  This module
 allows you to expose GWT classes, methods, and fields as Javascript
-objects and takes case of marshalling GWT objects back and forth
-between the Javascript interface as the GWT interface.
+objects and takes care of marshalling GWT objects back and forth
+between the Javascript interface and the GWT interface.
 
 Feel free to use, modify, and redistribute this code according to the
 provisions of the Apache License 2.0.
