@@ -1,0 +1,53 @@
+<html>
+	<head>
+		<title>ExporterDemo</title>
+
+
+		<style>
+			body,td,a,div,.p{font-family:arial,sans-serif}
+			div,td{color:#000000}
+			a:link,.w,.w a:link{color:#0000cc}
+			a:visited{color:#551a8b}
+			a:active{color:#ff0000}
+		</style>
+
+		<script language='javascript' src='exporterDemo.ExporterDemo.nocache.js'></script>
+		<script language='javascript'>
+		   function runTests() {
+                      var employee = new test.Employee('CEO', 'Bill', 'Gates', test.Employee.MALE);
+                      var employee2 = new test.Employee('Senator', 'Hillary', 'Clinton', test.Employee.FEMALE);
+                      var person = new exporterdemo.Person('Ray', 'Cromwell');
+		      print("employee.getFirstName() = "+employee.getFirstName());
+		      print("employee2.getFirstName() = "+employee2.getFirstName());
+		      print("Employee.sayHello(employee) = "+test.Employee.sayHello(employee));
+		      print("employee2.getGender() = "+employee.getGender());
+		      print("employee2.getSelf().getGender() = "+employee.getSelf().getGender());
+		      print("Employee.sayHello(person) = "+test.Employee.sayHello(person));
+		      print("person.getSelf().getGender = (should be undefined) "+person.getSelf().getGender);
+		      employee.addListener(function(emp, str, i) { 
+                                              alert(str+" "+emp.getFirstName());
+                                           });
+                      employee.fire();
+	           }
+		 
+                   function print(str) {
+		     var d = document.getElementById('results');
+		     d.innerHTML += "<br>"+str;
+                   }
+                </script>
+	</head>
+
+
+	<body>
+
+		<!-- OPTIONAL: include this if you want history support -->
+		<iframe src="javascript:''" id="__gwt_historyFrame" style="width:0;height:0;border:0"></iframe>
+
+		<h1>ExporterDemo</h1>
+
+		<p>
+		  <input type="button" onClick="runTests();" value="Run Tests">
+		  <div id="results"></div>
+		</p>
+	</body>
+</html>

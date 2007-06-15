@@ -1,0 +1,10 @@
+<module>
+
+	<!-- Inherit the core Web Toolkit stuff.                  -->
+	<inherits name='com.google.gwt.user.User'/>
+	<inherits name='org.timepedia.exporter.Exporter'/>
+
+	<!-- Specify the app entry point class.                   -->
+	<entry-point class='exporterdemo.client.ExporterDemo'/>
+  
+</module>

@@ -1,0 +1,13 @@
+<module>
+
+    <!-- Inherit the core Web Toolkit stuff.                  -->
+    <inherits name='com.google.gwt.user.User'/>
+
+        
+    <generate-with class="org.timepedia.exporter.rebind.ExporterGenerator">
+	  <when-type-assignable class="org.timepedia.exporter.client.Exportable"/>
+    </generate-with>
+
+  
+
+</module>
