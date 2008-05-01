@@ -3,11 +3,7 @@ package org.timepedia.exporter.rebind;
 import com.google.gwt.core.ext.typeinfo.JParameter;
 
 /**
- * Created by IntelliJ IDEA.
- * User: ray
- * Date: Jun 11, 2007
- * Time: 6:00:24 PM
- * To change this template use File | Settings | File Templates.
+ * 
  */
 public class JExportableParameter {
     private JParameter param;
@@ -41,7 +37,7 @@ public class JExportableParameter {
                                    cType.getJSQualifiedExportName()+" ? " +
                                  argName+".instance : "+
                                 "("+argName+".@java.lang.Object"+
-                        "::typeName ? " + argName + " : @" +
+                        "::hashCode() ? " + argName + " : @" +
                         cType.getQualifiedExporterImplementationName() + "::" +
                         "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("+
                         argName+")))";

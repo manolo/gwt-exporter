@@ -3,11 +3,7 @@ package org.timepedia.exporter.rebind;
 import com.google.gwt.core.ext.typeinfo.JField;
 
 /**
- * Created by IntelliJ IDEA.
- * User: ray
- * Date: Jun 11, 2007
- * Time: 4:42:45 PM
- * To change this template use File | Settings | File Templates.
+ *
  */
 public class JExportableField {
     private JExportableClassType enclosingExportType;

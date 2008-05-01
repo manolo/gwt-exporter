@@ -18,7 +18,6 @@ public class ExporterGenerator extends Generator {
     public String generate(TreeLogger logger, GeneratorContext ctx,
                            String requestedClass)
             throws UnableToCompleteException {
-
         ClassExporter classExporter = new ClassExporter(logger, ctx);
         String generatedClass = classExporter.exportClass(requestedClass);
         return generatedClass;

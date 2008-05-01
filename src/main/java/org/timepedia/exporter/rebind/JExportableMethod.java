@@ -6,11 +6,7 @@ import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 
 /**
- * Created by IntelliJ IDEA.
- * User: ray
- * Date: Jun 11, 2007
- * Time: 5:40:00 PM
- * To change this template use File | Settings | File Templates.
+ *
  */
 public class JExportableMethod implements JExportable {
     protected JExportableClassType exportableEnclosingType;
