@@ -19,6 +19,7 @@ public class ExporterDemo implements EntryPoint {
     try {
       Exporter exporter = (Exporter)GWT.create(Employee.class);
       exporter.export();
+      Window.alert("foo!");
     } catch (Exception e) {
       Window.alert("Exception "+e.toString());
     }

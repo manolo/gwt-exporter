@@ -52,13 +52,13 @@ public class ClassExporter {
    * accepts a JavaScriptObject in its constructor containing a callback. It
    * then delegates the single-method of the interface to this callback. <p/>
    * For example: <p/> <p/> / ** * @gwt.exportClosure * / public interface
-   * ClickListener implements Exportable { public void onClick(Sender s); }
-   * <p/> generates a delegation class <p/> public class ClickListenerImpl
-   * implements Exporter, ClickListener { <p/> private JavaScriptObject jso;
-   * public ClickListenerClosure(JavaScriptObject jso) { this.jso = jso; }
-   * <p/> public void onClick(Sender s) { invoke(jso, ExporterBase.wrap(s)); }
-   * <p/> public native void invoke(JavaScriptObject closure, JavascriptObject
-   * s) { closure(s); } <p/> }
+   * ClickListener implements Exportable { public void onClick(Sender s); } <p/>
+   * generates a delegation class <p/> public class ClickListenerImpl implements
+   * Exporter, ClickListener { <p/> private JavaScriptObject jso; public
+   * ClickListenerClosure(JavaScriptObject jso) { this.jso = jso; } <p/> public
+   * void onClick(Sender s) { invoke(jso, ExporterBase.wrap(s)); } <p/> public
+   * native void invoke(JavaScriptObject closure, JavascriptObject s) {
+   * closure(s); } <p/> }
    */
   public void exportClosure(JExportableClassType requestedType)
       throws UnableToCompleteException {
@@ -168,10 +168,10 @@ public class ClassExporter {
   }
 
   /**
-   * This method generates an implementation class that implements Exporter
-   * and returns the fully qualified name of the class.
+   * This method generates an implementation class that implements Exporter and
+   * returns the fully qualified name of the class.
    */
-  public String exportClass(String requestedClass)
+  public String exportClass(String requestedClass, boolean export)
       throws UnableToCompleteException {
 
     // JExportableClassType is a wrapper around JClassType
@@ -212,49 +212,55 @@ public class ClassExporter {
       return qualName; // null, already generated
     }
 
-    if (isClosure) {
-      exportClosure(requestedType);
+    if (export) {
+      if (isClosure) {
+        exportClosure(requestedType);
+      }
+
+      sw.indent();
+
+      // here we define a JSNI Javascript method called export0()
+      sw.println("public native void export0() /*-{");
+      sw.indent();
+
+      // if not defined, we create a Javascript package hierarchy
+      // foo.bar.baz to hold the Javascript bridge
+      declarePackages(requestedType);
+
+      // export Javascript constructors
+      exportConstructor(requestedType);
+
+      // export all static fields
+      exportFields(requestedType);
+
+      // export all exportable methods
+      exportMethods(requestedType);
+
+      // add map from TypeName to JS constructor in ExporterUtil
+      registerTypeMap(requestedType);
+
+      sw.outdent();
+      sw.println("}-*/;");
+
+      sw.println();
+
+      // the Javascript constructors refer to static factory methods
+      // on the Exporter implementation, referenced via JSNI
+      // We generate them here
+      exportStaticFactoryConstructors(requestedType);
+
+      // finally, generate the Exporter.export() method
+      // which invokes recursively, via GWT.create(),
+      // every other Exportable type we encountered in the exported ArrayList
+      // ending with a call to export0()
+
+      genExportMethod(requestedType, exported);
+      sw.outdent();
+    } else {
+      sw.indent();
+      sw.println("public void export() {}");
+      sw.outdent();
     }
-
-    sw.indent();
-
-    // here we define a JSNI Javascript method called export0()
-    sw.println("public native void export0() /*-{");
-    sw.indent();
-
-    // if not defined, we create a Javascript package hierarchy
-    // foo.bar.baz to hold the Javascript bridge
-    declarePackages(requestedType);
-
-    // export Javascript constructors
-    exportConstructor(requestedType);
-
-    // export all static fields
-    exportFields(requestedType);
-
-    // export all exportable methods
-    exportMethods(requestedType);
-
-    // add map from TypeName to JS constructor in ExporterBase
-    registerTypeMap(requestedType);
-
-    sw.outdent();
-    sw.println("}-*/;");
-
-    sw.println();
-
-    // the Javascript constructors refer to static factory methods
-    // on the Exporter implementation, referenced via JSNI
-    // We generate them here
-    exportStaticFactoryConstructors(requestedType);
-
-    // finally, generate the Exporter.export() method
-    // which invokes recursively, via GWT.create(),
-    // every other Exportable type we encountered in the exported ArrayList
-    // ending with a call to export0()
-
-    genExportMethod(requestedType, exported);
-    sw.outdent();
 
     sw.commit(logger);
 
@@ -264,7 +270,7 @@ public class ClassExporter {
 
   private void registerTypeMap(JExportableClassType requestedType) {
     sw.print(
-        "@org.timepedia.exporter.client.ExporterBase::addTypeMap(Ljava/lang/String;Lcom/google/gwt/core/client/JavaScriptObject;)("
+        "@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/String;Lcom/google/gwt/core/client/JavaScriptObject;)("
             +
 //                        "Ljavg/lang/String;" +
 //                        "Lcom/google/gwt/core/client/JavaScriptObject;)(" +
@@ -400,8 +406,8 @@ public class ClassExporter {
   }
 
   /**
-   * We create a static factory method public static [typeName]
-   * ___create(args) that just invokes the real constructor with the args
+   * We create a static factory method public static [typeName] ___create(args)
+   * that just invokes the real constructor with the args
    */
   private void exportStaticFactoryConstructor(
       JExportableConstructor constructor) {
@@ -452,7 +458,7 @@ public class ClassExporter {
       boolean needExport = eType != null && eType.needsExport();
       if (wrap && needExport) {
         sw.print(
-            "@org.timepedia.exporter.client.ExporterBase::wrap(Lorg/timepedia/exporter/client/Exportable;)(");
+            "@org.timepedia.exporter.client.ExporterUtil::wrap(Lorg/timepedia/exporter/client/Exportable;)(");
       }
       sw.print(ARG_PREFIX + i);
       if (wrap && needExport) {
@@ -593,7 +599,7 @@ public class ClassExporter {
     } else {
 
       sw.print((isVoid ? "" : "return ")
-          + "@org.timepedia.exporter.client.ExporterBase::wrap(Lorg/timepedia/exporter/client/Exportable;)("
+          + "@org.timepedia.exporter.client.ExporterUtil::wrap(Lorg/timepedia/exporter/client/Exportable;)("
 
       );
     }
@@ -627,7 +633,7 @@ public class ClassExporter {
     }
     visited.add(qualifiedSourceName);
     ClassExporter exporter = new ClassExporter(logger, ctx, visited);
-    exporter.exportClass(qualifiedSourceName);
+    exporter.exportClass(qualifiedSourceName, true);
     return true;
   }
 

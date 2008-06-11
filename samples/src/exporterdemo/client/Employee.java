@@ -1,14 +1,17 @@
 package exporterdemo.client;
 
 import org.timepedia.exporter.client.Exportable;
+import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportPackage;
+import org.timepedia.exporter.client.NoExport;
 
 /**
  * Blacklist export policy. All public methods exported by default
  *
  * @author Ray Cromwell &lt;ray@timepedia.org&gt;
- * @gwt.export
- * @gwt.exportPackage test
  */
+@Export
+@ExportPackage("test")
 public class Employee extends Person implements Exportable {
 
   private String title;
@@ -41,9 +44,8 @@ public class Employee extends Person implements Exportable {
 
   /**
    * let's stop this one from being exported
-   *
-   * @gwt.noexport
    */
+  @NoExport
   public String fullTitle() {
     return title + " " + super.fullTitle();
   }
@@ -63,23 +65,22 @@ public class Employee extends Person implements Exportable {
 
   /**
    * demonstrate how to avoid overload conflicts
-   *
-   * @gwt.export sayHelloString
    */
+  @Export("sayHelloString")
   public static String sayHello(String foo) {
     return "Hello " + foo;
   }
 
   /**
-   * @gwt.export addListener
    */
+  @Export("addListener")
   public void addClickListener(MyClickListener listener) {
     this.listener = listener;
   }
 
   /**
-   * @gwt.export fire
    */
+  @Export("fire")
   public void fireClickListener() {
     if (listener != null) {
       listener.onClick(this, "Hello", gender);
@@ -87,15 +88,15 @@ public class Employee extends Person implements Exportable {
   }
 
   /**
-   * @gwt.export
    */
+  @Export
   public InnerTest getInnerTest() {
     return new InnerTest();
   }
 
   /**
-   * @gwt.export
    */
+  @Export
   public static class InnerTest implements Exportable {
 
     public InnerTest() {

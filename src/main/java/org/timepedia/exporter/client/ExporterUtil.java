@@ -9,34 +9,31 @@ import java.util.HashMap;
  * Holds utility methods and wrapper state
  * @author Ray Cromwell &lt;ray@timepedia.org&gt;
  */
-public class ExporterBase {
+public class ExporterUtil {
+    private static ExporterBaseImpl impl=GWT.create(ExporterBaseImpl.class);
+  
     private static HashMap typeMap=new HashMap();
 
     public static void addTypeMap(Exportable type,
                                   JavaScriptObject exportedConstructor) {
-        addTypeMap(GWT.getTypeName(type), exportedConstructor);
+        impl.addTypeMap(type, exportedConstructor);
     }
 
     public static void addTypeMap(String type,
                                   JavaScriptObject exportedConstructor) {
-        typeMap.put(type, exportedConstructor);
+        impl.addTypeMap(type, exportedConstructor);
     }
 
     public static JavaScriptObject typeConstructor(Exportable type) {
-        return typeConstructor(GWT.getTypeName(type));
+        return impl.typeConstructor(type);
     }
 
     public static JavaScriptObject typeConstructor(String type) {
-        Object o =typeMap.get(type);
-        return (JavaScriptObject) o;
+        return impl.typeConstructor(type);
     }
 
     public static JavaScriptObject wrap(Exportable type) {
-        return wrap0(type, typeConstructor(type));
+        return impl.wrap(type);
     }
-
-    private native static JavaScriptObject wrap0(Exportable type,
-                                          JavaScriptObject constructor) /*-{
-         return new (constructor)(type);
-    }-*/;
+   
 }

@@ -5,6 +5,8 @@ import com.google.gwt.core.ext.typeinfo.JParameter;
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 
+import org.timepedia.exporter.client.Export;
+
 /**
  *
  */
@@ -17,12 +19,11 @@ public class JExportableMethod implements JExportable {
                              JAbstractMethod method) {
         this.exportableEnclosingType = exportableEnclosingType;
         this.method = method;
-        String metaData[][] =
-                method.getMetaData(ExportableTypeOracle.GWT_EXPORT_MD);
+        Export ann =
+                method.getAnnotation(Export.class);
 
-        if (metaData != null && metaData.length > 0 && metaData[0] != null &&
-                metaData[0].length > 0) {
-            exportName = metaData[0][0];
+        if (ann != null && ann.value().length() > 0)  {
+            exportName = ann.value();
         } else {
             exportName = method.getName();
         }

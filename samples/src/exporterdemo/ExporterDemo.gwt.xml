@@ -6,5 +6,6 @@
 
 	<!-- Specify the app entry point class.                   -->
 	<entry-point class='exporterdemo.client.ExporterDemo'/>
+        <set-property name="export" value="yes"/>
   
 </module>

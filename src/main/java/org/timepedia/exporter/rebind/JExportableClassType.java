@@ -5,6 +5,8 @@ import com.google.gwt.core.ext.typeinfo.JConstructor;
 import com.google.gwt.core.ext.typeinfo.JField;
 import com.google.gwt.core.ext.typeinfo.JMethod;
 
+import org.timepedia.exporter.client.ExportPackage;
+
 import java.util.ArrayList;
 
 /**
@@ -39,9 +41,9 @@ public class JExportableClassType implements JExportable, JExportableType {
 
   public String getJSExportPackage() {
     String requestedPackageName = getPrefix();
-    String md[][] = type.getMetaData("gwt.exportPackage");
-    if (md != null && md.length > 0 && md[0] != null && md[0][0] != null) {
-      requestedPackageName = md[0][0].trim();
+    ExportPackage ann = type.getAnnotation(ExportPackage.class);
+    if (ann != null) {
+      requestedPackageName = ann.value();
     } else if (type.getEnclosingType() != null) {
       JExportableClassType encType = exportableTypeOracle
           .findExportableClassType(

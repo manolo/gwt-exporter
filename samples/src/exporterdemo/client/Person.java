@@ -1,7 +1,7 @@
 package exporterdemo.client;
 
 import org.timepedia.exporter.client.Exportable;
-
+import org.timepedia.exporter.client.Export;
 
 /**
  * Whitelist demo, manually export 
@@ -12,52 +12,51 @@ public class Person implements Exportable {
     private String lastName;
 
     /**
-     * @gwt.export
      */
+    @Export
     public Person(String firstName, String lastName) {
         this.firstName = firstName;
         this.lastName = lastName;
     }
 
     /**
-     * @gwt.export
      */
-
+    @Export
     public String getLastName() {
         return lastName;
     }
  
     /**
-     * @gwt.export
      */
+    @Export
    public void setLastName(String lastName) {
         this.lastName = lastName;
     }
 
     /**
-     * @gwt.export
      */
+    @Export
     public String getFirstName() {
         return firstName;
     }
 
     /**
-     * @gwt.export
      */
+    @Export
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
  
     /**
-     * @gwt.export
      */
+    @Export
    public String fullTitle() {
         return firstName+" "+lastName;
     }
 
     /**
-     * @gwt.export
      */
+    @Export
     public Person getSelf() {
         return this;
     }

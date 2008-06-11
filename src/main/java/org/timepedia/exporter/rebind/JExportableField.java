@@ -2,6 +2,8 @@ package org.timepedia.exporter.rebind;
 
 import com.google.gwt.core.ext.typeinfo.JField;
 
+import org.timepedia.exporter.client.Export;
+
 /**
  *
  */
@@ -14,12 +16,11 @@ public class JExportableField {
                             JField field) {
         this.enclosingExportType = enclosingExportType;
         this.field = field;
-        String metaData[][] =
-                field.getMetaData(ExportableTypeOracle.GWT_EXPORT_MD);
+        Export ann =
+                field.getAnnotation(Export.class);
 
-        if(metaData != null && metaData.length > 0 && metaData[0] != null &&
-                metaData[0].length > 0) {
-            exportName = metaData[0][0];
+        if(ann != null && ann.value().length() > 0) {
+            exportName = ann.value();
         } else {
             exportName = field.getName();
         }
