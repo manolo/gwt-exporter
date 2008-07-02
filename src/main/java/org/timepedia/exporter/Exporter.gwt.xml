@@ -6,13 +6,13 @@
       
     <define-property name="export" values="yes,no"/>
   
-    <replace-with class="org.timepedia.exporter.client.ExporterImpl">
+    <replace-with class="org.timepedia.exporter.client.ExporterBaseImpl">
       <when-type-assignable class="org.timepedia.exporter.client.ExporterBaseImpl"/>
       <when-property-is name="export" value="no"/>
     </replace-with>
   
-    <replace-with class="org.timepedia.exporter.client.ExporterImpl">
-      <when-type-assignable class="org.timepedia.exporter.client.ExporterBaseActual"/>
+    <replace-with class="org.timepedia.exporter.client.ExporterBaseActual">
+      <when-type-assignable class="org.timepedia.exporter.client.ExporterBaseImpl"/>
       <when-property-is name="export" value="yes"/>
     </replace-with>
   

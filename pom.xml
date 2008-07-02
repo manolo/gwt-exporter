@@ -1,10 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.timepedia.exporter</groupId>
     <artifactId>gwtexporter</artifactId>
     <packaging>jar</packaging>
-    <version>1.01</version>
+    <version>2.0-alpha</version>
     <name>GWT Javascript API Exporter</name>
     <url>http://timepedia.org</url>
     <dependencies>
@@ -34,7 +34,7 @@
 
     </dependencies>
     <build>
-        <finalName>gwtexporter</finalName>
+        <finalName>gwtexporter2alpha</finalName>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/java</directory>
@@ -75,7 +75,7 @@
                 <jdk>1</jdk>
             </activation>
             <properties>
-		<gwtversion>1.4.61timepedia</gwtversion>
+		<gwtversion>1.5.0-rc1</gwtversion>
             </properties>
 	</profile>
         <profile>

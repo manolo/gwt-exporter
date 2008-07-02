@@ -11,23 +11,23 @@ import java.util.HashMap;
 public class ExporterBaseImpl {
   
 
-    public static void addTypeMap(Exportable type,
+    public void addTypeMap(Exportable type,
                                   JavaScriptObject exportedConstructor) {
     }
 
-    public static void addTypeMap(String type,
+    public void addTypeMap(String type,
                                   JavaScriptObject exportedConstructor) {
     }
 
-    public static JavaScriptObject typeConstructor(Exportable type) {
+    public JavaScriptObject typeConstructor(Exportable type) {
         return null;
     }
 
-    public static JavaScriptObject typeConstructor(String type) {
+    public JavaScriptObject typeConstructor(String type) {
         return null;
     }
 
-    public static JavaScriptObject wrap(Exportable type) {
+    public JavaScriptObject wrap(Exportable type) {
         return null;
     }
 
