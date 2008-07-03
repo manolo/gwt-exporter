@@ -11,7 +11,7 @@ import java.util.HashMap;
 public class ExporterBaseActual extends ExporterBaseImpl {
 
   private static HashMap typeMap = new HashMap();
-
+  public static final String WRAPPER_PROPERTY="__gwtex_wrap";
   public void addTypeMap(Exportable type,
       JavaScriptObject exportedConstructor) {
     addTypeMap(GWT.getTypeName(type), exportedConstructor);
@@ -32,11 +32,13 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   public JavaScriptObject wrap(Exportable type) {
-    return wrap0(type, typeConstructor(type));
+      return wrap0(type, typeConstructor(type), WRAPPER_PROPERTY);
   }
 
   private native static JavaScriptObject wrap0(Exportable type,
-      JavaScriptObject constructor) /*-{
-           return new (constructor)(type);
+					       JavaScriptObject constructor, String wrapProp) /*-{
+           var wrap=type[wrapProp] || new (constructor)(type);
+           type[wrapProp]=wrap;
+           return wrap;
       }-*/;
 }
