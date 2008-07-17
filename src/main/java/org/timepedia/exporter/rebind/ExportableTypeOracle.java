@@ -32,13 +32,10 @@ public class ExportableTypeOracle {
 
   private JClassType stringType = null;
 
-  
-
   public static final String JSO_CLASS
       = "com.google.gwt.core.client.JavaScriptObject";
 
   private static final String STRING_CLASS = "java.lang.String";
-
 
   public ExportableTypeOracle(TypeOracle typeOracle, TreeLogger log) {
     this.typeOracle = typeOracle;
@@ -137,8 +134,7 @@ public class ExportableTypeOracle {
 
     if (cType != null && cType.isAssignableTo(exportableType)) {
       ExportClosure ann = cType.getAnnotation(ExportClosure.class);
-      if (ann != null 
-          && cType.isInterface() != null) {
+      if (ann != null && cType.isInterface() != null) {
 
         return cType.getMethods().length == 1;
       }

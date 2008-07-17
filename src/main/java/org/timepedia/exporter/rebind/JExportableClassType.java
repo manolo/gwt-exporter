@@ -48,7 +48,9 @@ public class JExportableClassType implements JExportable, JExportableType {
       JExportableClassType encType = exportableTypeOracle
           .findExportableClassType(
               type.getEnclosingType().getQualifiedSourceName());
-      if(encType != null) return encType.getJSExportPackage();
+      if (encType != null) {
+        return encType.getJSExportPackage();
+      }
     }
     return requestedPackageName;
   }

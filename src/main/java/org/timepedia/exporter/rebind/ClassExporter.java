@@ -374,7 +374,8 @@ public class ClassExporter {
       // pass arguments[0], ..., arguments[n] to the JSNI call
       declareJSPassedValues(constructor, true);
       sw.println(");");
-      sw.println("this.instance[@org.timepedia.exporter.client.ExporterBaseActual::WRAPPER_PROPERTY] = this;");
+      sw.println(
+          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(this.instance, this);");
       sw.outdent();
       sw.println("}");
     }

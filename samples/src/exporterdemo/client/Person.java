@@ -1,64 +1,66 @@
 package exporterdemo.client;
 
-import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.Exportable;
 
 /**
- * Whitelist demo, manually export 
+ * Whitelist demo, manually export
+ *
  * @author Ray Cromwell &lt;ray@timepedia.org&gt;
  */
 public class Person implements Exportable {
-    private String firstName;
-    private String lastName;
 
-    /**
-     */
-    @Export
-    public Person(String firstName, String lastName) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-    }
+  private String firstName;
 
-    /**
-     */
-    @Export
-    public String getLastName() {
-        return lastName;
-    }
- 
-    /**
-     */
-    @Export
-   public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+  private String lastName;
 
-    /**
-     */
-    @Export
-    public String getFirstName() {
-        return firstName;
-    }
+  /**
+   */
+  @Export
+  public Person(String firstName, String lastName) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+  }
 
-    /**
-     */
-    @Export
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
- 
-    /**
-     */
-    @Export
-   public String fullTitle() {
-        return firstName+" "+lastName;
-    }
+  /**
+   */
+  @Export
+  public String getLastName() {
+    return lastName;
+  }
 
-    /**
-     */
-    @Export
-    public Person getSelf() {
-        return this;
-    }
-    
+  /**
+   */
+  @Export
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
+  /**
+   */
+  @Export
+  public String getFirstName() {
+    return firstName;
+  }
+
+  /**
+   */
+  @Export
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  /**
+   */
+  @Export
+  public String fullTitle() {
+    return firstName + " " + lastName;
+  }
+
+  /**
+   */
+  @Export
+  public Person getSelf() {
+    return this;
+  }
 }
