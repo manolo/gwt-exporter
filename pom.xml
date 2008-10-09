@@ -5,7 +5,7 @@
   <groupId>org.timepedia.exporter</groupId>
   <artifactId>gwtexporter</artifactId>
   <packaging>jar</packaging>
-  <version>2.0-alpha</version>
+  <version>2.03</version>
   <name>GWT Javascript API Exporter</name>
   <url>http://timepedia.org</url>
   <dependencies>
@@ -20,22 +20,25 @@
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
       <version>${gwtversion}</version>
-      <type>jar</type>
       <scope>provided</scope>
     </dependency>
-
-
     <dependency>
       <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev-${gwtplatform}</artifactId>
+      <artifactId>gwt-dev</artifactId>
       <version>${gwtversion}</version>
-      <type>jar</type>
+      <classifier>${gwtplatform}-libs</classifier>
+      <type>zip</type>
       <scope>provided</scope>
     </dependency>
-
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <version>${gwtversion}</version>
+      <classifier>${gwtplatform}</classifier>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <build>
-    <finalName>gwtexporter2alpha</finalName>
     <resources>
       <resource>
         <directory>${basedir}/src/main/java</directory>
@@ -62,7 +65,7 @@
       <url>http://gwt-maven.googlecode.com/svn/trunk/mavenrepo/</url>
     </pluginRepository>
   </pluginRepositories>
-
+c
   <repositories>
     <repository>
       <id>gwt-maven</id>
@@ -76,7 +79,7 @@
         <jdk>1</jdk>
       </activation>
       <properties>
-        <gwtversion>1.5.0-rc1</gwtversion>
+        <gwtversion>1.5.2</gwtversion>
       </properties>
     </profile>
     <profile>

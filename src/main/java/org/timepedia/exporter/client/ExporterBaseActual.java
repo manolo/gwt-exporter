@@ -56,6 +56,8 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   public JavaScriptObject wrap(Exportable type) {
+    if(type == null) return null;
+
     if (!GWT.isScript()) {
       JavaScriptObject wrapper = wrapperMap.get(type);
       if (wrapper != null) {
