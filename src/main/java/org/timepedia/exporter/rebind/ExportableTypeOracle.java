@@ -12,6 +12,9 @@ import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.NoExport;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  */
@@ -26,6 +29,9 @@ public class ExportableTypeOracle {
   static final String EXPORTABLE_CLASS
       = "org.timepedia.exporter.client.Exportable";
 
+  static final String EXPORT_OVERLAY_CLASS
+      = "org.timepedia.exporter.client.ExportOverlay";
+
   private JClassType exportableType = null;
 
   private JClassType jsoType = null;
@@ -37,22 +43,42 @@ public class ExportableTypeOracle {
 
   private static final String STRING_CLASS = "java.lang.String";
 
+  private JClassType exportOverlayType;
+
+  private Map<JClassType, JExportOverlayClassType> overlayTypes
+      = new HashMap<JClassType, JExportOverlayClassType>();
+
   public ExportableTypeOracle(TypeOracle typeOracle, TreeLogger log) {
     this.typeOracle = typeOracle;
     this.log = log;
     exportableType = typeOracle.findType(EXPORTABLE_CLASS);
+    exportOverlayType = typeOracle.findType(EXPORT_OVERLAY_CLASS);
     jsoType = typeOracle.findType(JSO_CLASS);
     stringType = typeOracle.findType(STRING_CLASS);
     assert exportableType != null;
+    assert exportOverlayType != null;
+    assert jsoType != null;
+    assert stringType != null;
+
+    for (JClassType t : typeOracle.getTypes()) {
+      if (t.isAssignableTo(exportOverlayType) && !t.equals(exportOverlayType)) {
+        JClassType targetType = getExportOverlayType(t);
+        overlayTypes.put(targetType, new JExportOverlayClassType(this, t));
+      }
+    }
   }
 
   public JExportableClassType findExportableClassType(String requestedClass) {
     JClassType requestedType = typeOracle.findType(requestedClass);
     if (requestedType != null) {
 
-      if (requestedType.isAssignableTo(exportableType)) {
+      if (requestedType.isAssignableTo(exportOverlayType)) {
+        return new JExportOverlayClassType(this, requestedType);
+      } else if (requestedType.isAssignableTo(exportableType)) {
         return new JExportableClassType(this, requestedType);
       }
+      JExportOverlayClassType exportOverlay = overlayTypes.get(requestedType);
+      return exportOverlay;
     }
     return null;
   }
@@ -100,11 +126,14 @@ public class ExportableTypeOracle {
     try {
       JType type = typeOracle.parse(paramTypeName);
       JClassType cType = type != null ? type.isClassOrInterface() : null;
-
       if (type.isPrimitive() != null) {
         return new JExportablePrimitiveType(this, type.isPrimitive());
       } else if (type.isArray() != null) {
         return new JExportableArrayType(this, type.isArray());
+      } else if (overlayTypes.containsKey(cType)) {
+        return overlayTypes.get(cType);
+      } else if (cType.isAssignableTo(exportOverlayType)) {
+        return new JExportOverlayClassType(this, type.isClassOrInterface());
       } else if (cType != null && (cType.isAssignableTo(exportableType)
           || cType.isAssignableTo(stringType) || cType
           .isAssignableTo(jsoType))) {
@@ -152,5 +181,19 @@ public class ExportableTypeOracle {
 
   public boolean isArray(JExportableClassType jExportableClassType) {
     return jExportableClassType.getType().isArray() != null;
+  }
+
+  public boolean isExportOverlay(JClassType i) {
+    return i.isAssignableTo(exportOverlayType);
+  }
+
+  public JClassType getExportOverlayType(JClassType requestedType) {
+    JClassType[] inf = requestedType.getImplementedInterfaces();
+    for (JClassType i : inf) {
+      if (isExportOverlay(i)) {
+        return i.isParameterized().getTypeArgs()[0];
+      }
+    }
+    return null;
   }
 }

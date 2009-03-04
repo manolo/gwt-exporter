@@ -20,7 +20,7 @@ public class JExportableArrayType extends JExportableClassType
   private JArrayType array;
 
   public boolean needsExport() {
-    return getComponentType().needsExport();
+    return true;
   }
 
   public String getQualifiedSourceName() {

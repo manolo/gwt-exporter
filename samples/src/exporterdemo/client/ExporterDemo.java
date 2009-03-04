@@ -16,8 +16,10 @@ public class ExporterDemo implements EntryPoint {
    */
   public void onModuleLoad() {
     try {
-      Exporter exporter = (Exporter) GWT.create(Employee.class);
-      exporter.export();
+//      Exporter exporter = (Exporter) GWT.create(Employee.class);
+//      exporter.export();
+      Exporter mexporter = GWT.create(ExportManager.class);
+      mexporter.export();
       Window.alert("foo!");
     } catch (Exception e) {
       Window.alert("Exception " + e.toString());

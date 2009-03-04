@@ -32,7 +32,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getPackageName() {
-    return type.getPackage().getName();
+    return getType().getPackage().getName();
   }
 
   public String getQualifiedExporterImplementationName() {
@@ -128,7 +128,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSNIReference() {
-    return type.getQualifiedSourceName();
+    return getType().getQualifiedSourceName();
   }
 
   public boolean needsExport() {
@@ -140,7 +140,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSConstructor() {
-    return getJSExportPackage() + "." + type.getName();
+    return getJSExportPackage() + "." + getType().getName();
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {
