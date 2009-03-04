@@ -37,4 +37,8 @@ public class ExporterUtil {
   public static JavaScriptObject wrap(Exportable type) {
     return impl.wrap(type);
   }
+
+  public static JavaScriptObject wrap(Exportable[] type) {
+    return impl.wrap(type);
+  }
 }

@@ -103,6 +103,8 @@ public class ExportableTypeOracle {
 
       if (type.isPrimitive() != null) {
         return new JExportablePrimitiveType(this, type.isPrimitive());
+      } else if (type.isArray() != null) {
+        return new JExportableArrayType(this, type.isArray());
       } else if (cType != null && (cType.isAssignableTo(exportableType)
           || cType.isAssignableTo(stringType) || cType
           .isAssignableTo(jsoType))) {
@@ -140,5 +142,9 @@ public class ExportableTypeOracle {
       }
     }
     return false;
+  }
+
+  public boolean isArray(JExportableClassType jExportableClassType) {
+    return jExportableClassType.getType().isArray() != null;
   }
 }

@@ -64,9 +64,9 @@ public class ClassExporter {
       throws UnableToCompleteException {
 
     if (requestedType == null) {
-      logger.log(TreeLogger.ERROR, "Type '"
-          + requestedType.getQualifiedSourceName()
-          + "' does not implement Exportable", null);
+      logger.log(TreeLogger.ERROR,
+          "Type '" + requestedType.getQualifiedSourceName()
+              + "' does not implement Exportable", null);
       throw new UnableToCompleteException();
     }
 
@@ -100,10 +100,11 @@ public class ClassExporter {
     JExportableMethod[] methods = requestedType.getExportableMethods();
 
     if (methods.length != 1) {
-      logger.log(TreeLogger.ERROR, "Interface "
-          + requestedType.getQualifiedSourceName() + " has more than one "
-          + "declared method. @gwt.exportClosure only currently works for "
-          + "single method interfaces.", null);
+      logger.log(TreeLogger.ERROR,
+          "Interface " + requestedType.getQualifiedSourceName()
+              + " has more than one "
+              + "declared method. @gwt.exportClosure only currently works for "
+              + "single method interfaces.", null);
       throw new UnableToCompleteException();
     }
 
@@ -126,8 +127,8 @@ public class ClassExporter {
 
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
     boolean noParams = method.getExportableParameters().length == 0;
-    sw.print("public " + method.getExportableReturnType()
-        .getQualifiedSourceName());
+    sw.print(
+        "public " + method.getExportableReturnType().getQualifiedSourceName());
 
     sw.print(" " + method.getName() + "(");
     declareParameters(method, true);
@@ -139,9 +140,8 @@ public class ClassExporter {
     sw.outdent();
     sw.println("}");
     sw.println();
-    sw.print(
-        "public native " + (isVoid ? "void" : method.getExportableReturnType()
-            .getQualifiedSourceName()));
+    sw.print("public native " + (isVoid ? "void"
+        : method.getExportableReturnType().getQualifiedSourceName()));
     sw.print(" invoke(" + ExportableTypeOracle.JSO_CLASS + " closure");
     if (method.getExportableParameters().length > 0) {
       sw.print(", ");
@@ -153,7 +153,8 @@ public class ClassExporter {
     sw.print((!isVoid ? "var result= " : "") + "closure(");
     declareJavaPassedValues(method, true);
     sw.println(");");
-    if (retType.needsExport() && !isVoid) {
+    boolean isArray = retType instanceof JExportableArrayType;
+    if (retType.needsExport() && !isVoid && !isArray) {
       sw.println("if(result != null && result != undefined) "
           + "result=result.instance;");
       sw.println("else if(result == undefined) result=null;");
@@ -355,10 +356,11 @@ public class ClassExporter {
       int numArguments = constructor.getExportableParameters().length;
       JExportableConstructor conflicting = arity.get(numArguments);
       if (conflicting != null) {
-        logger.log(TreeLogger.ERROR, "Constructor " + conflicting + " with "
-            + numArguments + " " + "arguments conflicts with " + constructor
-            + "." + "Two constructors may not have identical numbers of "
-            + "arguments.", null);
+        logger.log(TreeLogger.ERROR,
+            "Constructor " + conflicting + " with " + numArguments + " "
+                + "arguments conflicts with " + constructor + "."
+                + "Two constructors may not have identical numbers of "
+                + "arguments.", null);
         throw new UnableToCompleteException();
       }
       arity.put(numArguments, constructor);
@@ -402,8 +404,9 @@ public class ClassExporter {
 
     // restore inner class namespace
     sw.println("if(pkg) {");
-    sw.println("for(p in pkg) { $wnd."
-        + requestedType.getJSQualifiedExportName() + "[p]=pkg[p]; }");
+    sw.println(
+        "for(p in pkg) { $wnd." + requestedType.getJSQualifiedExportName()
+            + "[p]=pkg[p]; }");
     sw.println("}");
   }
 
@@ -415,8 +418,7 @@ public class ClassExporter {
       JExportableConstructor constructor) {
     JExportableClassType consType = (JExportableClassType) constructor
         .getExportableReturnType();
-    String typeName = consType
-        .getQualifiedSourceName();
+    String typeName = consType.getQualifiedSourceName();
     sw.print("public static " + typeName + " "
         + constructor.getStaticFactoryMethodName() + "(");
     declareParameters(constructor);
@@ -458,9 +460,12 @@ public class ClassExporter {
     for (int i = 0; i < params.length; i++) {
       JExportableType eType = params[i].getExportableType();
       boolean needExport = eType != null && eType.needsExport();
+      boolean isArray = eType instanceof JExportableArrayType;
+
       if (wrap && needExport) {
-        sw.print(
-            "@org.timepedia.exporter.client.ExporterUtil::wrap(Lorg/timepedia/exporter/client/Exportable;)(");
+        sw.print("@org.timepedia.exporter.client.ExporterUtil::wrap("
+            + (isArray ? "[" : "")
+            + "Lorg/timepedia/exporter/client/Exportable;)(");
       }
       sw.print(ARG_PREFIX + i);
       if (wrap && needExport) {
@@ -551,10 +556,11 @@ public class ClassExporter {
         : visited.get(key);
 
     if (conflicting != null) {
-      logger.log(TreeLogger.ERROR, "Method " + method + " having " + arity
-          + " arguments conflicts with " + conflicting + ". "
-          + "Two exportable methods cannot have the same number of arguments. "
-          + "Use @gwt.export <newName> on one of the methods to disambiguate.",
+      logger.log(TreeLogger.ERROR,
+          "Method " + method + " having " + arity + " arguments conflicts with "
+              + conflicting + ". "
+              + "Two exportable methods cannot have the same number of arguments. "
+              + "Use @gwt.export <newName> on one of the methods to disambiguate.",
           null);
       throw new UnableToCompleteException();
     } else {
@@ -587,9 +593,9 @@ public class ClassExporter {
     sw.print(") { ");
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
 
-    sw.print((isVoid ? "" : "var x=")
-        + (method.isStatic() ? "@" : "this.instance.@")
-        + method.getJSNIReference() + "(");
+    sw.print(
+        (isVoid ? "" : "var x=") + (method.isStatic() ? "@" : "this.instance.@")
+            + method.getJSNIReference() + "(");
 
     declareJSPassedValues(method, false);
 
@@ -599,9 +605,12 @@ public class ClassExporter {
     if (!retType.needsExport()) {
       sw.print(isVoid ? "" : "return (");
     } else {
+      boolean isArray = retType instanceof JExportableArrayType;
 
       sw.print((isVoid ? "" : "return ")
-          + "@org.timepedia.exporter.client.ExporterUtil::wrap(Lorg/timepedia/exporter/client/Exportable;)("
+          + "@org.timepedia.exporter.client.ExporterUtil::wrap("
+          + (isArray ? "[" : "")
+          + "Lorg/timepedia/exporter/client/Exportable;)("
 
       );
     }
@@ -649,8 +658,9 @@ public class ClassExporter {
     String prefix = "";
     for (int i = 0; i < superPackages.length; i++) {
       if (!superPackages[i].equals("client")) {
-        sw.println("if(!$wnd." + prefix + "" + superPackages[i] + ") $wnd."
-            + prefix + superPackages[i] + " = {} ");
+        sw.println(
+            "if(!$wnd." + prefix + "" + superPackages[i] + ") $wnd." + prefix
+                + superPackages[i] + " = {} ");
         prefix += superPackages[i] + ".";
       }
     }
@@ -692,8 +702,8 @@ public class ClassExporter {
 
       String var = "export" + exprCount++;
       sw.println(ExportableTypeOracle.EXPORTER_CLASS + " " + var + " = ("
-          + ExportableTypeOracle
-          .EXPORTER_CLASS + ") GWT.create(" + qualName + ".class);");
+          + ExportableTypeOracle.EXPORTER_CLASS + ") GWT.create(" + qualName
+          + ".class);");
       sw.println(var + ".export();");
     }
 

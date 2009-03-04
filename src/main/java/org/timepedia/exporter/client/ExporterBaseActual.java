@@ -2,6 +2,7 @@ package org.timepedia.exporter.client;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.core.client.JsArray;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -56,7 +57,9 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   public JavaScriptObject wrap(Exportable type) {
-    if(type == null) return null;
+    if (type == null) {
+      return null;
+    }
 
     if (!GWT.isScript()) {
       JavaScriptObject wrapper = wrapperMap.get(type);
@@ -75,7 +78,31 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return wrapper;
   }
 
-  private native JavaScriptObject getWrapperJS(Exportable type, String wrapProp) /*-{
+  public JavaScriptObject wrap(Exportable[] type) {
+    if (type == null) {
+      return null;
+    }
+    if (!GWT.isScript()) {
+      JavaScriptObject wrapper = wrapperMap.get(type);
+      if (wrapper != null) {
+        return wrapper;
+      }
+    } else {
+      JavaScriptObject wrapper = getWrapperJS(type, WRAPPER_PROPERTY);
+      if (wrapper != null) {
+        return wrapper;
+      }
+    }
+    JavaScriptObject wrapper = JavaScriptObject.createArray();
+    JsArray<JavaScriptObject> wrapperArray = wrapper.cast();
+    for (int i = 0; i < type.length; i++) {
+      wrapperArray.set(i, wrap(type[i]));
+    }
+    setWrapper(type, wrapperArray);
+    return wrapper;
+  }
+
+  private native JavaScriptObject getWrapperJS(Object type, String wrapProp) /*-{
     return type[wrapProp];
   }-*/;
 
