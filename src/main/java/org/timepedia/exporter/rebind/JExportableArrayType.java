@@ -5,10 +5,12 @@ import com.google.gwt.core.ext.typeinfo.JArrayType;
 /**
  *
  */
-public class JExportableArrayType implements JExportableType {
+public class JExportableArrayType extends JExportableClassType
+    implements JExportableType {
 
   public JExportableArrayType(ExportableTypeOracle exportableTypeOracle,
       JArrayType array) {
+    super(exportableTypeOracle, array);
     this.exportableTypeOracle = exportableTypeOracle;
     this.array = array;
   }

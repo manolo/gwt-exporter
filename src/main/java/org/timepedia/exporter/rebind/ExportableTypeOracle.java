@@ -131,7 +131,13 @@ public class ExportableTypeOracle {
   }
 
   public boolean isClosure(String qualifiedSourceName) {
+    if (qualifiedSourceName == null) {
+      return false;
+    }
     JType type = typeOracle.findType(qualifiedSourceName);
+    if (type == null) {
+      return false;
+    }
     JClassType cType = type.isClassOrInterface();
 
     if (cType != null && cType.isAssignableTo(exportableType)) {
