@@ -3,6 +3,7 @@ package org.timepedia.exporter.rebind;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -181,9 +182,6 @@ public class ClassExporter {
     JExportableClassType requestedType = xTypeOracle
         .findExportableClassType(requestedClass);
 
-    // add this so we don't try to recursively reexport ourselves later
-    exported.add(requestedType);
-    visited.add(requestedType.getQualifiedSourceName());
 
     if (requestedType == null) {
       logger.log(TreeLogger.ERROR,
@@ -191,6 +189,11 @@ public class ClassExporter {
       throw new UnableToCompleteException();
     }
 
+
+    // add this so we don't try to recursively reexport ourselves later
+    exported.add(requestedType);
+    visited.add(requestedType.getQualifiedSourceName());
+    
     // get the name of the Java class implementing Exporter
     String genName = requestedType.getExporterImplementationName();
 
@@ -461,11 +464,13 @@ public class ClassExporter {
       JExportableType eType = params[i].getExportableType();
       boolean needExport = eType != null && eType.needsExport();
       boolean isArray = eType instanceof JExportableArrayType;
+      String arrayType = needExport && isArray ? ("L"
+          + ((JExportableArrayType)eType).getJSNIReference()) : "";
 
       if (wrap && needExport) {
         sw.print("@org.timepedia.exporter.client.ExporterUtil::wrap("
-            + (isArray ? "[" : "")
-            + "Lorg/timepedia/exporter/client/Exportable;)(");
+            + (isArray ? arrayType
+            : "Lorg/timepedia/exporter/client/Exportable;") + ")(");
       }
       sw.print(ARG_PREFIX + i);
       if (wrap && needExport) {
@@ -606,11 +611,12 @@ public class ClassExporter {
       sw.print(isVoid ? "" : "return (");
     } else {
       boolean isArray = retType instanceof JExportableArrayType;
+      String arrayType = isArray ? ((JExportableArrayType)retType).getJSNIReference() : "";
 
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ? "[" : "")
-          + "Lorg/timepedia/exporter/client/Exportable;)("
+          + (isArray ?  arrayType
+          : "Lorg/timepedia/exporter/client/Exportable;") + ")("
 
       );
     }
@@ -642,6 +648,21 @@ public class ClassExporter {
     if (visited.contains(qualifiedSourceName)) {
       return false;
     }
+    JExportableType xType = xTypeOracle
+        .findExportableType(qualifiedSourceName);
+    if(xType instanceof JExportableArrayType) {
+
+      JExportableType xcompType = ((JExportableArrayType) xType)
+          .getComponentType();
+      if(xcompType instanceof JExportablePrimitiveType) {
+        return false;
+      }
+      else {
+        return exportDependentClass(xcompType.getQualifiedSourceName());
+      }
+    }
+
+
     visited.add(qualifiedSourceName);
     ClassExporter exporter = new ClassExporter(logger, ctx, visited);
     exporter.exportClass(qualifiedSourceName, true);
@@ -695,7 +716,9 @@ public class ClassExporter {
     int exprCount = 0;
     for (JExportableClassType classType : exported) {
       if (requestedType.getQualifiedSourceName()
-          .equals(classType.getQualifiedSourceName())) {
+          .equals(classType.getQualifiedSourceName()) ||
+          classType instanceof JExportableArrayType 
+          ) {
         continue;
       }
       String qualName = classType.getQualifiedSourceName();

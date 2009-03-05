@@ -63,7 +63,7 @@ public class JExportableMethod implements JExportable {
 
   public String getJSNIReference() {
 
-    String reference = exportableEnclosingType.getJSNIReference() + "::"
+    String reference = exportableEnclosingType.getQualifiedSourceName() + "::"
         + method.getName() + "(";
     JParameter[] params = method.getParameters();
     for (int i = 0; i < params.length; i++) {

@@ -128,7 +128,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSNIReference() {
-    return getType().getQualifiedSourceName();
+    return getType().getJNISignature();
   }
 
   public boolean needsExport() {

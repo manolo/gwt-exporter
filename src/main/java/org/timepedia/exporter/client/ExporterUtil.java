@@ -41,4 +41,32 @@ public class ExporterUtil {
   public static JavaScriptObject wrap(Exportable[] type) {
     return impl.wrap(type);
   }
+
+  public static JavaScriptObject wrap(double[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(float[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(int[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(char[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(byte[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(long[] type) {
+    return impl.wrap(type);
+  }
+
+  public static JavaScriptObject wrap(short[] type) {
+    return impl.wrap(type);
+  }
 }

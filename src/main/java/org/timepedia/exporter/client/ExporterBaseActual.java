@@ -3,6 +3,7 @@ package org.timepedia.exporter.client;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.JsArrayNumber;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -82,24 +83,154 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     if (type == null) {
       return null;
     }
-    if (!GWT.isScript()) {
-      JavaScriptObject wrapper = wrapperMap.get(type);
-      if (wrapper != null) {
-        return wrapper;
-      }
-    } else {
-      JavaScriptObject wrapper = getWrapperJS(type, WRAPPER_PROPERTY);
-      if (wrapper != null) {
-        return wrapper;
-      }
-    }
-    JavaScriptObject wrapper = JavaScriptObject.createArray();
+
+    JavaScriptObject wrapper = getWrapper(type);
+
     JsArray<JavaScriptObject> wrapperArray = wrapper.cast();
     for (int i = 0; i < type.length; i++) {
       wrapperArray.set(i, wrap(type[i]));
     }
-    setWrapper(type, wrapperArray);
     return wrapper;
+  }
+
+  private JavaScriptObject getWrapper(Object type) {
+    JavaScriptObject wrapper = null;
+    if (!GWT.isScript()) {
+      wrapper = wrapperMap.get(type);
+    } else {
+      wrapper = getWrapperJS(type, WRAPPER_PROPERTY);
+    }
+
+    if (wrapper == null) {
+      wrapper = JavaScriptObject.createArray();
+      setWrapper(type, wrapper);
+    }
+    return wrapper;
+  }
+
+  private static native JavaScriptObject reinterpretCast(Object nl) /*-{
+        return nl;
+    }-*/;
+
+  @Override
+  public JavaScriptObject wrap(float[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+
+  }
+
+  @Override
+  public JavaScriptObject wrap(byte[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+
+  @Override
+  public JavaScriptObject wrap(char[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+
+  @Override
+  public JavaScriptObject wrap(int[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+
+  @Override
+  public JavaScriptObject wrap(long[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+
+  @Override
+  public JavaScriptObject wrap(short[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+
+  public JavaScriptObject wrap(double[] type) {
+
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+
   }
 
   private native JavaScriptObject getWrapperJS(Object type, String wrapProp) /*-{

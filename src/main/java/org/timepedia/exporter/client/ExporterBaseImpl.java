@@ -32,5 +32,33 @@ public class ExporterBaseImpl {
   public JavaScriptObject wrap(Exportable[] type) {
     return null;
   }
+
+  public JavaScriptObject wrap(double[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(float[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(int[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(char[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(byte[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(long[] type) {
+    return null;
+  }
+
+  public JavaScriptObject wrap(short[] type) {
+    return null;
+  }
 }
 
