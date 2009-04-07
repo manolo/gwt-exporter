@@ -34,6 +34,9 @@ public class Employee extends Person implements Exportable {
     super(firstName, lastName);
     this.title = title;
     this.gender = gender;
+    people=new Person[2];
+    people[0]=new Person("John", "McCain");
+    people[1]=new Person("Barack", "Obama");
   }
 
   public Employee(Employee old) {
@@ -105,5 +108,17 @@ public class Employee extends Person implements Exportable {
     public int getFoo() {
       return 10;
     }
+  }
+
+    double values[] = new double[] = {1,2,3,4,5};
+  @Export
+      public double[] getValues() {
+      return values;
+  }
+
+    Person[] people;
+  @Export
+      public Person[] getPeople() { 
+      return people;
   }
 }

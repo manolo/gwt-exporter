@@ -710,8 +710,14 @@ public class ClassExporter {
    */
   private void genExportMethod(JExportableClassType requestedType,
       ArrayList<JExportableClassType> exported) {
+    sw.println("private static boolean exported;");
+
     sw.println("public void export() { ");
     sw.indent();
+    sw.println("if(!exported) {");
+    sw.indent();
+    sw.println("exported=true;");
+    
     // first, export our dependencies
     int exprCount = 0;
     for (JExportableClassType classType : exported) {
@@ -732,7 +738,8 @@ public class ClassExporter {
 
     // now export our class
     sw.println("export0();");
-
+    sw.outdent();
+    sw.println("}");
     sw.outdent();
     sw.println("}");
   }
