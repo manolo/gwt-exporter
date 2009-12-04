@@ -14,6 +14,18 @@ public class Person implements Exportable {
 
   private String lastName;
 
+//  @Export
+//  public enum TestEnum implements Exportable { 
+//    
+//    @Export INSTANCE {
+//      Employee getSomeClass() {
+//        return some;
+//      }
+//    };
+//    public Employee some;
+//    @Export
+//    abstract Employee getSomeClass();
+//  }
   /**
    */
   @Export

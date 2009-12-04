@@ -24,4 +24,9 @@ public class JExportablePrimitiveType implements JExportableType {
   public String getQualifiedSourceName() {
     return primitive.getQualifiedSourceName();
   }
+
+  public String getHostedModeJsTypeCast() {
+    return primitive.getSimpleSourceName().equals("Boolean") ? "Boolean" : 
+        "Number";
+  }
 }

@@ -37,7 +37,7 @@ public class JExportableParameter {
         String value = "(" + argName + ".constructor == $wnd."
             + cType.getJSQualifiedExportName() + " ? " + argName
             + ".instance : " + "(" + argName + ".@java.lang.Object"
-            + "::hashCode() ? " + argName + " : @"
+            + "::typeMarker ? " + argName + " : @"
             + cType.getQualifiedExporterImplementationName() + "::"
             + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
             + argName + ")))";

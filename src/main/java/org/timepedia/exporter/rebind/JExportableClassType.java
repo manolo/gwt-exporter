@@ -123,6 +123,10 @@ public class JExportableClassType implements JExportable, JExportableType {
     return type.getQualifiedSourceName();
   }
 
+  public String getHostedModeJsTypeCast() {
+    return null;
+  }
+
   public String getJSQualifiedExportName() {
     return getJSConstructor();
   }

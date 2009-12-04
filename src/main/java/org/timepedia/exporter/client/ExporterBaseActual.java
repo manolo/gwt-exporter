@@ -23,6 +23,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private HashMap typeMap = new HashMap();
 
   //TODO: track garbage collected wrappers and remove mapping
+
   private IdentityHashMap<Object, JavaScriptObject> wrapperMap = null;
 
   public ExporterBaseActual() {
@@ -127,7 +128,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     } else {
       return reinterpretCast(type);
     }
-
   }
 
   @Override
@@ -230,7 +230,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     } else {
       return reinterpretCast(type);
     }
-
   }
 
   private native JavaScriptObject getWrapperJS(Object type, String wrapProp) /*-{
@@ -244,5 +243,37 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private native void setWrapperJS(Object instance, JavaScriptObject wrapper,
       String wrapperProperty) /*-{
     instance[wrapperProperty] = wrapper;
+  }-*/;
+
+  private native void declarePackage0(JavaScriptObject prefix, String pkg) /*-{
+    prefix[pkg] || (prefix[pkg] = {});
+  }-*/;
+
+  @Override
+  public void declarePackage(String packageName,
+      String enclosingClassesString) {
+    String superPackages[] = packageName.split("\\.");
+    JavaScriptObject prefix = getWindow();
+    for (int i = 0; i < superPackages.length; i++) {
+      if (!superPackages[i].equals("client")) {
+        declarePackage0(prefix, superPackages[i]);
+        prefix = getProp(prefix, superPackages[i]);
+      }
+    }
+    String enclosingClasses[] = enclosingClassesString.split("\\.");
+    for (String enclosingName : enclosingClasses) {
+      if (!enclosingName.trim().equals("")) {
+        declarePackage0(prefix, enclosingName);
+        prefix = getProp(prefix, enclosingName);
+      }
+    }
+  }
+
+  private static native JavaScriptObject getWindow() /*-{
+    return $wnd;
+  }-*/;
+  
+  private static native JavaScriptObject getProp(JavaScriptObject jso, String key) /*-{
+    return jso[key];
   }-*/;
 }

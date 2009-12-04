@@ -60,5 +60,8 @@ public class ExporterBaseImpl {
   public JavaScriptObject wrap(short[] type) {
     return null;
   }
+
+  public void declarePackage(String packageName, String enclosingClasses) {
+  }
 }
 

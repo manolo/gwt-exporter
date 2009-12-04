@@ -69,4 +69,9 @@ public class ExporterUtil {
   public static JavaScriptObject wrap(short[] type) {
     return impl.wrap(type);
   }
+  
+  public static void declarePackage(String packageName, String enclosingClasses) {
+    impl.declarePackage(packageName, enclosingClasses);
+  }
+ 
 }

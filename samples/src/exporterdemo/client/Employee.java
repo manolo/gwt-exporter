@@ -110,15 +110,15 @@ public class Employee extends Person implements Exportable {
     }
   }
 
-    double values[] = new double[] = {1,2,3,4,5};
+    double values[] = new double[] {1,2,3,4,5};
   @Export
       public double[] getValues() {
       return values;
   }
 
     Person[] people;
-  @Export
-      public Person[] getPeople() { 
-      return people;
-  }
+//  @Export
+//      public Person[] getPeople() { 
+//      return people;
+//  }
 }
