@@ -3,7 +3,7 @@ package org.timepedia.exporter.client;
 import com.google.gwt.core.client.JavaScriptObject;
 
 /**
- *
+ * No-op implementation when export is disabled.
  */
 public class ExporterBaseImpl {
 

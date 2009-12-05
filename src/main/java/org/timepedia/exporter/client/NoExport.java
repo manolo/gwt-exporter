@@ -6,7 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * If a class is marked for export, used this method to selectively disable
+ * certain methods or fields from being exported.
  */
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.RUNTIME)

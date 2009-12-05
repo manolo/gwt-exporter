@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 
 /**
- *
+ * Methods used to maintain a mapping between JS types and Java (GWT) objects.
  */
 public class ExporterBaseActual extends ExporterBaseImpl {
 
