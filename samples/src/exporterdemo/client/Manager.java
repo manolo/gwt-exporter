@@ -12,6 +12,9 @@ public class Manager {
     this.employee = employee;
   }
 
+  public Manager() {
+  }
+
   public Employee getEmployee() {
     return employee;
   }

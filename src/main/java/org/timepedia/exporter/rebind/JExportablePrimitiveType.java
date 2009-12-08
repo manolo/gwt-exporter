@@ -29,4 +29,8 @@ public class JExportablePrimitiveType implements JExportableType {
     return primitive.getSimpleSourceName().equals("Boolean") ? "Boolean" : 
         "Number";
   }
+
+  public String getWrapperFunc() {
+    return null;
+  }
 }

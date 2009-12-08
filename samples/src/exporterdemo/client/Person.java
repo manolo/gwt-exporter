@@ -34,6 +34,9 @@ public class Person implements Exportable {
     this.lastName = lastName;
   }
 
+  public Person() {
+  }
+
   /**
    */
   @Export

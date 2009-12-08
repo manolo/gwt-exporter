@@ -5,6 +5,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Window;
 
 import org.timepedia.exporter.client.Exporter;
+import org.timepedia.exporter.client.ExporterUtil;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -16,13 +17,7 @@ public class ExporterDemo implements EntryPoint {
    */
   public void onModuleLoad() {
     try {
-      Exporter exporter = (Exporter) GWT.create(Employee.class);
-      exporter.export();
-      Exporter mexporter = GWT.create(ExportManager.class);
-      mexporter.export();
-//       Exporter exporter3 = (Exporter) GWT.create(Person.TestEnum.class);
-//      exporter3.export();
-      Window.alert("foo!");
+      ExporterUtil.exportAll();
     } catch (Exception e) {
       Window.alert("Exception " + e.toString());
     }

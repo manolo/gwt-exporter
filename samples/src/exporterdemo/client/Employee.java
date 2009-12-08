@@ -14,6 +14,10 @@ import org.timepedia.exporter.client.NoExport;
 @ExportPackage("test")
 public class Employee extends Person implements Exportable {
 
+  public Employee(String firstName, String lastName) {
+    super(firstName, lastName);
+  }
+
   private String title;
 
   private int gender;
@@ -30,13 +34,16 @@ public class Employee extends Person implements Exportable {
     this.title = title;
   }
 
+  public Employee() {
+  }
+
   public Employee(String title, String firstName, String lastName, int gender) {
     super(firstName, lastName);
     this.title = title;
     this.gender = gender;
-    people=new Person[2];
-    people[0]=new Person("John", "McCain");
-    people[1]=new Person("Barack", "Obama");
+    people = new Person[2];
+    people[0] = new Person("John", "McCain");
+    people[1] = new Person("Barack", "Obama");
   }
 
   public Employee(Employee old) {
@@ -54,6 +61,7 @@ public class Employee extends Person implements Exportable {
   }
 
   // should not be exported
+
   private String getBlah() {
     return "blah";
   }
@@ -64,6 +72,18 @@ public class Employee extends Person implements Exportable {
 
   public static String sayHello(Person emp) {
     return "Hello " + emp.fullTitle();
+  }
+
+  public String overriden(String x) {
+    return x + ".";
+  }
+
+  public double overriden(double x) {
+    return x + 1;
+  }
+  
+  public Employee overriden(Employee that) {
+    return that;
   }
 
   /**
@@ -110,15 +130,17 @@ public class Employee extends Person implements Exportable {
     }
   }
 
-    double values[] = new double[] {1,2,3,4,5};
+  double values[] = new double[]{1, 2, 3, 4, 5};
+
   @Export
-      public double[] getValues() {
-      return values;
+  public double[] getValues() {
+    return values;
   }
 
-    Person[] people;
-//  @Export
-//      public Person[] getPeople() { 
-//      return people;
-//  }
+  Person[] people;
+
+  @Export
+  public Person[] getPeople() {
+    return people;
+  }
 }

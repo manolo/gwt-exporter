@@ -6,6 +6,8 @@ import com.google.gwt.core.ext.typeinfo.JField;
 import com.google.gwt.core.ext.typeinfo.JMethod;
 
 import org.timepedia.exporter.client.ExportPackage;
+import org.timepedia.exporter.client.Exportable;
+import org.timepedia.exporter.client.ExporterUtil;
 
 import java.util.ArrayList;
 
@@ -32,11 +34,15 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getPackageName() {
-    return getType().getPackage().getName();
+    return type.getPackage().getName();
   }
 
   public String getQualifiedExporterImplementationName() {
     return getPackageName() + "." + getExporterImplementationName();
+  }
+
+  public JClassType getTypeToExport() {
+    return type;
   }
 
   public String getJSExportPackage() {
@@ -60,7 +66,7 @@ public class JExportableClassType implements JExportable, JExportableType {
         = new ArrayList<JExportableField>();
 
     for (JField field : type.getFields()) {
-      if (ExportableTypeOracle.isExportable(field)) {
+      if (exportableTypeOracle.isExportable(field)) {
         exportableFields.add(new JExportableField(this, field));
       }
     }
@@ -86,12 +92,17 @@ public class JExportableClassType implements JExportable, JExportableType {
     ArrayList<JExportableConstructor> exportableCons
         = new ArrayList<JExportableConstructor>();
 
-    for (JConstructor method : type.getConstructors()) {
+    JClassType exportType = type;
+    if (exportableTypeOracle.isExportOverlay(type)) {
+      // export public no-arg constructor for overlay types
+      exportType = exportableTypeOracle.getExportOverlayType(type);
+    }
+    for (JConstructor method : exportType.getConstructors()) {
       if (method.isConstructor() == null) {
         continue;
       }
 
-      if (ExportableTypeOracle.isExportable(method)) {
+      if (exportableTypeOracle.isExportable(method)) {
         exportableCons.add(new JExportableConstructor(this, method));
       }
     }
@@ -107,7 +118,7 @@ public class JExportableClassType implements JExportable, JExportableType {
         continue;
       }
 
-      if (ExportableTypeOracle.isExportable(method)) {
+      if (exportableTypeOracle.isExportable(method)) {
         exportableMethods.add(new JExportableMethod(this, method));
       }
     }
@@ -120,11 +131,17 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getQualifiedSourceName() {
-    return type.getQualifiedSourceName();
+    return getType().getQualifiedSourceName();
   }
 
   public String getHostedModeJsTypeCast() {
     return null;
+  }
+
+  public String getWrapperFunc() {
+    if (!needsExport()) { return null; }
+    return "@" + ExporterUtil.class.getName() + 
+        "::wrap(Lorg/timepedia/exporter/client/Exportable;)";
   }
 
   public String getJSQualifiedExportName() {
@@ -132,7 +149,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSNIReference() {
-    return getType().getJNISignature();
+    return type.getJNISignature();
   }
 
   public boolean needsExport() {
@@ -144,7 +161,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSConstructor() {
-    return getJSExportPackage() + "." + getType().getName();
+    return getJSExportPackage() + "." + type.getName();
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {

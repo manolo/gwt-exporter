@@ -1,6 +1,7 @@
 package org.timepedia.exporter.client;
 
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.core.client.JsArray;
 
 /**
  * No-op implementation when export is disabled.
@@ -11,7 +12,7 @@ public class ExporterBaseImpl {
       JavaScriptObject exportedConstructor) {
   }
 
-  public void addTypeMap(String type, JavaScriptObject exportedConstructor) {
+  public void addTypeMap(Class type, JavaScriptObject exportedConstructor) {
   }
 
   public void setWrapper(Object instance, JavaScriptObject wrapper) {
@@ -62,6 +63,14 @@ public class ExporterBaseImpl {
   }
 
   public void declarePackage(String packageName, String enclosingClasses) {
+  }
+
+  public JavaScriptObject getDispatch(Class clazz, String meth,
+      JsArray<JavaScriptObject> arguments, boolean isStatic) {
+    return null;
+  }
+
+  public void registerDispatchMap(Class clazz, JavaScriptObject dispMap, boolean isStatic) {
   }
 }
 

@@ -19,4 +19,6 @@ public interface JExportableType {
    * Java values for Javascript in hosted mode.
    */
   String getHostedModeJsTypeCast();
+
+  String getWrapperFunc();
 }

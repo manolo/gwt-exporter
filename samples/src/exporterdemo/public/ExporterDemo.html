@@ -36,7 +36,7 @@
       print("employee2.getFirstName() = " + employee2.getFirstName());
       print("Employee.sayHello(employee) = "
           + test.Employee.sayHello(employee));
-      print("employee2.getGender() = " + employee.getGender());
+      print("employee2.getGender() = " + employee.getGender(1));
       print("employee2.getSelf().getGender() = "
           + employee.getSelf().getGender());
       print("Employee.sayHello(person) = " + test.Employee.sayHello(person));
@@ -48,7 +48,16 @@
         alert(str + " " + emp.getFirstName());
       });
       employee.fire();
+      print("overriden(\"Hello\") = "+employee.overriden("Hello"));
+      print("overriden(\"10\") = "+employee.overriden(10));
+      print("overriden(\"employee\") = "+employee.overriden(employee).getFirstName());
+        
+      var peoples = employee.getPeople();
+      for(i = 0; i<peoples.length; i++) {
+         print("people["+i+"]="+peoples[i].getFirstName());
+      }
     }
+    
 
     function print(str) {
       var d = document.getElementById('results');

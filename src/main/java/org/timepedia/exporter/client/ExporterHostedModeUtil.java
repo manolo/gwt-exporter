@@ -10,7 +10,8 @@ public class ExporterHostedModeUtil {
   public static native JavaScriptObject deboxHostedMode(
       JavaScriptObject typeCast, JavaScriptObject val) /*-{
     return @com.google.gwt.core.client.GWT::isScript()() ? val : function() {
-      return typeCast.apply(null, val.apply(this, arguments));
+      var v = val.apply(this, arguments);
+      return typeCast.apply(null, v == undefined ? [] : [v]);
     };
   }-*/;
 }

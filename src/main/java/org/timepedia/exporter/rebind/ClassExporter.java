@@ -1,9 +1,9 @@
 package org.timepedia.exporter.rebind;
 
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
+import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -79,7 +79,7 @@ public class ClassExporter {
     // export constructor
     sw.println("private " + ExportableTypeOracle.JSO_CLASS + " jso;");
     sw.println();
-    sw.println("public " + genName + "() {}");
+    sw.println("public " + genName + "() { export(); }");
 
     sw.println(
         "public " + genName + "(" + ExportableTypeOracle.JSO_CLASS + " jso) {");
@@ -132,7 +132,7 @@ public class ClassExporter {
         "public " + method.getExportableReturnType().getQualifiedSourceName());
 
     sw.print(" " + method.getName() + "(");
-    declareParameters(method, true);
+    declareParameters(method, -1, true);
     sw.println(") {");
     sw.indent();
     sw.print((isVoid ? "" : "return ") + "invoke(jso" + (noParams ? "" : ","));
@@ -148,7 +148,7 @@ public class ClassExporter {
       sw.print(", ");
     }
 
-    declareParameters(method, true);
+    declareParameters(method, -1, true);
     sw.println(") /*-{");
     sw.indent();
     sw.print((!isVoid ? "var result= " : "") + "closure(");
@@ -182,18 +182,16 @@ public class ClassExporter {
     JExportableClassType requestedType = xTypeOracle
         .findExportableClassType(requestedClass);
 
-
     if (requestedType == null) {
       logger.log(TreeLogger.ERROR,
           "Type '" + requestedClass + "' does not implement Exportable", null);
       throw new UnableToCompleteException();
     }
 
-
     // add this so we don't try to recursively reexport ourselves later
     exported.add(requestedType);
     visited.add(requestedType.getQualifiedSourceName());
-    
+
     // get the name of the Java class implementing Exporter
     String genName = requestedType.getExporterImplementationName();
 
@@ -216,13 +214,18 @@ public class ClassExporter {
       return qualName; // null, already generated
     }
 
-    if (export) {
+    if (export && xTypeOracle.isExportAll(requestedClass)) {
+      exportAll(genName);
+    } else if (export) {
       if (isClosure) {
         exportClosure(requestedType);
       }
 
       sw.indent();
 
+      if (!isClosure) {
+        sw.println("public " + genName + "() { export(); }");
+      }
       // here we define a JSNI Javascript method called export0()
       sw.println("public native void export0() /*-{");
       sw.indent();
@@ -230,6 +233,11 @@ public class ClassExporter {
       // if not defined, we create a Javascript package hierarchy
       // foo.bar.baz to hold the Javascript bridge
       declarePackages(requestedType);
+
+      if (!isClosure) {
+        // make a throwaway object to access this object's prototype
+        sw.println("var _proto = @" + qualName + "::___create()();");
+      }
 
       // export Javascript constructors
       exportConstructor(requestedType);
@@ -272,13 +280,25 @@ public class ClassExporter {
     return qualName;
   }
 
+  private void exportAll(String genName) {
+    sw.println("public " + genName + "() { export(); } ");
+    sw.println("public void export() { ");
+    
+    for (JClassType type : xTypeOracle.findAllExportableTypes()) {
+      sw.indent();
+      sw.println("GWT.create(" + type.getQualifiedSourceName() + ".class);");
+      sw.outdent();
+    }
+    sw.println("}");
+  }
+
   private void registerTypeMap(JExportableClassType requestedType) {
     sw.print(
-        "@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/String;Lcom/google/gwt/core/client/JavaScriptObject;)("
+        "@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)("
             +
-//                        "Ljavg/lang/String;" +
+//                        "Ljavg/lang/String;" +   
 //                        "Lcom/google/gwt/core/client/JavaScriptObject;)(" +
-            "\"" + requestedType.getQualifiedSourceName() + "\", " + "$wnd."
+            "@" + requestedType.getQualifiedSourceName() + "::class, $wnd."
             + requestedType.getJSQualifiedExportName() + ");");
   }
 
@@ -302,15 +322,62 @@ public class ClassExporter {
    */
   private void exportMethods(JExportableClassType requestedType)
       throws UnableToCompleteException {
-    HashMap<String, JExportableMethod> visited
-        = new HashMap<String, JExportableMethod>();
 
-    HashMap<String, JExportableMethod> staticVisited
-        = new HashMap<String, JExportableMethod>();
+    HashMap<String, DispatchTable> dispatchMap = buildDispatchTableMap(
+        requestedType, false);
 
+    HashMap<String, DispatchTable> staticDispatchMap = buildDispatchTableMap(
+        requestedType, true);
+    HashSet<String> exported = new HashSet<String>();
     for (JExportableMethod method : requestedType.getExportableMethods()) {
-      exportMethod(method, visited, staticVisited);
+      if (!exported.contains(method.getName())) {
+        exportMethod(method,
+            method.isStatic() ? staticDispatchMap : dispatchMap);
+        exported.add(method.getName());
+      }
     }
+    if (!xTypeOracle
+        .isClosure(requestedType.getType().getQualifiedSourceName())) {
+      if (DispatchTable.isAnyOverridden(dispatchMap)) {
+        registerDispatchMap(requestedType, dispatchMap, false);
+      }
+      if (DispatchTable.isAnyOverridden(staticDispatchMap)) {
+        registerDispatchMap(requestedType, staticDispatchMap, true);
+      }
+    }
+  }
+
+  private void registerDispatchMap(JExportableClassType requestedType,
+      HashMap<String, DispatchTable> dispatchMap, boolean isStatic) {
+    sw.print("@org.timepedia.exporter.client.ExporterUtil::registerDispatchMap("
+        + "Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;Z)(@"
+        + requestedType.getQualifiedSourceName() + "::class,"
+        + DispatchTable.toJSON(dispatchMap) + ", " + isStatic + ");");
+  }
+
+  private HashMap<String, DispatchTable> buildDispatchTableMap(
+      JExportableClassType requestedType, boolean staticDispatch)
+      throws UnableToCompleteException {
+    HashMap<String, DispatchTable> dispMap
+        = new HashMap<String, DispatchTable>();
+    for (JExportableMethod meth : requestedType.getExportableMethods()) {
+      if (staticDispatch && !meth.isStatic() || !staticDispatch && meth
+          .isStatic()) {
+        continue;
+      }
+      DispatchTable dt = dispMap.get(meth.getUnqualifiedExportName());
+      if (dt == null) {
+        dt = new DispatchTable();
+        dispMap.put(meth.getUnqualifiedExportName(), dt);
+      }
+      if (!dt.addSignature(meth, meth.getExportableParameters())) {
+        logger.log(TreeLogger.ERROR,
+            "Ambiguous method signature " + meth.getJSNIReference()
+                + " would conflict in JS with another method");
+        throw new UnableToCompleteException();
+      }
+    }
+    return dispMap;
   }
 
   /**
@@ -327,8 +394,8 @@ public class ClassExporter {
 
     // constructor.getJSQualifiedExportName() returns fully qualified package
     // + exported class name
-    sw.print(
-        "$wnd." + requestedType.getJSQualifiedExportName() + " = $entry(function(");
+    sw.print("$wnd." + requestedType.getJSQualifiedExportName()
+        + " = $entry(function(");
 
     // for every parameter 0..n of the constructor, we generate
     // arg0, ..., argn
@@ -340,11 +407,11 @@ public class ClassExporter {
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
     sw.println("if(arguments.length == 1 && (arguments[0] != null && "
-        + "arguments[0].@java.lang.Object::getClass()() == "
-        + "@"+requestedType.getQualifiedSourceName() + "::class)) {");
+        + "arguments[0].@java.lang.Object::getClass()() == " + "@"
+        + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
 
-    sw.println(" this.instance = arguments[0];");
+    sw.println(" this.__gwt_instance = arguments[0];");
     sw.outdent();
     sw.println("}");
 
@@ -373,14 +440,14 @@ public class ClassExporter {
       // else someone is calling the constructor normally
       // we generate a JSNI call to the matching static factory method
       // and store it in this.instance
-      sw.print("this.instance = @" + constructor.getStaticFactoryJSNIReference()
-          + "(");
+      sw.print("this.__gwt_instance = @"
+          + constructor.getStaticFactoryJSNIReference() + "(");
 
       // pass arguments[0], ..., arguments[n] to the JSNI call
       declareJSPassedValues(constructor, true);
       sw.println(");");
       sw.println(
-          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(this.instance, this);");
+          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(this.__gwt_instance, this);");
       sw.outdent();
       sw.println("}");
     }
@@ -424,7 +491,7 @@ public class ClassExporter {
     String typeName = consType.getQualifiedSourceName();
     sw.print("public static " + typeName + " "
         + constructor.getStaticFactoryMethodName() + "(");
-    declareParameters(constructor);
+    declareParameters(constructor, -1);
     sw.println(") {");
     sw.indent();
     sw.print("return new " + typeName + "(");
@@ -434,15 +501,15 @@ public class ClassExporter {
     sw.println("}");
   }
 
-   private void debugJSPassedValues(JExportableMethod method) {
+  private void debugJSPassedValues(JExportableMethod method) {
     JExportableParameter params[] = method.getExportableParameters();
     for (int i = 0; i < params.length; i++) {
-      sw.print("$wnd.alert(\"\"+"+params[i].getExportParameterValue(
-           ARG_PREFIX + i)+");");
-     
+      sw.print(
+          "$wnd.alert(\"\"+" + params[i].getExportParameterValue(ARG_PREFIX + i)
+              + ");");
     }
   }
-  
+
   /**
    * Generate comma separated list of argnames, arg0, ..., arg_n where n =
    * number of parameters of method
@@ -474,7 +541,7 @@ public class ClassExporter {
       boolean needExport = eType != null && eType.needsExport();
       boolean isArray = eType instanceof JExportableArrayType;
       String arrayType = needExport && isArray ? ("L"
-          + ((JExportableArrayType)eType).getJSNIReference()) : "";
+          + ((JExportableArrayType) eType).getJSNIReference()) : "";
 
       if (wrap && needExport) {
         sw.print("@org.timepedia.exporter.client.ExporterUtil::wrap("
@@ -497,10 +564,11 @@ public class ClassExporter {
    *
    * @param includeTypes true if arg names should have declared types
    */
-  private void declareParameters(JExportableMethod method,
+  private void declareParameters(JExportableMethod method, int arity,
       boolean includeTypes) {
     JExportableParameter params[] = method.getExportableParameters();
-    for (int i = 0; i < params.length; i++) {
+    for (int i = 0; i < (includeTypes || arity < 0 ? params.length : arity);
+        i++) {
       sw.print(
           (includeTypes ? params[i].getTypeName() : "") + " " + ARG_PREFIX + i);
       if (i < params.length - 1) {
@@ -512,15 +580,15 @@ public class ClassExporter {
   /**
    * declare java typed Java method parameters
    */
-  private void declareParameters(JExportableMethod method) {
-    declareParameters(method, true);
+  private void declareParameters(JExportableMethod method, int arity) {
+    declareParameters(method, arity, true);
   }
 
   /**
    * declare type-less Javascript method parameters
    */
-  private void declareJSParameters(JExportableMethod method) {
-    declareParameters(method, false);
+  private void declareJSParameters(JExportableMethod method, int arity) {
+    declareParameters(method, arity, false);
   }
 
   /**
@@ -550,8 +618,7 @@ public class ClassExporter {
    * subclasses of Number, and JavaScriptObject
    */
   private void exportMethod(JExportableMethod method,
-      HashMap<String, JExportableMethod> visited,
-      HashMap<String, JExportableMethod> staticVisited)
+      HashMap<String, DispatchTable> dispatchMap)
       throws UnableToCompleteException {
     JExportableType retType = method.getExportableReturnType();
 
@@ -566,24 +633,24 @@ public class ClassExporter {
     String name = method.getUnqualifiedExportName();
     String key = name + "_" + arity;
 
-    JExportableMethod conflicting = method.isStatic() ? staticVisited.get(key)
-        : visited.get(key);
-
-    if (conflicting != null) {
-      logger.log(TreeLogger.ERROR,
-          "Method " + method + " having " + arity + " arguments conflicts with "
-              + conflicting + ". "
-              + "Two exportable methods cannot have the same number of arguments. "
-              + "Use @gwt.export <newName> on one of the methods to disambiguate.",
-          null);
-      throw new UnableToCompleteException();
-    } else {
-      if (method.isStatic()) {
-        staticVisited.put(key, method);
-      } else {
-        visited.put(key, method);
-      }
-    }
+//    JExportableMethod conflicting = method.isStatic() ? staticVisited.get(key)
+//        : visited.get(key);
+//
+//    if (conflicting != null) {
+//      logger.log(TreeLogger.ERROR,
+//          "Method " + method + " having " + arity + " arguments conflicts with "
+//              + conflicting + ". "
+//              + "Two exportable methods cannot have the same number of arguments. "
+//              + "Use @gwt.export <newName> on one of the methods to disambiguate.",
+//          null);
+//      throw new UnableToCompleteException();
+//    } else {
+//      if (method.isStatic()) {
+//        staticVisited.put(key, method);
+//      } else {
+//        visited.put(key, method);
+//      }
+//    }
 
     // return type needs to be exported if it is not a primitive
     // String,Number,JSO, etc and it hasn't already been exported
@@ -597,40 +664,56 @@ public class ClassExporter {
     }
 
     exportDependentParams(method);
-    String returnTypeCast = retType != null ? 
-        retType.getHostedModeJsTypeCast() : null;
+    String returnTypeCast = retType != null ? retType.getHostedModeJsTypeCast()
+        : null;
     if (method.isStatic()) {
       sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
     } else {
-      sw.print("_." + method.getUnqualifiedExportName() +  "= ");
-    }  
-    if(returnTypeCast != null) {
+      sw.print("_." + method.getUnqualifiedExportName() + "= ");
+    }
+    if (returnTypeCast != null) {
       // GWT 2.0 hosted mode $entry requires deboxing return valus for JS
-      sw.print("@org.timepedia.exporter.client.ExporterHostedModeUtil::deboxHostedMode(Lcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)("+returnTypeCast+",");
+      sw.print(
+          "@org.timepedia.exporter.client.ExporterHostedModeUtil::deboxHostedMode(Lcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)("
+              + returnTypeCast + ",");
     }
     sw.print("$entry(function(");
-    declareJSParameters(method);
+    DispatchTable dt = dispatchMap.get(method.getUnqualifiedExportName());
+    declareJSParameters(method, dt.isOverloaded() ? dt.maxArity() : -1);
     sw.print(") { ");
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
 //    debugJSPassedValues(method);
-    sw.print(
-        (isVoid ? "" : "var x=") + (method.isStatic() ? "@" : "this.instance.@")
-            + method.getJSNIReference() + "(");
+    if (!dt.isOverloaded()) {
+      sw.print((isVoid ? "" : "var x=")
+          + (method.isStatic() ? "@" : "this.__gwt_instance.@")
+          + method.getJSNIReference() + "(");
 
-    declareJSPassedValues(method, false);
+      declareJSPassedValues(method, false);
 
-    // end method call
-    sw.print(");");
-
+      // end method call
+      sw.print(");");
+    } else {
+      sw.print((isVoid ? ""
+          : "var x=@org.timepedia.exporter.client.ExporterUtil::getDispatch("
+              + "Ljava/lang/Class;Ljava/lang/String;"
+              + "Lcom/google/gwt/core/client/JsArray;Z)" + "(@" + method
+              .getEnclosingExportType().getQualifiedSourceName()) + "::class,'"
+          + method.getUnqualifiedExportName() + "', arguments,"
+          + method.isStatic() + ").apply("
+          + (method.isStatic() ? "null" : "this.__gwt_instance")
+          + ", arguments");
+      sw.print(");");
+    }
     if (!retType.needsExport()) {
       sw.print(isVoid ? "" : "return (");
     } else {
       boolean isArray = retType instanceof JExportableArrayType;
-      String arrayType = isArray ? ((JExportableArrayType)retType).getJSNIReference() : "";
+      String arrayType = isArray ? ((JExportableArrayType) retType)
+          .getJSNIReference() : "";
 
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ?  arrayType
+          + (isArray ? "[Lorg/timepedia/exporter/client/Exportable;"
           : "Lorg/timepedia/exporter/client/Exportable;") + ")("
 
       );
@@ -641,7 +724,7 @@ public class ClassExporter {
       sw.println("x);");
     }
     sw.print("})");
-    if(returnTypeCast != null) {
+    if (returnTypeCast != null) {
       sw.print(")");
     }
     sw.println(";");
@@ -667,20 +750,17 @@ public class ClassExporter {
     if (visited.contains(qualifiedSourceName)) {
       return false;
     }
-    JExportableType xType = xTypeOracle
-        .findExportableType(qualifiedSourceName);
-    if(xType instanceof JExportableArrayType) {
+    JExportableType xType = xTypeOracle.findExportableType(qualifiedSourceName);
+    if (xType instanceof JExportableArrayType) {
 
       JExportableType xcompType = ((JExportableArrayType) xType)
           .getComponentType();
-      if(xcompType instanceof JExportablePrimitiveType) {
+      if (xcompType instanceof JExportablePrimitiveType) {
         return false;
-      }
-      else {
+      } else {
         return exportDependentClass(xcompType.getQualifiedSourceName());
       }
     }
-
 
     visited.add(qualifiedSourceName);
     ClassExporter exporter = new ClassExporter(logger, ctx, visited);
@@ -696,11 +776,14 @@ public class ClassExporter {
     String requestedPackageName = requestedClassType.getJSExportPackage();
     String enclosingClasses[] = requestedClassType.getEnclosingClasses();
     String enclosing = "";
-    for(String enclosingClass : enclosingClasses) {
+    for (String enclosingClass : enclosingClasses) {
       enclosing += enclosingClass + ".";
     }
-    enclosing = enclosing.length() > 0 ? enclosing.substring(0, enclosing.length()-1) : enclosing;
-    sw.println("@org.timepedia.exporter.client.ExporterUtil::declarePackage(Ljava/lang/String;Ljava/lang/String;)('"+requestedPackageName+"','"+enclosing+"');");
+    enclosing = enclosing.length() > 0 ? enclosing
+        .substring(0, enclosing.length() - 1) : enclosing;
+    sw.println(
+        "@org.timepedia.exporter.client.ExporterUtil::declarePackage(Ljava/lang/String;Ljava/lang/String;)('"
+            + requestedPackageName + "','" + enclosing + "');");
   }
 
   /**
@@ -721,14 +804,13 @@ public class ClassExporter {
     sw.println("if(!exported) {");
     sw.indent();
     sw.println("exported=true;");
-    
+
     // first, export our dependencies
     int exprCount = 0;
     for (JExportableClassType classType : exported) {
       if (requestedType.getQualifiedSourceName()
-          .equals(classType.getQualifiedSourceName()) ||
-          classType instanceof JExportableArrayType 
-          ) {
+          .equals(classType.getQualifiedSourceName())
+          || classType instanceof JExportableArrayType) {
         continue;
       }
       String qualName = classType.getQualifiedSourceName();
@@ -737,7 +819,6 @@ public class ClassExporter {
       sw.println(ExportableTypeOracle.EXPORTER_CLASS + " " + var + " = ("
           + ExportableTypeOracle.EXPORTER_CLASS + ") GWT.create(" + qualName
           + ".class);");
-      sw.println(var + ".export();");
     }
 
     // now export our class

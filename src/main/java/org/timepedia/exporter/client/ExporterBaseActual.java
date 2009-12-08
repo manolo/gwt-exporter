@@ -7,6 +7,7 @@ import com.google.gwt.core.client.JsArrayNumber;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * Methods used to maintain a mapping between JS types and Java (GWT) objects.
@@ -22,6 +23,12 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   private HashMap typeMap = new HashMap();
 
+  private HashMap<Class, JavaScriptObject> dispatchMap
+      = new HashMap<Class, JavaScriptObject>();
+
+  private HashMap<Class, JavaScriptObject> staticDispatchMap
+      = new HashMap<Class, JavaScriptObject>();
+
   //TODO: track garbage collected wrappers and remove mapping
 
   private IdentityHashMap<Object, JavaScriptObject> wrapperMap = null;
@@ -34,10 +41,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   public void addTypeMap(Exportable type,
       JavaScriptObject exportedConstructor) {
-    addTypeMap(GWT.getTypeName(type), exportedConstructor);
+    addTypeMap(type.getClass(), exportedConstructor);
   }
 
-  public void addTypeMap(String type, JavaScriptObject exportedConstructor) {
+  public void addTypeMap(Class type, JavaScriptObject exportedConstructor) {
     typeMap.put(type, exportedConstructor);
   }
 
@@ -50,10 +57,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   public JavaScriptObject typeConstructor(Exportable type) {
-    return typeConstructor(GWT.getTypeName(type));
+    return typeConstructor(type.getClass());
   }
 
-  public JavaScriptObject typeConstructor(String type) {
+  public JavaScriptObject typeConstructor(Class type) {
     Object o = typeMap.get(type);
     return (JavaScriptObject) o;
   }
@@ -272,8 +279,108 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private static native JavaScriptObject getWindow() /*-{
     return $wnd;
   }-*/;
-  
-  private static native JavaScriptObject getProp(JavaScriptObject jso, String key) /*-{
+
+  private static native JavaScriptObject getProp(JavaScriptObject jso,
+      String key) /*-{
     return jso[key];
   }-*/;
+
+  @Override
+  public JavaScriptObject getDispatch(Class clazz, String meth,
+      JsArray<JavaScriptObject> arguments, boolean isStatic) {
+    Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap
+        : dispatchMap;
+    JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
+        arguments.length());
+
+    for (int i = 0; i < sigs.length(); i++) {
+      SignatureJSO sig = sigs.get(i);
+      if (sig.matches(arguments)) {
+        JavaScriptObject javaFunc = sig.getFunction();
+        if (!GWT.isScript()) {
+          JavaScriptObject wrapFunc = sig.getWrapperFunc();
+          return wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;
+        } else {
+          return javaFunc;
+        }
+      }
+    }
+    throw new RuntimeException(
+        "Can't find exported method for given arguments");
+  }
+
+  // this is way more complicated than it needs to be, thanks to hosted mode
+  private native static JavaScriptObject wrapFunction(JavaScriptObject wrapFunc,
+      JavaScriptObject javaFunc) /*-{
+     return function() {
+         var i, newArgs = [];
+         for(i = 0; i < arguments.length; i++) {
+             newArgs[i] = arguments[i].__gwt_instance || arguments[i];
+         }
+         return wrapFunc.apply(null, [javaFunc.apply(this, newArgs)]);
+     };
+  }-*/;
+
+  private native JsArray<SignatureJSO> getSigs(JavaScriptObject jsoMap,
+      String meth, int arity) /*-{
+    return jsoMap[meth][arity];
+  }-*/;
+
+  @Override
+  public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
+      boolean isStatic) {
+    if (isStatic) {
+      staticDispatchMap.put(clazz, dispMap);
+    } else {
+      dispatchMap.put(clazz, dispMap);
+    }
+  }
+
+  final public static class SignatureJSO extends JavaScriptObject {
+
+    protected SignatureJSO() {
+    }
+
+    public boolean matches(JsArray<JavaScriptObject> arguments) {
+      // add argument matching logic
+      // add structural type checks
+      for (int i = 0; i < arguments.length(); i++) {
+        Object jsType = getObject(i + 2);
+        String argJsType = typeof(arguments, i);
+        if (argJsType.equals("object")) {
+          Object gwtObject = getJavaObject(arguments, i);
+          if (gwtObject != null) {
+            if (!gwtObject.getClass().equals(jsType)) {
+              return false;
+            }
+          } else if (!jsType.equals("object")) {
+            return false;
+          }
+        } else if (!jsType.equals(argJsType)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    public native Object getJavaObject(JavaScriptObject args, int i) /*-{
+      return args[i].__gwt_instance || null;
+    }-*/;
+
+    public native static String typeof(JavaScriptObject args, int i) /*-{
+      return typeof(args[i]);
+    }-*/;
+
+    public native Object getObject(int i) /*-{
+      return this[i];
+    }-*/;
+
+    public native JavaScriptObject getFunction() /*-{
+      return this[0];
+    }-*/;
+
+    public native JavaScriptObject getWrapperFunc() /*-{
+      return this[1];
+    }-*/;
+  }
 }

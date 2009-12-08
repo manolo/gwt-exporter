@@ -1,6 +1,9 @@
 package org.timepedia.exporter.rebind;
 
 import com.google.gwt.core.ext.typeinfo.JArrayType;
+import com.google.gwt.core.ext.typeinfo.JType;
+
+import org.timepedia.exporter.client.ExporterUtil;
 
 /**
  *
@@ -25,6 +28,13 @@ public class JExportableArrayType extends JExportableClassType
 
   public String getQualifiedSourceName() {
     return array.getQualifiedSourceName();
+  }
+
+  @Override
+  public String getWrapperFunc() {
+    JType type = array.getComponentType();
+    return "@" + ExporterUtil.class.getName() + "::wrap(["
+        + type.getJNISignature() + ")";
   }
 
   public JExportableType getComponentType() {
