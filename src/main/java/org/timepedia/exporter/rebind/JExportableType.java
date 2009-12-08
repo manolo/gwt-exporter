@@ -20,5 +20,7 @@ public interface JExportableType {
    */
   String getHostedModeJsTypeCast();
 
+  String getJsTypeOf();
+  
   String getWrapperFunc();
 }

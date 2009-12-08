@@ -85,6 +85,9 @@ public class ClassExporter {
         "public " + genName + "(" + ExportableTypeOracle.JSO_CLASS + " jso) {");
     sw.indent();
     sw.println("this.jso = jso;");
+    if (requestedType.isStructuralType()) {
+      sw.println("___importStructuralType();");
+    }
     sw.outdent();
     sw.println("}");
     sw.println();
@@ -202,13 +205,16 @@ public class ClassExporter {
     String qualName = requestedType.getQualifiedExporterImplementationName();
 
     boolean isClosure = xTypeOracle.isClosure(requestedClass);
+    String superClass = xTypeOracle.isStructuralType(requestedType.getType())
+        ? requestedClass : null;
 
     // try to construct a sourcewriter for the qualified name
     if (isClosure) {
-      sw = getSourceWriter(logger, ctx, packageName, genName, "Exporter",
-          requestedType.getQualifiedSourceName());
+      sw = getSourceWriter(logger, ctx, packageName, genName, superClass,
+          "Exporter", requestedType.getQualifiedSourceName());
     } else {
-      sw = getSourceWriter(logger, ctx, packageName, genName, "Exporter");
+      sw = getSourceWriter(logger, ctx, packageName, genName, superClass,
+          "Exporter");
     }
     if (sw == null) {
       return qualName; // null, already generated
@@ -219,6 +225,13 @@ public class ClassExporter {
     } else if (export) {
       if (isClosure) {
         exportClosure(requestedType);
+      } else if (requestedType.isStructuralType()) {
+        exportStructuralTypeConstructor(genName, requestedType);
+      }
+
+      if (requestedType.isStructuralType()) {
+        exportStructuralTypeImporter(requestedType);
+        exportStructuralTypeMatchMethod(requestedType);
       }
 
       sw.indent();
@@ -261,6 +274,12 @@ public class ClassExporter {
       // We generate them here
       exportStaticFactoryConstructors(requestedType);
 
+      // if this class is a structural type, generate overrides for every
+      // structure type field
+      if (requestedType.isStructuralType()) {
+        exportStructuralTypeFields(requestedType);
+      }
+
       // finally, generate the Exporter.export() method
       // which invokes recursively, via GWT.create(),
       // every other Exportable type we encountered in the exported ArrayList
@@ -280,10 +299,112 @@ public class ClassExporter {
     return qualName;
   }
 
+  private void exportStructuralTypeMatchMethod(
+      JExportableClassType requestedType) throws UnableToCompleteException {
+    sw.println("public static native boolean ___match(JavaScriptObject jso) /*-{");
+    sw.indent();
+    sw.print("return ");
+    for (JStructuralTypeField field : requestedType.getStructuralTypeFields()) {
+
+      JExportableType eType = field.getExportableType();
+      if (eType == null) {
+        logger.log(TreeLogger.ERROR,
+            "Structural type field " + field.getMethodName() + " for class "
+                + requestedType.getQualifiedSourceName()
+                + " is not exportable.");
+        throw new UnableToCompleteException();
+      }
+      if (eType instanceof JExportableClassType) {
+        JExportableClassType cType = (JExportableClassType) field
+            .getExportableType();
+        if (cType.needsExport() && cType.isStructuralType()) {
+          sw.print("(jso." + field.getName() + " && @"
+              + ((JExportableClassType) eType)
+              .getQualifiedExporterImplementationName()
+              + "::___match(Lcom/google/gwt/core/client/JavaScriptObject;)(jso."
+              + field.getName() + ") &&");
+        } else if (cType.needsExport()) {
+          sw.print("(jso." + field.getName() + " && jso." + field.getName()
+              + ".__gwt__instance) && ");
+        } else if(!cType.needsExport()) {
+          sw.print(
+            "typeof(jso." + field.getName() + ") == '" + eType.getJsTypeOf()
+                + "' && ");
+        }
+      } else if (eType instanceof JExportablePrimitiveType) {
+        sw.print(
+            "typeof(jso." + field.getName() + ") == '" + eType.getJsTypeOf()
+                + "' && ");
+      }
+    }
+    sw.println("true;");
+    sw.outdent();
+    sw.println("}-*/;");
+  }
+
+  private void exportStructuralTypeImporter(
+      JExportableClassType requestedType) {
+    sw.println("public void ___importStructuralType() {");
+    sw.indent();
+    for (JStructuralTypeField field : requestedType.getStructuralTypeFields()) {
+      sw.println("super." + field.getMethodName() + "((" + field.getFieldType()
+          + ")org.timepedia.exporter.client.ExporterUtil.getStructuralField"
+          + field.getFieldLowestType() + "(jso, \"" + field.getName()
+          + "\"));");
+    }
+    sw.outdent();
+    sw.println("}");
+  }
+
+  private void exportStructuralTypeConstructor(String genName,
+      JExportableClassType requestedType) {
+    // export constructor
+    sw.println("private " + ExportableTypeOracle.JSO_CLASS + " jso;");
+    sw.println();
+
+    sw.println(
+        "public " + genName + "(" + ExportableTypeOracle.JSO_CLASS + " jso) {");
+    sw.indent();
+    sw.println("this.jso = jso;");
+    if (requestedType.isStructuralType()) {
+      sw.println("___importStructuralType();");
+    }
+    sw.outdent();
+    sw.println("}");
+    sw.println();
+  }
+
+  private void exportStructuralTypeFields(JExportableClassType requestedType) {
+    for (JStructuralTypeField field : requestedType.getStructuralTypeFields()) {
+      exportStructuralTypeField(field);
+    }
+  }
+
+  private void exportStructuralTypeField(JStructuralTypeField field) {
+    sw.println("public " + field.JavaDeclaration() + "{");
+    sw.indent();
+    if (field.isVoidReturn()) {
+      sw.println("super." + field.getMethodName() + "(arg);");
+      sw.println(
+          "org.timepedia.exporter.client.ExporterUtil.setStructuralField("
+              + "jso, \"" + field.getName() + "\", arg);");
+    } else {
+      sw.println(field.getReturnType() + " x = super." + field.getMethodName()
+          + "(arg);");
+      sw.println(
+          "org.timepedia.exporter.client.ExporterUtil.setStructuralField("
+              + "jso, '" + field.getName() + "', arg);");
+      sw.println("return x;");
+    }
+
+    sw.outdent();
+    sw.println("}");
+  }
+
   private void exportAll(String genName) {
     sw.println("public " + genName + "() { export(); } ");
     sw.println("public void export() { ");
-    
+
     for (JClassType type : xTypeOracle.findAllExportableTypes()) {
       sw.indent();
       sw.println("GWT.create(" + type.getQualifiedSourceName() + ".class);");
@@ -839,7 +960,7 @@ public class ClassExporter {
    */
   protected SourceWriter getSourceWriter(TreeLogger logger,
       GeneratorContext context, String packageName, String className,
-      String... interfaceNames) {
+      String superClass, String... interfaceNames) {
     PrintWriter printWriter = context.tryCreate(logger, packageName, className);
     if (printWriter == null) {
       return null;
@@ -847,6 +968,11 @@ public class ClassExporter {
     ClassSourceFileComposerFactory composerFactory
         = new ClassSourceFileComposerFactory(packageName, className);
     composerFactory.addImport("com.google.gwt.core.client.GWT");
+    composerFactory.addImport("com.google.gwt.core.client.JavaScriptObject");
+    
+    if (superClass != null) {
+      composerFactory.setSuperclass(superClass);
+    }
     for (String interfaceName : interfaceNames) {
       composerFactory.addImplementedInterface(interfaceName);
     }

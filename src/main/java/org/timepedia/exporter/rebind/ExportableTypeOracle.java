@@ -12,6 +12,7 @@ import com.google.gwt.core.ext.typeinfo.TypeOracleException;
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.NoExport;
+import org.timepedia.exporter.client.StructuralType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -239,5 +240,19 @@ public class ExportableTypeOracle {
       }
     }
     return types;
+  }
+
+  public boolean isStructuralType(JClassType type) {
+    return type.getAnnotation(StructuralType.class) != null;
+  }
+
+  public String getJsTypeOf(JClassType type) {
+    if(type.isAssignableTo(stringType)) {
+      return "string";
+    }
+    else if(type.isAssignableTo(jsoType)) {
+      return "object";
+    }
+    return "@"+type.getQualifiedSourceName()+"::class";
   }
 }

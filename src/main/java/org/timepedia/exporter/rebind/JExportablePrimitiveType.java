@@ -26,11 +26,16 @@ public class JExportablePrimitiveType implements JExportableType {
   }
 
   public String getHostedModeJsTypeCast() {
-    return primitive.getSimpleSourceName().equals("Boolean") ? "Boolean" : 
-        "Number";
+    return primitive.getSimpleSourceName().equals("Boolean") ? "Boolean"
+        : "Number";
   }
 
   public String getWrapperFunc() {
     return null;
+  }
+
+  public String getJsTypeOf() {
+    JPrimitiveType prim = primitive.isPrimitive();
+    return prim == JPrimitiveType.BOOLEAN ? "boolean" : "number";
   }
 }

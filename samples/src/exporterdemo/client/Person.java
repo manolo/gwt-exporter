@@ -2,12 +2,14 @@ package exporterdemo.client;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.Exportable;
+import org.timepedia.exporter.client.StructuralType;
 
 /**
  * Whitelist demo, manually export
  *
  * @author Ray Cromwell &lt;ray@timepedia.org&gt;
  */
+@StructuralType
 public class Person implements Exportable {
 
   private String firstName;
