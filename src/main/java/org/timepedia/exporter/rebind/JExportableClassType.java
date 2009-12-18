@@ -55,18 +55,20 @@ public class JExportableClassType implements JExportable, JExportableType {
     ArrayList<JExportableConstructor> exportableCons
         = new ArrayList<JExportableConstructor>();
 
-    JClassType exportType = type;
-    if (exportableTypeOracle.isExportOverlay(type)) {
-      // export public no-arg constructor for overlay types
-      exportType = exportableTypeOracle.getExportOverlayType(type);
-    }
-    for (JConstructor method : exportType.getConstructors()) {
-      if (method.isConstructor() == null) {
-        continue;
+    if (isInstantiable()) {
+      JClassType exportType = type;
+      if (exportableTypeOracle.isExportOverlay(type)) {
+        // export public no-arg constructor for overlay types
+        exportType = exportableTypeOracle.getExportOverlayType(type);
       }
+      for (JConstructor method : exportType.getConstructors()) {
+        if (method.isConstructor() == null) {
+          continue;
+        }
 
-      if (exportableTypeOracle.isExportable(method)) {
-        exportableCons.add(new JExportableConstructor(this, method));
+        if (exportableTypeOracle.isExportable(method)) {
+          exportableCons.add(new JExportableConstructor(this, method));
+        }
       }
     }
     return exportableCons.toArray(new JExportableConstructor[0]);
@@ -230,5 +232,9 @@ public class JExportableClassType implements JExportable, JExportableType {
 
   public boolean needsExport() {
     return !isPrimitive() && !isTransparentType();
+  }
+
+  public boolean isInstantiable() {
+    return type.isDefaultInstantiable();
   }
 }

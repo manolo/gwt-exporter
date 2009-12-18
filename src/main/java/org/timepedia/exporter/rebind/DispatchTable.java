@@ -104,7 +104,7 @@ public class DispatchTable {
       if (method.isStatic()) {
         sb.append(functionRef);
       } else {
-        sb.append("_proto." + functionRef);
+        sb.append("function() { return this." + functionRef+".apply(this, arguments); }");
       }
       sb.append(",");
       

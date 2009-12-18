@@ -80,4 +80,14 @@ public class Person implements Exportable {
   public Person getSelf() {
     return this;
   }
+  
+  @Export
+  public static Person salute(String name) {
+    return new Person();
+  }
+  
+  @Export
+  public static String salute(int x) {
+    return "Hello " + x;
+  }
 }

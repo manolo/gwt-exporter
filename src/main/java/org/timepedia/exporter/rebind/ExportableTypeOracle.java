@@ -11,6 +11,7 @@ import com.google.gwt.core.ext.typeinfo.TypeOracleException;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 import org.timepedia.exporter.client.StructuralType;
 
@@ -32,8 +33,7 @@ public class ExportableTypeOracle {
   static final String EXPORTABLE_CLASS
       = "org.timepedia.exporter.client.Exportable";
 
-  static final String EXPORTALL_CLASS
-      = "org.timepedia.exporter.client.ExporterUtil.ExportAll";
+  static final String EXPORTALL_CLASS = "org.timepedia.exporter.client.ExporterUtil.ExportAll";
 
   static final String EXPORT_OVERLAY_CLASS
       = "org.timepedia.exporter.client.ExportOverlay";
@@ -224,7 +224,7 @@ public class ExportableTypeOracle {
   }
 
   public boolean isExportAll(String requestedClass) {
-    return typeOracle.findType(requestedClass).equals(exportAllType);
+    return typeOracle.findType(requestedClass).isAssignableTo(exportAllType);
   }
 
   public List<JClassType> findAllExportableTypes() {
@@ -236,23 +236,25 @@ public class ExportableTypeOracle {
       }
       if (t.isAssignableTo(exportableType) || t
           .isAssignableTo(exportOverlayType)) {
-        types.add(t);
+        if (t.isDefaultInstantiable() && t.isPublic()) {
+          types.add(t);
+        }
       }
     }
     return types;
   }
 
   public boolean isStructuralType(JClassType type) {
-    return type.getAnnotation(StructuralType.class) != null;
+    // always false for now until enabled
+    return false && type.getAnnotation(StructuralType.class) != null;
   }
 
   public String getJsTypeOf(JClassType type) {
-    if(type.isAssignableTo(stringType)) {
+    if (type.isAssignableTo(stringType)) {
       return "string";
-    }
-    else if(type.isAssignableTo(jsoType)) {
+    } else if (type.isAssignableTo(jsoType)) {
       return "object";
     }
-    return "@"+type.getQualifiedSourceName()+"::class";
+    return "@" + type.getQualifiedSourceName() + "::class";
   }
 }

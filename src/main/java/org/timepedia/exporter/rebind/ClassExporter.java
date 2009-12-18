@@ -247,10 +247,6 @@ public class ClassExporter {
       // foo.bar.baz to hold the Javascript bridge
       declarePackages(requestedType);
 
-      if (!isClosure) {
-        // make a throwaway object to access this object's prototype
-        sw.println("var _proto = @" + qualName + "::___create()();");
-      }
 
       // export Javascript constructors
       exportConstructor(requestedType);
@@ -272,7 +268,9 @@ public class ClassExporter {
       // the Javascript constructors refer to static factory methods
       // on the Exporter implementation, referenced via JSNI
       // We generate them here
-      exportStaticFactoryConstructors(requestedType);
+      if (requestedType.isInstantiable()) {
+        exportStaticFactoryConstructors(requestedType);
+      }
 
       // if this class is a structural type, generate overrides for every
       // structure type field
@@ -450,11 +448,19 @@ public class ClassExporter {
     HashMap<String, DispatchTable> staticDispatchMap = buildDispatchTableMap(
         requestedType, true);
     HashSet<String> exported = new HashSet<String>();
+    HashSet<String> staticExported = new HashSet<String>();
+    
     for (JExportableMethod method : requestedType.getExportableMethods()) {
-      if (!exported.contains(method.getName())) {
+      if (method.isStatic() ? !staticExported.contains(method.getName())
+           :!exported.contains(method.getName())) {
         exportMethod(method,
             method.isStatic() ? staticDispatchMap : dispatchMap);
-        exported.add(method.getName());
+        if(method.isStatic()) {
+          exported.add(method.getName());
+        }
+        else {
+          staticExported.add(method.getName());
+        }
       }
     }
     if (!xTypeOracle
@@ -688,11 +694,12 @@ public class ClassExporter {
   private void declareParameters(JExportableMethod method, int arity,
       boolean includeTypes) {
     JExportableParameter params[] = method.getExportableParameters();
-    for (int i = 0; i < (includeTypes || arity < 0 ? params.length : arity);
+    int numParams = includeTypes || arity < 0 ? params.length : arity;
+    for (int i = 0; i < numParams;
         i++) {
       sw.print(
           (includeTypes ? params[i].getTypeName() : "") + " " + ARG_PREFIX + i);
-      if (i < params.length - 1) {
+      if (i < numParams - 1) {
         sw.print(", ");
       }
     }
@@ -825,7 +832,7 @@ public class ClassExporter {
           + ", arguments");
       sw.print(");");
     }
-    if (!retType.needsExport()) {
+    if (dt.isOverloaded() || !retType.needsExport()) {
       sw.print(isVoid ? "" : "return (");
     } else {
       boolean isArray = retType instanceof JExportableArrayType;
@@ -834,7 +841,7 @@ public class ClassExporter {
 
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ? "[Lorg/timepedia/exporter/client/Exportable;"
+          + (isArray ? arrayType
           : "Lorg/timepedia/exporter/client/Exportable;") + ")("
 
       );

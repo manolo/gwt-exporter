@@ -37,22 +37,22 @@ public class ExporterUtil {
     GWT.create(ExportAll.class);
   }
 
-  public static void exportAllAsync() {
-    GWT.runAsync(new RunAsyncCallback() {
-      public void onFailure(Throwable reason) {
-        throw new RuntimeException(reason);
-      }
-
-      public void onSuccess() {
-        GWT.create(ExportAll.class);
-        onexport();
-      }
-
-      private native void onexport() /*-{
-        $wnd.onexport();
-      }-*/;
-    });
-  }
+//  public static void exportAllAsync() {
+//    GWT.runAsync(new RunAsyncCallback() {
+//      public void onFailure(Throwable reason) {
+//        throw new RuntimeException(reason);
+//      }
+//
+//      public void onSuccess() {
+//        GWT.create(ExportAll.class);
+//        onexport();
+//      }
+//
+//      private native void onexport() /*-{
+//        $wnd.onexport();
+//      }-*/;
+//    });
+//  }
 
   public static JavaScriptObject getDispatch(Class clazz, String meth,
       JsArray arguments, boolean isStatic) {
