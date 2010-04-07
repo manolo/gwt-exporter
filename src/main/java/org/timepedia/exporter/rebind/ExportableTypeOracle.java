@@ -61,7 +61,7 @@ public class ExportableTypeOracle {
 
   public boolean isExportable(JAbstractMethod method) {
     if (method instanceof JConstructor) {
-      if (method.getParameters().length == 0) {
+      if (method.getParameters().length == 0 && method.isPublic()) {
         // zero-arg constructors always exportable
         return true;
       }

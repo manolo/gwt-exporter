@@ -235,6 +235,6 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public boolean isInstantiable() {
-    return type.isDefaultInstantiable();
+    return type.isInterface() == null && !type.isAbstract();                
   }
 }
