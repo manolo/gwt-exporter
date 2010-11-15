@@ -841,7 +841,7 @@ public class ClassExporter {
 
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ? arrayType
+          + (isArray ? "Lorg/timepedia/exporter/client/Exportable;"
           : "Lorg/timepedia/exporter/client/Exportable;") + ")("
 
       );
