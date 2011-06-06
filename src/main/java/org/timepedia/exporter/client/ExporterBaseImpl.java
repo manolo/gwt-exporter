@@ -72,5 +72,9 @@ public class ExporterBaseImpl {
 
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap, boolean isStatic) {
   }
+
+  public JavaScriptObject wrap(String[] type) {
+    return null;
+  }
 }
 

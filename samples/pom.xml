@@ -1,17 +1,18 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>gwtexporter</groupId>
-  <artifactId>demo</artifactId>
+  <groupId>org.timepedia.exporter</groupId>
+  <artifactId>gwtexporter-demo</artifactId>
   <packaging>war</packaging>
-  <version>2.10.0-SNAPSHOT</version>
+  <version>2.1.1</version>
 
   <build>
+    <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/classes</outputDirectory>
     <plugins>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>gwt-maven-plugin</artifactId>
-          <version>2.1.0</version>
+          <version>${gwtmaven}</version>
           <configuration>
             <logLevel>${gwt.loglevel}</logLevel>
             <style>${gwt.outputstyle}</style>
@@ -45,6 +46,22 @@
           <target>1.6</target>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+           <downloadSources>true</downloadSources>
+           <downloadJavadocs>false</downloadJavadocs>
+           <additionalBuildcommands>
+             <buildCommand>
+               <name>com.google.gwt.eclipse.core.gwtProjectValidator</name>
+             </buildCommand>
+           </additionalBuildcommands>
+           <additionalProjectnatures>
+             <projectnature>com.google.gwt.eclipse.core.gwtNature</projectnature>
+           </additionalProjectnatures>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   
@@ -70,18 +87,19 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <gwtversion>2.1.0</gwtversion>
+    <gwtversion>${version}</gwtversion>
+    <gwtmaven>2.1.0-1</gwtmaven>
     <gwt.loglevel>INFO</gwt.loglevel>
-    <gwt.outputstyle>OBF</gwt.outputstyle>
+    <gwt.outputstyle>PRETTY</gwt.outputstyle>
     <gwt.modulesuffix />
     <gwt.module>exporterdemo.ExporterDemo</gwt.module>
     <maven.test.skip>false</maven.test.skip> 
     <gwt.inplace>false</gwt.inplace>
-    <gwt.soyc>false</gwt.soyc>
+    <gwt.soyc>true</gwt.soyc>
     <gwt.xdisable>true</gwt.xdisable>
     <gwt.draft>false</gwt.draft>
     <gwt.workers></gwt.workers>
-    <gwt.target>demo/demo.html</gwt.target>
+    <gwt.target>index.html</gwt.target>
   </properties>
 
   <profiles>
@@ -91,6 +109,12 @@
       <id>bind</id>
       <properties>
         <gwt.loglevel>INFO' -bindAddress '0.0.0.0</gwt.loglevel>
+      </properties>
+    </profile>
+    <profile>
+      <id>pretty</id>
+      <properties>
+        <gwt.outputstyle>PRETTY</gwt.outputstyle>
       </properties>
     </profile>
   </profiles>

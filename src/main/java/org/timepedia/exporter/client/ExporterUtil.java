@@ -129,6 +129,10 @@ public class ExporterUtil {
     return impl.wrap(type);
   }
 
+  public static JavaScriptObject wrap(String[] type) {
+    return impl.wrap(type);
+  }
+
   public static JavaScriptObject wrap(double[] type) {
     return impl.wrap(type);
   }

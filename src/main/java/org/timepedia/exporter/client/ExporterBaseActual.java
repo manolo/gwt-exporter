@@ -1,13 +1,14 @@
 package org.timepedia.exporter.client;
 
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
-
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import com.google.gwt.core.client.JsArrayString;
 
 /**
  * Methods used to maintain a mapping between JS types and Java (GWT) objects.
@@ -222,14 +223,31 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
   }
 
+  @Override
   public JavaScriptObject wrap(double[] type) {
-
     if (!GWT.isScript()) {
       if (type == null) {
         return null;
       }
       JavaScriptObject wrapper = getWrapper(type);
       JsArrayNumber wrapperArray = wrapper.cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapper;
+    } else {
+      return reinterpretCast(type);
+    }
+  }
+  
+  @Override
+  public JavaScriptObject wrap(String[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JavaScriptObject wrapper = getWrapper(type);
+      JsArrayString wrapperArray =  wrapper.cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }

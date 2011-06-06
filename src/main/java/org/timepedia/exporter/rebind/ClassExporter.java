@@ -65,9 +65,7 @@ public class ClassExporter {
       throws UnableToCompleteException {
 
     if (requestedType == null) {
-      logger.log(TreeLogger.ERROR,
-          "Type '" + requestedType.getQualifiedSourceName()
-              + "' does not implement Exportable", null);
+      logger.log(TreeLogger.ERROR, "exportClosure: requestedType is null", null);
       throw new UnableToCompleteException();
     }
 
@@ -188,6 +186,7 @@ public class ClassExporter {
     if (requestedType == null) {
       logger.log(TreeLogger.ERROR,
           "Type '" + requestedClass + "' does not implement Exportable", null);
+      new RuntimeException().printStackTrace();
       throw new UnableToCompleteException();
     }
 
@@ -628,6 +627,7 @@ public class ClassExporter {
     sw.println("}");
   }
 
+  @SuppressWarnings("unused")
   private void debugJSPassedValues(JExportableMethod method) {
     JExportableParameter params[] = method.getExportableParameters();
     for (int i = 0; i < params.length; i++) {
@@ -748,6 +748,7 @@ public class ClassExporter {
   private void exportMethod(JExportableMethod method,
       HashMap<String, DispatchTable> dispatchMap)
       throws UnableToCompleteException {
+    
     JExportableType retType = method.getExportableReturnType();
 
     if (retType == null) {
@@ -757,10 +758,10 @@ public class ClassExporter {
       throw new UnableToCompleteException();
     }
 
-    int arity = method.getExportableParameters().length;
-    String name = method.getUnqualifiedExportName();
-    String key = name + "_" + arity;
-
+//    int arity = method.getExportableParameters().length;
+//    String name = method.getUnqualifiedExportName();
+//    String key = name + "_" + arity;
+//
 //    JExportableMethod conflicting = method.isStatic() ? staticVisited.get(key)
 //        : visited.get(key);
 //
@@ -821,11 +822,11 @@ public class ClassExporter {
       // end method call
       sw.print(");");
     } else {
-      sw.print((isVoid ? ""
-          : "var x=@org.timepedia.exporter.client.ExporterUtil::getDispatch("
+      sw.print((isVoid ? "" : "var x=")
+          + "@org.timepedia.exporter.client.ExporterUtil::getDispatch("
               + "Ljava/lang/Class;Ljava/lang/String;"
               + "Lcom/google/gwt/core/client/JsArray;Z)" + "(@" + method
-              .getEnclosingExportType().getQualifiedSourceName()) + "::class,'"
+              .getEnclosingExportType().getQualifiedSourceName() + "::class,'"
           + method.getUnqualifiedExportName() + "', arguments,"
           + method.isStatic() + ").apply("
           + (method.isStatic() ? "null" : "this.__gwt_instance")
@@ -838,10 +839,13 @@ public class ClassExporter {
       boolean isArray = retType instanceof JExportableArrayType;
       String arrayType = isArray ? ((JExportableArrayType) retType)
           .getJSNIReference() : "";
-
+      
+      arrayType = arrayType.matches("^\\[(.|Ljava.lang.String;)") ? arrayType
+          : "[Lorg/timepedia/exporter/client/Exportable;";
+      
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ? "Lorg/timepedia/exporter/client/Exportable;"
+          + (isArray ? arrayType
           : "Lorg/timepedia/exporter/client/Exportable;") + ")("
 
       );
@@ -874,7 +878,6 @@ public class ClassExporter {
 
   private boolean exportDependentClass(String qualifiedSourceName)
       throws UnableToCompleteException {
-
     if (visited.contains(qualifiedSourceName)) {
       return false;
     }
@@ -883,7 +886,9 @@ public class ClassExporter {
 
       JExportableType xcompType = ((JExportableArrayType) xType)
           .getComponentType();
-      if (xcompType instanceof JExportablePrimitiveType) {
+      
+      if (xcompType instanceof JExportablePrimitiveType ||
+          qualifiedSourceName.equals("java.lang.String[]")) {
         return false;
       } else {
         return exportDependentClass(xcompType.getQualifiedSourceName());
