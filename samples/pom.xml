@@ -24,9 +24,6 @@
             <soyc>${gwt.soyc}</soyc>
             <localWorkers>${gwt.workers}</localWorkers>
             <extraJvmArgs>-Xmx256m</extraJvmArgs>
-            <modules>
-              <module>${gwt.module}</module>
-            </modules>
             <inplace>${gwt.inplace}</inplace>
           </configuration>
           <executions>
@@ -92,7 +89,6 @@
     <gwt.loglevel>INFO</gwt.loglevel>
     <gwt.outputstyle>PRETTY</gwt.outputstyle>
     <gwt.modulesuffix />
-    <gwt.module>exporterdemo.ExporterDemo</gwt.module>
     <maven.test.skip>false</maven.test.skip> 
     <gwt.inplace>false</gwt.inplace>
     <gwt.soyc>true</gwt.soyc>
@@ -127,10 +123,24 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <version>${gwtversion}</version>
+      <scope>provided</scope>
+    </dependency>    
+    <dependency>
       <groupId>org.timepedia.exporter</groupId>
       <artifactId>gwtexporter</artifactId>
       <version>${version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun</groupId>
+      <artifactId>tools</artifactId>
+      <version>1.6</version>
+      <scope>system</scope>
+      <optional>true</optional>
+      <systemPath>${java.home}/../lib/tools.jar</systemPath>
     </dependency>
   </dependencies>
   

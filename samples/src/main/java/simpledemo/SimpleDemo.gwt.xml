@@ -1,0 +1,9 @@
+<module rename-to='simple'>
+
+  <inherits name='com.google.gwt.user.User'/>
+  <inherits name='org.timepedia.exporter.Exporter'/>
+
+  <entry-point class='simpledemo.client.SimpleDemo'/>
+  <set-property name="export" value="yes"/>
+
+</module>
