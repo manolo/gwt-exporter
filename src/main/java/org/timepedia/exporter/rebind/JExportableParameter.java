@@ -37,11 +37,19 @@ public class JExportableParameter {
           .isClosure(type.getQualifiedSourceName())) {
         String value = "(" + argName + ".constructor == $wnd."
             + cType.getJSQualifiedExportName() + " ? " + argName
-            + ".__gwt_instance : " + "(" + argName + ".@java.lang.Object"
-            + "::typeMarker ? " + argName + " : @"
-            + cType.getQualifiedExporterImplementationName() + "::"
+            + ".__gwt_instance : " 
+// typeMarker makes Hosted mode fail in gwt-2.2.0 and gwt-2.3.0
+//            + "(" + argName + ".@java.lang.Object"
+//            + "::typeMarker ? " + argName + " : "
+            + "@" + cType.getQualifiedExporterImplementationName() + "::"
             + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
-            + argName + ")))";
+            + argName 
+//            + ")"
+            + "))";
+//        value = "@" 
+//        + cType.getQualifiedExporterImplementationName() + "::"
+//        + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
+//        + argName + ")";
         return value;
       } else {
         return argName + ".__gwt_instance";
