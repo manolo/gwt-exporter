@@ -3,7 +3,9 @@ package org.timepedia.exporter.client;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.core.client.RunAsyncCallback;
+import com.google.gwt.core.client.JsArrayNumber;
+import com.google.gwt.core.client.JsArrayString;
+import com.google.gwt.user.client.Window;
 
 /**
  * Holds utility methods and wrapper state
@@ -159,5 +161,47 @@ public class ExporterUtil {
 
   public static JavaScriptObject wrap(short[] type) {
     return impl.wrap(type);
+  }
+
+  public static String[] toArrString(JsArrayString type) {
+    return impl.toArrString(type);
+  }
+  
+  public static double[] toArrDouble(JsArrayNumber type) {
+    return impl.toArrDouble(type);
+  }
+  
+  public static float[] toArrFloat(JsArrayNumber type) {
+    return impl.toArrFloat(type);
+  }
+  
+  public static int[] toArrInt(JsArrayNumber type) {
+    return impl.toArrInt(type);
+  }
+  
+  public static byte[] toArrByte(JsArrayNumber type) {
+    return impl.toArrByte(type);
+  }
+  
+  public static char[] toArrChar(JsArrayNumber type) {
+    return impl.toArrChar(type);
+  }
+  
+  public static long[] toArrLong(JsArrayNumber type) {
+    return impl.toArrLong(type);
+  }
+  
+  public static Object[] toArrObject(JavaScriptObject type) {
+    return impl.toArrObject(type);
+  }
+  
+  // Although in Compiled mode we could cast an Exportable[] to any other T[] array
+  // In hosted mode it is not possible, so we only support Exportable[] parameter
+  public static Exportable[] toArrExport(JavaScriptObject type) {
+    return impl.toArrExport(type);
+  }
+  
+  public static boolean isTheSameClass(Object o, Class clazz) {
+    return o.getClass() == clazz;
   }
 }

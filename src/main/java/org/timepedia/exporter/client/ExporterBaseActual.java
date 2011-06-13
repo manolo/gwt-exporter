@@ -256,6 +256,96 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return reinterpretCast(type);
     }
   }
+  
+  public Object[] toArrObject(JavaScriptObject p) {
+    JsArray<JavaScriptObject> s = p.cast();
+    int l = s.length();
+    Object[] ret = new Object[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = s.get(i);
+    }
+    return ret;
+  }
+  
+  private final static native Object getGwtInstance(JavaScriptObject o) /*-{
+    return o.__gwt_instance || null;
+  }-*/;
+  
+  public Exportable[] toArrExport(JavaScriptObject j) {
+    JsArray<JavaScriptObject> s = j.cast();
+    int l = s.length();
+    Exportable[] ret = new Exportable[l];
+    for (int i = 0; i < l; i++) {
+      Object o = getGwtInstance(s.get(i));
+      if (o == null) {
+        o = s.get(i);
+      }
+      assert (o != null && (o instanceof Exportable));
+      ret[i] = (Exportable) o;
+    }
+   return ret;
+  }
+  
+  public String[] toArrString(JsArrayString s) {
+    int l = s.length();
+    String[] ret = new String[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = s.get(i);
+    }
+    return ret;
+  }
+  
+  public long[] toArrLong(JsArrayNumber s) {
+    int l = s.length();
+    long[] ret = new long[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = (long)s.get(i);
+    }
+    return ret;
+  }
+
+  public double[] toArrDouble(JsArrayNumber s) {
+    int l = s.length();
+    double[] ret = new double[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = s.get(i);
+    }
+    return ret;
+  }
+
+  public int[] toArrInt(JsArrayNumber s) {
+    int l = s.length();
+    int[] ret = new int[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = (int)s.get(i);
+    }
+    return ret;
+  }
+
+  public byte[] toArrByte(JsArrayNumber s) {
+    int l = s.length();
+    byte[] ret = new byte[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = (byte)s.get(i);
+    }
+    return ret;
+  }
+  public char[] toArrChar(JsArrayNumber s) {
+    int l = s.length();
+    char[] ret = new char[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = (char)s.get(i);
+    }
+    return ret;
+  }
+  public float[] toArrFloat(JsArrayNumber s) {
+    int l = s.length();
+    float[] ret = new float[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = (long)s.get(i);
+    }
+    return ret;
+  }
 
   private native JavaScriptObject getWrapperJS(Object type, String wrapProp) /*-{
     return type[wrapProp];

@@ -112,7 +112,8 @@ public class DispatchTable {
       for (JExportableParameter param : exportableParameters) {
         String jsType = param.getJsTypeOf();
         if (jsType.equals("number") || jsType.equals("object") ||
-            jsType.equals("string") || jsType.equals("boolean")) {
+            jsType.equals("string") || jsType.equals("boolean") ||
+            jsType.equals("array") ) {
           jsType = "\""+jsType+"\"";
         }
         sb.append(jsType + ",");

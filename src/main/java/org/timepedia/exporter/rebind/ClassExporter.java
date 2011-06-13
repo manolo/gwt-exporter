@@ -532,8 +532,8 @@ public class ClassExporter {
     // e.g. code is calling constructor as
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
-    sw.println("if(arguments.length == 1 && (arguments[0] != null && "
-        + "arguments[0].@java.lang.Object::getClass()() == " + "@"
+    sw.println("if (arguments.length == 1 && "
+        + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)(arguments[0], @"  
         + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
 
@@ -802,37 +802,35 @@ public class ClassExporter {
     }
     if (returnTypeCast != null) {
       // GWT 2.0 hosted mode $entry requires deboxing return valus for JS
-      sw.print(
-          "@org.timepedia.exporter.client.ExporterHostedModeUtil::deboxHostedMode(Lcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)("
-              + returnTypeCast + ",");
+      sw.println(
+          "@org.timepedia.exporter.client.ExporterHostedModeUtil::deboxHostedMode(Lcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)");
+      sw.print(" (" + returnTypeCast + ",");
     }
     sw.print("$entry(function(");
     DispatchTable dt = dispatchMap.get(method.getUnqualifiedExportName());
     declareJSParameters(method, dt.isOverloaded() ? dt.maxArity() : -1);
-    sw.print(") { ");
+    sw.println(") { ");
+    sw.indent();
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
 //    debugJSPassedValues(method);
+    sw.print(isVoid ? "" : "var x=");
     if (!dt.isOverloaded()) {
-      sw.print((isVoid ? "" : "var x=")
-          + (method.isStatic() ? "@" : "this.__gwt_instance.@")
-          + method.getJSNIReference() + "(");
-
+      sw.print(method.isStatic() ? "@" : "this.__gwt_instance.@");
+      sw.print(method.getJSNIReference() + "(");
       declareJSPassedValues(method, false);
-
-      // end method call
-      sw.print(");");
     } else {
-      sw.print((isVoid ? "" : "var x=")
-          + "@org.timepedia.exporter.client.ExporterUtil::getDispatch("
-              + "Ljava/lang/Class;Ljava/lang/String;"
-              + "Lcom/google/gwt/core/client/JsArray;Z)" + "(@" + method
-              .getEnclosingExportType().getQualifiedSourceName() + "::class,'"
-          + method.getUnqualifiedExportName() + "', arguments,"
+      sw.print("@org.timepedia.exporter.client.ExporterUtil::getDispatch("
+          + "Ljava/lang/Class;Ljava/lang/String;"
+          + "Lcom/google/gwt/core/client/JsArray;Z)(@"
+          + method.getEnclosingExportType().getQualifiedSourceName()
+          + "::class,'" + method.getUnqualifiedExportName() + "', arguments,"
           + method.isStatic() + ").apply("
           + (method.isStatic() ? "null" : "this.__gwt_instance")
           + ", arguments");
-      sw.print(");");
     }
+    // end method call
+    sw.println(");");
+    
     if (dt.isOverloaded() || !retType.needsExport()) {
       sw.print(isVoid ? "" : "return (");
     } else {
@@ -840,14 +838,13 @@ public class ClassExporter {
       String arrayType = isArray ? ((JExportableArrayType) retType)
           .getJSNIReference() : "";
       
-      arrayType = arrayType.matches("^\\[(.|Ljava.lang.String;)") ? arrayType
+      arrayType = arrayType.matches("^\\[(.|Ljava/lang/String;)") ? arrayType
           : "[Lorg/timepedia/exporter/client/Exportable;";
       
       sw.print((isVoid ? "" : "return ")
           + "@org.timepedia.exporter.client.ExporterUtil::wrap("
           + (isArray ? arrayType
           : "Lorg/timepedia/exporter/client/Exportable;") + ")("
-
       );
     }
 
@@ -855,6 +852,7 @@ public class ClassExporter {
     if (!isVoid) {
       sw.println("x);");
     }
+    sw.outdent();
     sw.print("})");
     if (returnTypeCast != null) {
       sw.print(")");

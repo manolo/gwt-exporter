@@ -36,6 +36,31 @@ public class JExportableArrayType extends JExportableClassType
     return "@" + ExporterUtil.class.getName() + "::wrap(["
         + type.getJNISignature() + ")";
   }
+  
+  public String getToArrayFunc(String argName) {
+    String ret = "@org.timepedia.exporter.client.ExporterUtil::";
+    String qsn = array.getQualifiedSourceName();
+    if (qsn.equals("java.lang.String[]")) {
+      ret += "toArrString(Lcom/google/gwt/core/client/JsArrayString;)" ;
+    } else if (qsn.equals("double[]")) {
+      ret += "toArrDouble(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.equals("float[]")) {
+      ret += "toArrFloat(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.equals("long[]")) {
+      ret += "toArrLong(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.equals("int[]")) {
+      ret += "toArrInt(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.equals("byte[]")) {
+      ret += "toArrByte(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.equals("char[]")) {
+      ret += "toArrChar(Lcom/google/gwt/core/client/JsArrayNumber;)" ;
+    } else if (qsn.endsWith("Object[]")) {
+      ret += "toArrObject(Lcom/google/gwt/core/client/JavaScriptObject;)" ;
+    } else {
+      ret += "toArrExport(Lcom/google/gwt/core/client/JavaScriptObject;)" ;
+    }
+    return ret + "(" + argName + ")";
+  }
 
   public JExportableType getComponentType() {
     return exportableTypeOracle

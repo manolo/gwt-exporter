@@ -2,6 +2,8 @@ package org.timepedia.exporter.client;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.JsArrayNumber;
+import com.google.gwt.core.client.JsArrayString;
 
 /**
  * No-op implementation when export is disabled.
@@ -74,6 +76,42 @@ public class ExporterBaseImpl {
   }
 
   public JavaScriptObject wrap(String[] type) {
+    return null;
+  }
+
+  public String[] toArrString(JsArrayString type) {
+    return null;
+  }
+
+  public double[] toArrDouble(JsArrayNumber type) {
+    return null;
+  }
+
+  public float[] toArrFloat(JsArrayNumber type) {
+    return null;
+  }
+
+  public int[] toArrInt(JsArrayNumber type) {
+    return null;
+  }
+
+  public byte[] toArrByte(JsArrayNumber type) {
+    return null;
+  }
+
+  public char[] toArrChar(JsArrayNumber type) {
+    return null;
+  }
+
+  public long[] toArrLong(JsArrayNumber type) {
+    return null;
+  }
+
+  public Object[] toArrObject(JavaScriptObject type) {
+    return null;
+  }
+
+  public Exportable[] toArrExport(JavaScriptObject p) {
     return null;
   }
 }
