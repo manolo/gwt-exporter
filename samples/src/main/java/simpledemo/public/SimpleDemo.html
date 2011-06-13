@@ -2,22 +2,8 @@
 <head>
   <title>SimpleDemo</title>
   <script language='javascript' src='simple.nocache.js'></script>
-  <script language='javascript'>
-    function runTests() {
-        var p = new jsc.Simple();
-        p.show();
-        p.foo();
-        p.echo("ECHO");
-        p.hello(new jsc.Hello());
-        p.executeJsClosure(function(arg1, arg2) {
-            alert(arg1 + "," + arg2);
-        });
-    }
-  </script>
 </head>
 <body>
-<p>
-  <input type="button" onClick="runTests();" value="Run Tests">
-</p>
+<div id="out"></div>
 </body>
 </html>

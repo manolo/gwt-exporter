@@ -10,19 +10,19 @@ import org.timepedia.exporter.client.Exportable;
 // But method in parent classes will not.
 public class Simple extends Abstract implements Exportable {
 
-  public void show(){
-    System.out.println("Call show");
+  public String show(){
+    return("Simple.show");
   }
   
-  public void echo(String e) {
-    System.out.println("echo: " + e);
+  public String echo(String e) {
+    return("Simple.echo: " + e);
   }
   
-  public void hello(Hello a6) {
-    System.out.println("hello " + a6.sayHello());
+  public String hello(Hello a6) {
+    return("Simple.hello " + a6.sayHello());
   }
   
-  public void executeJsClosure(Closure closure){
-    closure.execute("Hello", "Friend");
+  public String executeJsClosure(Closure closure){
+    return closure.execute("Hello", "Friend");
   }
 }

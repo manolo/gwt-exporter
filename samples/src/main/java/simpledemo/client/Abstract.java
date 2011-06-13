@@ -9,7 +9,7 @@ import org.timepedia.exporter.client.Exportable;
 // They have to implement Exportable though
 public class Abstract implements Exportable {
   @Export("foo")
-  public void initialise(){
-    System.out.println("Call foo == initialise");
+  public String initialise(){
+    return("Abstract.foo.initialise");
   }
 }
