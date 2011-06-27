@@ -1,4 +1,4 @@
-package simpledemo.client;
+package org.timepedia.exporter.test;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
@@ -7,33 +7,22 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
-import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.user.client.Window;
+import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.RootPanel;
 
-public class SimpleDemo implements EntryPoint {
+public class CoreTest extends GWTTestCase{
+
+  @Override
+  public String getModuleName() {
+    return "org.timepedia.exporter.Test";
+  }
   
-  public void onModuleLoad() {
+  public void test() {
     ExporterUtil.exportAll();
-    print(Window.Navigator.getUserAgent());
     runJsTests();
   }
   
-  public static <T> void print(T s) {
-    RootPanel.get().add(new Label(s.toString()));
-  }
-  
-  public static <T> void mAssertEqual(T a, T b) {
-    if (a.toString().equals(b.toString())) {
-      print("OK -> " + b);
-    } else {
-      print("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
-          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
-    }
-  }
-
   @ExportPackage("gwt")
   @Export
   public static class HelloAbstract implements Exportable {
@@ -184,47 +173,57 @@ public class SimpleDemo implements EntryPoint {
     }
   }
   
+  public static <T> void mAssertEqual(T a, T b) {
+    assertEquals(a.toString(), b.toString());
+//    if (a.toString().equals(b.toString())) {
+//      System.out.println("OK -> " + b);
+//    } else {
+//      System.out.println("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
+//          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+//    }
+  }
+  
   public native JavaScriptObject runJsTests() /*-{
-    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+    assertEq = function(a, b) {@org.timepedia.exporter.test.CoreTest::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
-    var v1 = new $wnd.gwt.SimpleDemo.Foo();
-    p("foo", v1);
-    var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
-    p("foo2", v2);
-    var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
-    p("foo3bbb", v3);
-    p("foo3bbb>ccc", v3.toString("ccc"));
-    p("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
+    var v1 = new $wnd.gwt.CoreTest.Foo();
+    assertEq("foo", v1);
+    var v2 = new $wnd.gwt.CoreTest.Foo("foo2");
+    assertEq("foo2", v2);
+    var v3 = new $wnd.gwt.CoreTest.Foo("foo3", "bbb");
+    assertEq("foo3bbb", v3);
+    assertEq("foo3bbb>ccc", v3.toString("ccc"));
+    assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
         return arg1 + "," + arg2;
     }));
     
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
-    p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
-    p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
-    p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
+    var h = new $wnd.gwt.CoreTest.HelloClass();
+    assertEq("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,org.timepedia.exporter.test.CoreTest$HelloClass", $wnd.gwt.CoreTest.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.CoreTest.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
+    assertEq("1,2", $wnd.gwt.CoreTest.HelloClass.test2());
+    assertEq("org.timepedia.exporter.test.CoreTest$HelloClass", $wnd.gwt.CoreTest.HelloClass.test3()[0].hello());
+    assertEq("org.timepedia.exporter.test.CoreTest$HelloClass", $wnd.gwt.CoreTest.HelloClass.test3()[0].helloAbstract());
+    assertEq("undefined", "" + $wnd.gwt.CoreTest.HelloClass.test3()[0].noHelloAbstract);
     
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
-    p("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
-    p("3", "" + $wnd.gwt.SimpleDemo.HelloClass.test6());
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test7());
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test8());
-    p("A", "" + $wnd.gwt.SimpleDemo.HelloClass.test9());
-    p("div", "" + $wnd.gwt.SimpleDemo.HelloClass.test10().tagName.toLowerCase());
-    p("6", "" + $wnd.gwt.SimpleDemo.HelloClass.test11());
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
-    p("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
+    assertEq("1", "" + $wnd.gwt.CoreTest.HelloClass.test4(1, "A"));
+    assertEq("2", "" + $wnd.gwt.CoreTest.HelloClass.test5());
+    assertEq("3", "" + $wnd.gwt.CoreTest.HelloClass.test6());
+    assertEq("4", "" + $wnd.gwt.CoreTest.HelloClass.test7());
+    assertEq("5", "" + $wnd.gwt.CoreTest.HelloClass.test8());
+    assertEq("A", "" + $wnd.gwt.CoreTest.HelloClass.test9());
+    assertEq("div", "" + $wnd.gwt.CoreTest.HelloClass.test10().tagName.toLowerCase());
+    assertEq("6", "" + $wnd.gwt.CoreTest.HelloClass.test11());
+    assertEq("1", "" + $wnd.gwt.CoreTest.HelloClass.test12(1));
+    assertEq("5", "" + $wnd.gwt.CoreTest.HelloClass.test13(2, 3));
+    assertEq("4", "" + $wnd.gwt.CoreTest.HelloClass.test16(4));
+    assertEq("14", "" + $wnd.gwt.CoreTest.HelloClass.test16(4, 10));
     
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("102", "" + h.test14(1, 1, [100]));
-    p("100,200", "" + h.test15([100, 200]));
-    p("5", "" + h.test17(5));
-    p("15", "" + h.test17(5,10));
+    var h = new $wnd.gwt.CoreTest.HelloClass();
+    assertEq("102", "" + h.test14(1, 1, [100]));
+    assertEq("100,200", "" + h.test15([100, 200]));
+    assertEq("5", "" + h.test17(5));
+    assertEq("15", "" + h.test17(5,10));
     
   }-*/;
-  
+
 }
