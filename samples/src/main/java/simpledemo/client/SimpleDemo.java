@@ -1,42 +1,19 @@
 package simpledemo.client;
 
 import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
+import org.timepedia.exporter.client.NoExport;
 
 import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
   
-  @ExportPackage("gwt")
-  @Export
-  public static class MLong implements Exportable {
-    public static long rlongS() {
-      return 4l;
-    }
-    public static String plongS(long a) {
-      return "" + a;
-    }
-    public static String pdoubleS(double a) {
-      return "" + a;
-    }
-    public long rlongC() {
-      return rlongS();
-    }
-    public String plongC(long a) {
-      return plongS(a);
-    }
-    public void normal(int a, double[] b, MLong l) {
-      
-    }
-  }
-
   public void onModuleLoad() {
     ExporterUtil.exportAll();
     runJsTests();
@@ -45,10 +22,31 @@ public class SimpleDemo implements EntryPoint {
   public static <T> void print(T s) {
     RootPanel.get().add(new Label(s.toString()));
   }
+  public static <T> void mAssertEqual(T a, T b) {
+    if (a.toString().equals(b.toString())) {
+      print("OK -> " + b);
+    } else {
+      print("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
+          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+    }
+  }
 
   @ExportPackage("gwt")
   @Export
-  public static class HelloClass implements Exportable {
+  public static class HelloAbstract implements Exportable {
+    public String helloAbstract(){
+      return this.getClass().getName();
+    }
+    
+    @NoExport
+    public String noHelloAbstract(){
+      return this.getClass().getName();
+    }
+  }
+  
+  @ExportPackage("gwt")
+  @Export
+  public static class HelloClass extends HelloAbstract implements Exportable {
     public String hello(){
       return this.getClass().getName();
     }
@@ -61,8 +59,8 @@ public class SimpleDemo implements EntryPoint {
       ret[3] = "" + d;
       ret[4] = "" + f;
       ret[5] = "" + s;
-      ret[6] = "" + o;
-      ret[7] = "" + e;
+      ret[6] = "" + o.getClass().getName();
+      ret[7] = "" + e.getClass().getName();
       return ret;
     }
 
@@ -156,6 +154,7 @@ public class SimpleDemo implements EntryPoint {
   @ExportPackage("gwt")
   @Export
   public static class Foo implements Exportable {
+    
     String n = "foo";
     public Foo() {
     }
@@ -163,7 +162,7 @@ public class SimpleDemo implements EntryPoint {
       n= id;
     }
     public Foo(String id, String a) {
-      n= id;
+      n= id + a;
     }
     public String toString(){
       return n;
@@ -171,51 +170,57 @@ public class SimpleDemo implements EntryPoint {
     public String toString(String a){
       return n + ">" + a;
     }
+    
+    @ExportClosure
+    public interface Closure extends Exportable {
+      public String execute(String par1, String par2);
+    }
+    
+    public String executeJsClosure(Closure closure){
+       return closure.execute("Hello", "Friend");
+    }
   }
   
   public native JavaScriptObject runJsTests() /*-{
-    p = function(a) {@simpledemo.client.SimpleDemo::print(Ljava/lang/Object;)(a);}
+    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
     var v1 = new $wnd.gwt.SimpleDemo.Foo();
-    p(v1);
+    p("foo", v1);
     var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
-    p(v2);
+    p("foo2", v2);
     var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
-    p(v3);
-    p(v3.toString("ccc"));
-    
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p($wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window, h));
-    p($wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
-    p($wnd.gwt.SimpleDemo.HelloClass.test2());
-    p($wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test5());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test6());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test7());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test8());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test9());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test10());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test11());
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
-    p("" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
-    
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("" + h.test14(1, 1, [100]));
-    p("" + h.test15([100, 200]));
-    p("" + h.test17(5));
-    p("" + h.test17(5,10));
-    
-    var s = new $wnd.jsc.Simple();
-    p(s.show());
-    p(s.foo());
-    p(s.echo("ECHO"));
-    p(s.hello(new $wnd.jsc.Hello()));
-    p(s.executeJsClosure(function(arg1, arg2) {
+    p("foo3bbb", v3);
+    p("foo3bbb>ccc", v3.toString("ccc"));
+    p("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
         return arg1 + "," + arg2;
     }));
+    
+    var h = new $wnd.gwt.SimpleDemo.HelloClass();
+    p("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
+    p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
+    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
+    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
+    p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
+    
+    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
+    p("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
+    p("3", "" + $wnd.gwt.SimpleDemo.HelloClass.test6());
+    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test7());
+    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test8());
+    p("A", "" + $wnd.gwt.SimpleDemo.HelloClass.test9());
+    p("[object HTMLDivElement]", "" + $wnd.gwt.SimpleDemo.HelloClass.test10());
+    p("6", "" + $wnd.gwt.SimpleDemo.HelloClass.test11());
+    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
+    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
+    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
+    p("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
+    
+    var h = new $wnd.gwt.SimpleDemo.HelloClass();
+    p("102", "" + h.test14(1, 1, [100]));
+    p("100,200", "" + h.test15([100, 200]));
+    p("5", "" + h.test17(5));
+    p("15", "" + h.test17(5,10));
     
   }-*/;
   
