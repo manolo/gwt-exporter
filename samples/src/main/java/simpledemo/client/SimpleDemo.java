@@ -6,11 +6,41 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 
 import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
+  
+  @ExportPackage("gwt")
+  @Export
+  public static class MLong implements Exportable {
+    public static long rlongS() {
+      return 4l;
+    }
+    public static String plongS(long a) {
+      return "" + a;
+    }
+    public static String pdoubleS(double a) {
+      return "" + a;
+    }
+    public long rlongC() {
+      return rlongS();
+    }
+    public String plongC(long a) {
+      return plongS(a);
+    }
+    public void normal(int a, double[] b, MLong l) {
+      
+    }
+  }
+
+  public void onModuleLoad() {
+    ExporterUtil.exportAll();
+    runJsTests();
+  }
   
   public static <T> void print(T s) {
     RootPanel.get().add(new Label(s.toString()));
@@ -86,13 +116,40 @@ public class SimpleDemo implements EntryPoint {
       return new Label("").getElement();
     }
     
-    // Broken
     public static long test11() {
       return 6;
     }
-    // Broken
+    
     public static String test12(long l){
-      return "_" + l;
+      return "" + l;
+    }
+    
+    public static long test13(long l, double d) {
+      return l + (long)d;
+    }
+    
+    public long test14(long l, double d, long[] a) {
+      return l + (long)d + a[0];
+    }
+    
+    public long[] test15(long[] a) {
+      return a;
+    }
+
+    public static String test16(long l) {
+      return "" + l;
+    }
+
+    public static long test16(long a, long b) {
+      return (a + b);
+    }
+
+    public String test17(long l) {
+      return "" + l;
+    }
+
+    public long test17(long a, long b) {
+      return (a + b);
     }
   }
   
@@ -139,9 +196,18 @@ public class SimpleDemo implements EntryPoint {
     p("" + $wnd.gwt.SimpleDemo.HelloClass.test8());
     p("" + $wnd.gwt.SimpleDemo.HelloClass.test9());
     p("" + $wnd.gwt.SimpleDemo.HelloClass.test10());
-//    p("broken should be 6 -> " + $wnd.gwt.SimpleDemo.HelloClass.test11());
-//    p("broken should be _1 -> " + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
-
+    p("" + $wnd.gwt.SimpleDemo.HelloClass.test11());
+    p("" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
+    p("" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
+    p("" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
+    p("" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
+    
+    var h = new $wnd.gwt.SimpleDemo.HelloClass();
+    p("" + h.test14(1, 1, [100]));
+    p("" + h.test15([100, 200]));
+    p("" + h.test17(5));
+    p("" + h.test17(5,10));
+    
     var s = new $wnd.jsc.Simple();
     p(s.show());
     p(s.foo());
@@ -153,9 +219,4 @@ public class SimpleDemo implements EntryPoint {
     
   }-*/;
   
-  public void onModuleLoad() {
-    ExporterUtil.exportAll();
-    runJsTests();
-  }
-
 }

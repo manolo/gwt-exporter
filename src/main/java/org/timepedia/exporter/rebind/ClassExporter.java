@@ -234,6 +234,10 @@ public class ClassExporter {
       }
 
       sw.indent();
+      
+      // Create static wrapper methods to execute java methods which can not be 
+      // exported as JSNI functions, like methods with 'long' arguments 
+      createStaticWrappers(requestedType);
 
       if (!isClosure) {
         sw.println("public " + genName + "() { export(); }");
@@ -252,7 +256,7 @@ public class ClassExporter {
 
       // export all static fields
       exportFields(requestedType);
-
+      
       // export all exportable methods
       exportMethods(requestedType);
 
@@ -260,7 +264,7 @@ public class ClassExporter {
       registerTypeMap(requestedType);
 
       sw.outdent();
-      sw.println("}-*/;");
+      sw.println("\n}-*/;");
 
       sw.println();
 
@@ -411,8 +415,8 @@ public class ClassExporter {
   }
 
   private void registerTypeMap(JExportableClassType requestedType) {
-    sw.print(
-        "@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)("
+    sw.println(
+        "\n@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)\n ("
             +
 //                        "Ljavg/lang/String;" +   
 //                        "Lcom/google/gwt/core/client/JavaScriptObject;)(" +
@@ -432,6 +436,15 @@ public class ClassExporter {
 
     for (JExportableConstructor constructor : constructors) {
       exportStaticFactoryConstructor(constructor);
+    }
+  }
+  
+  private void createStaticWrappers(JExportableClassType requestedType)
+      throws UnableToCompleteException {
+    for (JExportableMethod method : requestedType.getExportableMethods()) {
+      if (method.needsWrapper()) {
+        createStaticWrapperMethod(method, requestedType);
+      }
     }
   }
 
@@ -475,8 +488,8 @@ public class ClassExporter {
 
   private void registerDispatchMap(JExportableClassType requestedType,
       HashMap<String, DispatchTable> dispatchMap, boolean isStatic) {
-    sw.print("@org.timepedia.exporter.client.ExporterUtil::registerDispatchMap("
-        + "Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;Z)(@"
+    sw.println("\n@org.timepedia.exporter.client.ExporterUtil::registerDispatchMap("
+        + "Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;Z)\n(@"
         + requestedType.getQualifiedSourceName() + "::class,"
         + DispatchTable.toJSON(dispatchMap) + ", " + isStatic + ");");
   }
@@ -646,6 +659,9 @@ public class ClassExporter {
   private void declareJSPassedValues(JExportableMethod method,
       boolean useArgumentsArray) {
     JExportableParameter params[] = method.getExportableParameters();
+    if (method.needsWrapper() && !method.isStatic()) {
+      sw.print("this.__gwt_instance" + (params.length > 0 ? ", " : ""));
+    }
     for (int i = 0; i < params.length; i++) {
       sw.print(params[i].getExportParameterValue(
           useArgumentsArray ? "arguments[" + i + "]" : ARG_PREFIX + i));
@@ -726,12 +742,68 @@ public class ClassExporter {
   private void exportFields(JExportableClassType requestedType)
       throws UnableToCompleteException {
     for (JExportableField field : requestedType.getExportableFields()) {
-
       sw.print("$wnd." + field.getJSQualifiedExportName() + " = ");
       sw.println("@" + field.getJSNIReference() + ";");
     }
   }
+  
+  /**
+   * Create a static wrapper for a method which can not be exported in JSNI.
+   * Typically all methods which have 'long' parameters or return 'long'
+   * 
+   * These methods look like:
+   * <pre>
+    // wrapper for a static method
+    public static double test13(double arg0, double arg1) {
+      return (double) simpledemo.client.SimpleDemo.HelloClass.test13((long) arg0,  arg1);
+    }
+    // wrapper for an instance method
+    public static double test14(simpledemo.client.SimpleDemo.HelloClass instance, double arg0, double arg1, long[] arg2) {
+      return (double) instance.test14((long) arg0,  arg1,  arg2);
+    }
+   * </pre>
+   * @param method
+   * @param requestedType
+   */
+  private void createStaticWrapperMethod(JExportableMethod method, JExportableClassType requestedType) {
+    String function = "public static ";
+    String body = "return ";
+    String r = method.getExportableReturnType().getQualifiedSourceName();
+    if (r.equals("long")) {
+      function += "double";
+      body += "(double) ";
+    } else {
+      function += method.getExportableReturnType().getQualifiedSourceName();
+    }
+    function += " " + JExportableMethod.WRAPPER_PREFIX + method.getName() + "(";
+    if (method.isStatic()) {
+      body += requestedType.getQualifiedSourceName();
+    } else {
+      function += requestedType.getQualifiedSourceName() + " instance" + (method.getExportableParameters().length > 0 ? ", " : "");
+      body += "instance";
+    }
+    body += "." + method.getName() + "(";
+    
+    int i = 0;
+    for (JExportableParameter p : method.getExportableParameters()) {
+      String pr = i > 0 ? ", " : "";
+      function += pr;
+      body += pr;
+      String type = p.getTypeName();
+      if (type.equals("long")) {
+        function += "double";
+        body += "(long)";
+      } else {
+        function += type;
+      }
+      function +=  " " + ARG_PREFIX + i ; 
+      body +=  " " + ARG_PREFIX + i++ ; 
+    }
 
+    sw.println(function + ") {\n  " + body + ");\n}" );
+  }
+  
+  
   /**
    * Export a method If the return type of the method is Exportable, we invoke
    * ClassExporter recursively on this type <p/> For static methods, the
@@ -750,14 +822,15 @@ public class ClassExporter {
       throws UnableToCompleteException {
     
     JExportableType retType = method.getExportableReturnType();
-
+    
+    
     if (retType == null) {
       logger.log(TreeLogger.ERROR,
           "Return type of method " + method.toString() + " is not Exportable.",
           null);
       throw new UnableToCompleteException();
     }
-
+    
 //    int arity = method.getExportableParameters().length;
 //    String name = method.getUnqualifiedExportName();
 //    String key = name + "_" + arity;
@@ -813,23 +886,34 @@ public class ClassExporter {
     sw.indent();
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
 //    debugJSPassedValues(method);
+
     sw.print(isVoid ? "" : "var x=");
     if (!dt.isOverloaded()) {
-      sw.print(method.isStatic() ? "@" : "this.__gwt_instance.@");
-      sw.print(method.getJSNIReference() + "(");
+      sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this.__gwt_instance.@") + method.getJSNIReference() + "(" );
       declareJSPassedValues(method, false);
+      sw.println(");");
     } else {
+      boolean isStatic = method.isStatic();
+
+      String appyArgs = (isStatic ? "null" : "this.__gwt_instance") + ", ";
+      if (!isStatic && method.needsWrapper()) {
+        // When the method needs a static wrapper we pass the instance to the wrapper in the first position 
+        appyArgs += "[this.__gwt_instance";
+        for (int i = 0; i < method.getExportableParameters().length ; i++) {
+          appyArgs += ", " + ARG_PREFIX + i;
+        }
+        appyArgs += "]";
+      } else {
+        appyArgs += "arguments";
+      }
+      
       sw.print("@org.timepedia.exporter.client.ExporterUtil::getDispatch("
           + "Ljava/lang/Class;Ljava/lang/String;"
-          + "Lcom/google/gwt/core/client/JsArray;Z)(@"
+          + "Lcom/google/gwt/core/client/JsArray;Z)\n (@"
           + method.getEnclosingExportType().getQualifiedSourceName()
           + "::class,'" + method.getUnqualifiedExportName() + "', arguments,"
-          + method.isStatic() + ").apply("
-          + (method.isStatic() ? "null" : "this.__gwt_instance")
-          + ", arguments");
+          + isStatic + ").apply(" + appyArgs + ");");
     }
-    // end method call
-    sw.println(");");
     
     if (dt.isOverloaded() || !retType.needsExport()) {
       sw.print(isVoid ? "" : "return (");

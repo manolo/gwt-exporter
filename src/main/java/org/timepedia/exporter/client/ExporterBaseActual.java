@@ -14,7 +14,7 @@ import com.google.gwt.core.client.JsArrayString;
  * Methods used to maintain a mapping between JS types and Java (GWT) objects.
  */
 public class ExporterBaseActual extends ExporterBaseImpl {
-
+  
   public static final String WRAPPER_PROPERTY = "__gwtex_wrap";
 
   private native static JavaScriptObject wrap0(Exportable type,
@@ -437,12 +437,19 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   @Override
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
       boolean isStatic) {
-    if (isStatic) {
-      staticDispatchMap.put(clazz, dispMap);
-    } else {
-      dispatchMap.put(clazz, dispMap);
+    HashMap<Class, JavaScriptObject> map = isStatic ? staticDispatchMap : dispatchMap;
+    JavaScriptObject jso = map.get(clazz);
+    if (jso == null) {
+      jso = dispMap;
+    } else  {
+      mergeJso(jso, dispMap);
     }
+    map.put(clazz, jso);
   }
+  
+  private static native void mergeJso(JavaScriptObject o1, JavaScriptObject o2) /*-{
+    for(p in o2) {o1[p] = o2[p];}
+  }-*/;
 
   final public static class SignatureJSO extends JavaScriptObject {
 

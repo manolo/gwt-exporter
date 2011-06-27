@@ -49,12 +49,12 @@ public class DispatchTable {
 
   public static String toJSON(HashMap<String, DispatchTable> dispatchMap) {
     StringBuilder sb = new StringBuilder();
-    sb.append("{");
+    sb.append("{\n");
     for (Map.Entry<String, DispatchTable> e : dispatchMap.entrySet()) {
       if (!e.getValue().isOverloaded()) {
         continue;
       }
-      sb.append("\"" + e.getKey() + "\":" + e.getValue().toJSON() + ",");
+      sb.append("  \"" + e.getKey() + "\":" + e.getValue().toJSON() + ",\n");
     }
     sb.append("}");
     return sb.toString();
@@ -101,7 +101,7 @@ public class DispatchTable {
       StringBuilder sb = new StringBuilder();
       sb.append("[");
       String functionRef = "@" + method.getJSNIReference();
-      if (method.isStatic()) {
+      if (method.isStatic() || method.needsWrapper()) {
         sb.append(functionRef);
       } else {
         sb.append("function() { return this." + functionRef+".apply(this, arguments); }");
@@ -125,11 +125,11 @@ public class DispatchTable {
 
   public String toJSON() {
     StringBuilder json = new StringBuilder();
-    json.append("{");
+    json.append("{\n");
     for (Integer arity : sigMap.keySet()) {
-      json.append("" + arity + ":" + toJSON(sigMap.get(arity)) + ",");
+      json.append("    " + arity + ":" + toJSON(sigMap.get(arity)) + ",\n");
     }
-    json.append("}");
+    json.append("  }");
     return json.toString();
   }
 

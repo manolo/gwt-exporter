@@ -12,6 +12,8 @@ import org.timepedia.exporter.client.Export;
  */
 public class JExportableMethod implements JExportable {
 
+  public static final String WRAPPER_PREFIX = "__static_wrapper_";
+
   protected JExportableClassType exportableEnclosingType;
 
   protected JAbstractMethod method;
@@ -62,15 +64,46 @@ public class JExportableMethod implements JExportable {
   }
 
   public String getJSNIReference() {
+    String reference = "";
+    if (!needsWrapper()) {
+      // we export the original method
+      reference = exportableEnclosingType.getQualifiedSourceName() + "::" + method.getName() + "(";
+    } else {
+      // we export a static wrapper
+      reference = exportableEnclosingType.getQualifiedExporterImplementationName() + "::" + WRAPPER_PREFIX + method.getName() + "(";
+      // Wrappers are static, so we pass the instance in the first argument.
+      if (!isStatic()) {
+        reference += exportableEnclosingType.getJSNIReference();
+      }
+    }
 
-    String reference = exportableEnclosingType.getQualifiedSourceName() + "::"
-        + method.getName() + "(";
     JParameter[] params = method.getParameters();
     for (int i = 0; i < params.length; i++) {
-      reference += params[i].getType().getJNISignature();
+      String signature = params[i].getType().getJNISignature();
+      // Here we replace long by double signatures
+      reference += needsWrapper() && "J".equals(signature) ? "D" : signature;
     }
     reference += ")";
     return reference;
+  }
+  
+  private Boolean wrap = null;
+
+  // return true if this method needs a static wrapper. 
+  // Right now all methods which have a 'long' parameter or return 'long'
+  public boolean needsWrapper() {
+    if (wrap == null) {
+      wrap = false;
+      if ("long".equals(getExportableReturnType().getQualifiedSourceName())) {
+        wrap = true;
+      } else for (JExportableParameter p : getExportableParameters()) {
+        if ("long".equals(p.getTypeName())) {
+          wrap = true;
+          break;
+        }
+      }
+    }
+    return wrap;
   }
 
   public boolean isStatic() {
