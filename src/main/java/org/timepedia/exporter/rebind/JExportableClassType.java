@@ -10,6 +10,8 @@ import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.SType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  *
@@ -89,12 +91,16 @@ public class JExportableClassType implements JExportable, JExportableType {
   public JExportableMethod[] getExportableMethods() {
     ArrayList<JExportableMethod> exportableMethods
         = new ArrayList<JExportableMethod>();
-
-    for (JMethod method : type.getMethods()) {
+    
+    // Create a set with all methods in this class and in in its type hierarchy
+    HashSet<JMethod> classMethods = new HashSet<JMethod>();
+    classMethods.addAll(Arrays.asList(type.getMethods()));
+    classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
+    
+    for (JMethod method : classMethods) {
       if (method.isConstructor() != null) {
         continue;
       }
-
       if (exportableTypeOracle.isExportable(method)) {
         exportableMethods.add(new JExportableMethod(this, method));
       }

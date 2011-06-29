@@ -9,7 +9,6 @@ import org.timepedia.exporter.client.NoExport;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
@@ -17,7 +16,6 @@ public class SimpleDemo implements EntryPoint {
   
   public void onModuleLoad() {
     ExporterUtil.exportAll();
-    print(Window.Navigator.getUserAgent());
     runJsTests();
   }
   
@@ -184,6 +182,49 @@ public class SimpleDemo implements EntryPoint {
     }
   }
   
+  public static interface MInterface extends Exportable {
+    @Export
+    String m1();
+    String m1(int a);
+    @Export
+    String m1(int a, int b);
+  }
+  
+  public static abstract class MBase implements MInterface {
+    @Export
+    public String m0() {
+      return "m0";
+    }
+    public String m1() {
+      return "m1";
+    }
+    public String m1(int a) {
+      return "m1-" + a;
+    }
+    public String m1(int a, int b) {
+      return "m1-" + a + b;
+    }
+    @Export
+    public String m2() {
+      return "m2";
+    }
+  }
+  
+  @ExportPackage("gwt")
+  public static class MClass extends MBase {
+    @Export
+    public String m0() {
+      return "om0";
+    }
+    @Export
+    public String m3() {
+      return "m3";
+    }
+    public String m4() {
+      return "m4";
+    }
+  }
+  
   public native JavaScriptObject runJsTests() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
@@ -224,6 +265,14 @@ public class SimpleDemo implements EntryPoint {
     p("100,200", "" + h.test15([100, 200]));
     p("5", "" + h.test17(5));
     p("15", "" + h.test17(5,10));
+    
+    var m = new $wnd.gwt.SimpleDemo.MClass();
+    p("om0", m.m0());
+    p("m1", m.m1());
+    p("m1-23", m.m1(2, 3));
+    p("m2", m.m2());
+    p("m2", m.m2());
+    p("m3", m.m3());
     
   }-*/;
   

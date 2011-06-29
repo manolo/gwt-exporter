@@ -94,7 +94,8 @@ public class JExportableMethod implements JExportable {
   public boolean needsWrapper() {
     if (wrap == null) {
       wrap = false;
-      if ("long".equals(getExportableReturnType().getQualifiedSourceName())) {
+      if (getExportableReturnType() != null &&
+          "long".equals(getExportableReturnType().getQualifiedSourceName())) {
         wrap = true;
       } else for (JExportableParameter p : getExportableParameters()) {
         if ("long".equals(p.getTypeName())) {

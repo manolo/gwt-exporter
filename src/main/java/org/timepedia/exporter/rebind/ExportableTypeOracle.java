@@ -1,24 +1,24 @@
 package org.timepedia.exporter.rebind;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.NoExport;
+import org.timepedia.exporter.client.StructuralType;
+
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
 import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 import com.google.gwt.core.ext.typeinfo.JField;
+import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.core.ext.typeinfo.TypeOracle;
 import com.google.gwt.core.ext.typeinfo.TypeOracleException;
-
-import org.timepedia.exporter.client.Export;
-import org.timepedia.exporter.client.ExportClosure;
-import org.timepedia.exporter.client.ExporterUtil;
-import org.timepedia.exporter.client.NoExport;
-import org.timepedia.exporter.client.StructuralType;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -58,7 +58,7 @@ public class ExportableTypeOracle {
   public static boolean isExportable(Export annotation) {
     return annotation != null;
   }
-
+  
   public boolean isExportable(JAbstractMethod method) {
     if (method instanceof JConstructor) {
       if (method.getParameters().length == 0 && method.isPublic()) {
@@ -66,9 +66,43 @@ public class ExportableTypeOracle {
         return true;
       }
     }
-    return (isExportable(method.getEnclosingType()) && method.isPublic()
-        && !isNotExportable(method.getAnnotation(NoExport.class)))
-        || (isExportable(method.getAnnotation(Export.class)));
+
+    // Only public methods are exported
+    if (method.isPublic()) {
+      
+      // Do not export methods annotated as NoExport, although the 
+      // method is marked as export in an interface or the entire class
+      // is annotated as Export
+      if (isNotExportable(method.getAnnotation(NoExport.class))) {
+        return false;
+      }
+      
+      // Export this method if has the Export annotation
+      if (isExportable(method.getAnnotation(Export.class))) {
+        return true;
+      }
+      
+      // Export all method in a class annotated as Export
+      if (isExportable(method.getEnclosingType())) {
+        return true;
+      }
+      
+      // Export methods which are annotated in implemented interfaces
+      for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
+        for (JMethod m : c.getMethods()) {
+          if (isExportable(m.getAnnotation(Export.class))
+              && m.getName().equals(method.getName())) {
+            if (m.getReadableDeclaration(true, true, false, true, true).equals(
+                ((JMethod) method).getReadableDeclaration(true, true, false,
+                    true, true))) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
   }
 
   private static boolean isExportable(ExportClosure annotation) {

@@ -7,6 +7,9 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
+import simpledemo.client.SimpleDemo.MBase;
+import simpledemo.client.SimpleDemo.MInterface;
+
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.Label;
@@ -173,6 +176,49 @@ public class CoreTest extends GWTTestCase{
     }
   }
   
+  public static interface MInterface extends Exportable {
+    @Export
+    String m1();
+    String m1(int a);
+    @Export
+    String m1(int a, int b);
+  }
+  
+  public static abstract class MBase implements MInterface {
+    @Export
+    public String m0() {
+      return "m0";
+    }
+    public String m1() {
+      return "m1";
+    }
+    public String m1(int a) {
+      return "m1-" + a;
+    }
+    public String m1(int a, int b) {
+      return "m1-" + a + b;
+    }
+    @Export
+    public String m2() {
+      return "m2";
+    }
+  }
+  
+  @ExportPackage("gwt")
+  public static class MClass extends MBase {
+    @Export
+    public String m0() {
+      return "om0";
+    }
+    @Export
+    public String m3() {
+      return "m3";
+    }
+    public String m4() {
+      return "m4";
+    }
+  }
+  
   public static <T> void mAssertEqual(T a, T b) {
     assertEquals(a.toString(), b.toString());
 //    if (a.toString().equals(b.toString())) {
@@ -217,12 +263,19 @@ public class CoreTest extends GWTTestCase{
     assertEq("5", "" + $wnd.gwt.CoreTest.HelloClass.test13(2, 3));
     assertEq("4", "" + $wnd.gwt.CoreTest.HelloClass.test16(4));
     assertEq("14", "" + $wnd.gwt.CoreTest.HelloClass.test16(4, 10));
-    
     var h = new $wnd.gwt.CoreTest.HelloClass();
     assertEq("102", "" + h.test14(1, 1, [100]));
     assertEq("100,200", "" + h.test15([100, 200]));
     assertEq("5", "" + h.test17(5));
     assertEq("15", "" + h.test17(5,10));
+    
+    var m = new $wnd.gwt.CoreTest.MClass();
+    assertEq("om0", m.m0());
+    assertEq("m1", m.m1());
+    assertEq("m1-23", m.m1(2, 3));
+    assertEq("m2", m.m2());
+    assertEq("m2", m.m2());
+    assertEq("m3", m.m3());
     
   }-*/;
 

@@ -29,6 +29,8 @@ public class ClassExporter {
 
   private ArrayList<JExportableClassType> exported;
 
+  private HashSet<String> overloadExported = new HashSet<String>();
+
   private HashSet<String> visited;
 
   private static final String ARG_PREFIX = "arg";
@@ -186,7 +188,6 @@ public class ClassExporter {
     if (requestedType == null) {
       logger.log(TreeLogger.ERROR,
           "Type '" + requestedClass + "' does not implement Exportable", null);
-      new RuntimeException().printStackTrace();
       throw new UnableToCompleteException();
     }
 
@@ -546,7 +547,7 @@ public class ClassExporter {
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
     sw.println("if (arguments.length == 1 && "
-        + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)(arguments[0], @"  
+        + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)\n  (arguments[0], @"  
         + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
 
@@ -597,8 +598,8 @@ public class ClassExporter {
     JExportableClassType superClass = requestedType
         .getExportableSuperClassType();
 
-    if (superClass != null && superClass.needsExport() && !exported
-        .contains(superClass)) {
+    if (superClass != null && superClass.isInstantiable()
+        && superClass.needsExport() && !exported.contains(superClass)) {
       if (exportDependentClass(superClass.getQualifiedSourceName())) {
         ;
       }
@@ -606,15 +607,16 @@ public class ClassExporter {
     }
     // we assign the prototype of the class to underscore so we can use it
     // later to define a bunch of methods
-    sw.print("var _=$wnd." + requestedType.getJSQualifiedExportName()
+    sw.print("var _= $wnd." + requestedType.getJSQualifiedExportName()
         + ".prototype = ");
-    sw.println(superClass == null ? "new Object();"
-        : "new $wnd." + superClass.getJSQualifiedExportName() + "();");
+    sw.println(superClass == null || !exported.contains(superClass)
+        ? "new Object();" : 
+          "new $wnd." + superClass.getJSQualifiedExportName()  + "();");
 
     // restore inner class namespace
     sw.println("if(pkg) {");
     sw.println(
-        "for(p in pkg) { $wnd." + requestedType.getJSQualifiedExportName()
+        "  for(p in pkg) { $wnd." + requestedType.getJSQualifiedExportName()
             + "[p]=pkg[p]; }");
     sw.println("}");
   }
@@ -803,7 +805,6 @@ public class ClassExporter {
     sw.println(function + ") {\n  " + body + ");\n}" );
   }
   
-  
   /**
    * Export a method If the return type of the method is Exportable, we invoke
    * ClassExporter recursively on this type <p/> For static methods, the
@@ -822,8 +823,6 @@ public class ClassExporter {
       throws UnableToCompleteException {
     
     JExportableType retType = method.getExportableReturnType();
-    
-    
     if (retType == null) {
       logger.log(TreeLogger.ERROR,
           "Return type of method " + method.toString() + " is not Exportable.",
@@ -857,8 +856,7 @@ public class ClassExporter {
     // return type needs to be exported if it is not a primitive
     // String,Number,JSO, etc and it hasn't already been exported
     // we need to export it because we need it to wrap the returned value
-    if (retType != null && retType.needsExport() && !exported
-        .contains(retType)) {
+    if (retType.needsExport() && !exported.contains(retType)) {
       if (exportDependentClass(retType.getQualifiedSourceName())) {
         ;
       }
@@ -866,12 +864,20 @@ public class ClassExporter {
     }
 
     exportDependentParams(method);
+    
+    // Overloaded methods only need being exported once
+    DispatchTable dt = dispatchMap.get(method.getUnqualifiedExportName());
+    if (dt.isOverloaded()
+        && overloadExported.contains(method.getJSQualifiedExportName())) {
+      return;
+    }
+    
     String returnTypeCast = retType != null ? retType.getHostedModeJsTypeCast()
         : null;
     if (method.isStatic()) {
       sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
     } else {
-      sw.print("_." + method.getUnqualifiedExportName() + "= ");
+      sw.print("_." + method.getUnqualifiedExportName() + " = ");
     }
     if (returnTypeCast != null) {
       // GWT 2.0 hosted mode $entry requires deboxing return valus for JS
@@ -880,7 +886,6 @@ public class ClassExporter {
       sw.print(" (" + returnTypeCast + ",");
     }
     sw.print("$entry(function(");
-    DispatchTable dt = dispatchMap.get(method.getUnqualifiedExportName());
     declareJSParameters(method, dt.isOverloaded() ? dt.maxArity() : -1);
     sw.println(") { ");
     sw.indent();
@@ -899,7 +904,7 @@ public class ClassExporter {
       if (!isStatic && method.needsWrapper()) {
         // When the method needs a static wrapper we pass the instance to the wrapper in the first position 
         appyArgs += "[this.__gwt_instance";
-        for (int i = 0; i < method.getExportableParameters().length ; i++) {
+        for (int i = 0; i < dt.maxArity(); i++) {
           appyArgs += ", " + ARG_PREFIX + i;
         }
         appyArgs += "]";
@@ -913,6 +918,8 @@ public class ClassExporter {
           + method.getEnclosingExportType().getQualifiedSourceName()
           + "::class,'" + method.getUnqualifiedExportName() + "', arguments,"
           + isStatic + ").apply(" + appyArgs + ");");
+      
+      overloadExported.add(method.getJSQualifiedExportName());
     }
     
     if (dt.isOverloaded() || !retType.needsExport()) {
