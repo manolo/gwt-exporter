@@ -90,7 +90,8 @@ public class ExportableTypeOracle {
       // Export methods which are annotated in implemented interfaces
       for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
         for (JMethod m : c.getMethods()) {
-          if (isExportable(m.getAnnotation(Export.class))
+          if (!isNotExportable(m.getAnnotation(NoExport.class))
+              && (isExportable(c) || isExportable(m.getAnnotation(Export.class)))
               && m.getName().equals(method.getName())) {
             if (m.getReadableDeclaration(true, true, false, true, true).equals(
                 ((JMethod) method).getReadableDeclaration(true, true, false,
@@ -154,7 +155,6 @@ public class ExportableTypeOracle {
   public JExportableClassType findExportableClassType(String requestedClass) {
     JClassType requestedType = typeOracle.findType(requestedClass);
     if (requestedType != null) {
-
       if (requestedType.isAssignableTo(exportOverlayType)) {
         return new JExportOverlayClassType(this, requestedType);
       } else if (requestedType.isAssignableTo(exportableType)) {
@@ -188,19 +188,6 @@ public class ExportableTypeOracle {
     } catch (TypeOracleException e) {
       return null;
     }
-  }
-
-  public JExportableClassType findFirstExportableSuperClassType(
-      JClassType type) {
-
-    if (type == null) {
-      return null;
-    }
-
-    JExportableClassType exportable = findExportableClassType(
-        type.getQualifiedSourceName());
-    return exportable != null && exportable.needsExport() ? exportable
-        : findFirstExportableSuperClassType(type.getSuperclass());
   }
 
   public JClassType getExportOverlayType(JClassType requestedType) {
@@ -268,9 +255,11 @@ public class ExportableTypeOracle {
           .equals(exportOverlayType)) {
         continue;
       }
-      if (t.isAssignableTo(exportableType) || t
-          .isAssignableTo(exportOverlayType)) {
-        if (t.isDefaultInstantiable() && t.isPublic()) {
+      if (t.isAssignableTo(exportableType)
+          || t.isAssignableTo(exportOverlayType)) {
+        if (t.isDefaultInstantiable()
+            && t.isPublic()
+            && new JExportableClassType(this, t).getExportableMethods().length > 0) {
           types.add(t);
         }
       }

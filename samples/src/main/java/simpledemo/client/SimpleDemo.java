@@ -8,13 +8,18 @@ import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
 import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
+
   
   public void onModuleLoad() {
+    GWT.create(C.class);
+    runJsTests1();
+
     ExporterUtil.exportAll();
     runJsTests();
   }
@@ -208,6 +213,10 @@ public class SimpleDemo implements EntryPoint {
     public String m2() {
       return "m2";
     }
+    @Export
+    public String m5() {
+      return "m5";
+    }
   }
   
   @ExportPackage("gwt")
@@ -223,8 +232,60 @@ public class SimpleDemo implements EntryPoint {
     public String m4() {
       return "m4";
     }
+    @NoExport
+    public String m5() {
+      return super.m5();
+    }
   }
   
+
+  public static class A implements Exportable {
+    public B convertToB() {
+      return new B();
+    }
+    @Export
+    public String foo() {
+      return "foo";
+    }
+    @Export
+    public String toString() {
+      return this.getClass().getName().replaceAll("^.+[\\.\\$]", "");
+    }
+  }
+
+  public static class B extends A {
+    public C convertToC() {
+      return new C();
+    }
+    public String toString() {
+      return "A";
+    }
+  }
+
+  @ExportPackage("gwt")
+  public static class C extends A {
+    @Export
+    public A convertToA() {
+      return new A();
+    }
+  }
+  
+  public native JavaScriptObject runJsTests1() /*-{
+    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+    
+    var c = new $wnd.gwt.SimpleDemo.C();
+    p("C", c); 
+    p("C", c.toString()); 
+    var a = c.convertToA();
+    p("A", a);
+    a = new $wnd.simpledemo.SimpleDemo.A();
+    p("A", a);
+    
+    // GWT.create(C) should not export B
+    var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
+    p("undefined", c); 
+  }-*/;
+
   public native JavaScriptObject runJsTests() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
@@ -273,7 +334,12 @@ public class SimpleDemo implements EntryPoint {
     p("m2", m.m2());
     p("m2", m.m2());
     p("m3", m.m3());
+    var m5 = $wnd.gwt.SimpleDemo.MClass.m5 ? "defined" : "undefined";
+    p("undefined", m5);
     
+    // exportAll must export B
+    var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
+    p("defined", c); 
   }-*/;
   
 }

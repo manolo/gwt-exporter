@@ -194,7 +194,7 @@ public class ClassExporter {
     // add this so we don't try to recursively reexport ourselves later
     exported.add(requestedType);
     visited.add(requestedType.getQualifiedSourceName());
-
+    
     // get the name of the Java class implementing Exporter
     String genName = requestedType.getExporterImplementationName();
 
@@ -203,7 +203,7 @@ public class ClassExporter {
 
     // get a fully qualified reference to the Exporter implementation
     String qualName = requestedType.getQualifiedExporterImplementationName();
-
+    
     boolean isClosure = xTypeOracle.isClosure(requestedClass);
     String superClass = xTypeOracle.isStructuralType(requestedType.getType())
         ? requestedClass : null;
@@ -527,9 +527,11 @@ public class ClassExporter {
    */
   private void exportConstructor(JExportableClassType requestedType)
       throws UnableToCompleteException {
+    
+    // save this namespace to restore later
     sw.println("if($wnd." + requestedType.getJSQualifiedExportName() + ") {");
     sw.println(
-        "var pkg = $wnd." + requestedType.getJSQualifiedExportName() + ";");
+        "  var pkg = $wnd." + requestedType.getJSQualifiedExportName() + ";");
     sw.println("}");
 
     // constructor.getJSQualifiedExportName() returns fully qualified package
@@ -537,9 +539,6 @@ public class ClassExporter {
     sw.print("$wnd." + requestedType.getJSQualifiedExportName()
         + " = $entry(function(");
 
-    // for every parameter 0..n of the constructor, we generate
-    // arg0, ..., argn
-//        declareJSParameters(constructor);
     sw.println(") {");
     sw.indent();
     // check if this is being used to wrap GWT types
@@ -574,7 +573,7 @@ public class ClassExporter {
         throw new UnableToCompleteException();
       }
       arity.put(numArguments, constructor);
-      sw.println("else if(arguments.length == " + numArguments + ") {");
+      sw.println("else if (arguments.length == " + numArguments + ") {");
       sw.indent();
 
       // else someone is calling the constructor normally
@@ -587,7 +586,7 @@ public class ClassExporter {
       declareJSPassedValues(constructor, true);
       sw.println(");");
       sw.println(
-          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(this.__gwt_instance, this);");
+          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)\n (this.__gwt_instance, this);");
       sw.outdent();
       sw.println("}");
     }
@@ -595,29 +594,16 @@ public class ClassExporter {
     sw.outdent();
     sw.println("});");
 
-    JExportableClassType superClass = requestedType
-        .getExportableSuperClassType();
-
-    if (superClass != null && superClass.isInstantiable()
-        && superClass.needsExport() && !exported.contains(superClass)) {
-      if (exportDependentClass(superClass.getQualifiedSourceName())) {
-        ;
-      }
-      exported.add(superClass);
-    }
     // we assign the prototype of the class to underscore so we can use it
     // later to define a bunch of methods
-    sw.print("var _= $wnd." + requestedType.getJSQualifiedExportName()
-        + ".prototype = ");
-    sw.println(superClass == null || !exported.contains(superClass)
-        ? "new Object();" : 
-          "new $wnd." + superClass.getJSQualifiedExportName()  + "();");
-
+    sw.println("var _ = $wnd." + requestedType.getJSQualifiedExportName()
+        + ".prototype = new Object();");
+    
     // restore inner class namespace
     sw.println("if(pkg) {");
     sw.println(
         "  for(p in pkg) { $wnd." + requestedType.getJSQualifiedExportName()
-            + "[p]=pkg[p]; }");
+            + "[p] = pkg[p]; }");
     sw.println("}");
   }
 
@@ -892,7 +878,7 @@ public class ClassExporter {
     boolean isVoid = retType.getQualifiedSourceName().equals("void");
 //    debugJSPassedValues(method);
 
-    sw.print(isVoid ? "" : "var x=");
+    sw.print(isVoid ? "" : "var x = ");
     if (!dt.isOverloaded()) {
       sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this.__gwt_instance.@") + method.getJSNIReference() + "(" );
       declareJSPassedValues(method, false);

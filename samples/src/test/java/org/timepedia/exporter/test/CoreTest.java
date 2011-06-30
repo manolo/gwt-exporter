@@ -7,9 +7,7 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
-import simpledemo.client.SimpleDemo.MBase;
-import simpledemo.client.SimpleDemo.MInterface;
-
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.Label;
@@ -22,8 +20,11 @@ public class CoreTest extends GWTTestCase{
   }
   
   public void test() {
+    GWT.create(C.class);
+    runJsTests1();
+    
     ExporterUtil.exportAll();
-    runJsTests();
+    runJsTests2();
   }
   
   @ExportPackage("gwt")
@@ -219,17 +220,70 @@ public class CoreTest extends GWTTestCase{
     }
   }
   
-  public static <T> void mAssertEqual(T a, T b) {
-    assertEquals(a.toString(), b.toString());
-//    if (a.toString().equals(b.toString())) {
-//      System.out.println("OK -> " + b);
-//    } else {
-//      System.out.println("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
-//          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
-//    }
+  @ExportPackage("gwt")
+  public static class A implements Exportable {
+    public B convertToB() {
+      return new B();
+    }
+    @Export
+    public String foo() {
+      return "foo";
+    }
+    @Export
+    public String toString() {
+      return this.getClass().getName().replaceAll("^.+[\\.\\$]", "");
+    }
+  }
+
+  @ExportPackage("gwt")
+  public static class B extends A {
+    public C convertToC() {
+      return new C();
+    }
+    public String toString() {
+      return "A";
+    }
+  }
+
+  @ExportPackage("gwt")
+  public static class C extends A {
+    @Export
+    public A convertToA() {
+      return new A();
+    }
   }
   
-  public native JavaScriptObject runJsTests() /*-{
+  public native JavaScriptObject runJsTests1() /*-{
+    assertEq = function(a, b) {@org.timepedia.exporter.test.CoreTest::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+    
+    var c = new $wnd.gwt.CoreTest.C();
+    assertEq("C", c); 
+    assertEq("C", c.toString()); 
+    var a = c.convertToA();
+    assertEq("A", a);
+    a = new $wnd.gwt.CoreTest.A();
+    assertEq("A", a);
+    
+    // GWT.create(C) should not export B
+    var c = $wnd.gwt.CoreTest.B ? "defined" : "undefined";
+    assertEq("undefined", c); 
+  }-*/;
+  
+  static boolean debug = false;
+  public static <T> void mAssertEqual(T a, T b) {
+    if (!debug) {
+      assertEquals(a.toString(), b.toString());
+    } else {
+      if (a.toString().equals(b.toString())) {
+        System.out.println("OK -> " + b);
+      } else {
+        System.out.println("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
+            + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+      }
+    }
+  }
+  
+  public native JavaScriptObject runJsTests2() /*-{
     assertEq = function(a, b) {@org.timepedia.exporter.test.CoreTest::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
     var v1 = new $wnd.gwt.CoreTest.Foo();
@@ -276,6 +330,10 @@ public class CoreTest extends GWTTestCase{
     assertEq("m2", m.m2());
     assertEq("m2", m.m2());
     assertEq("m3", m.m3());
+    
+    // exportAll must export B
+    var c = $wnd.gwt.CoreTest.B ? "defined" : "undefined";
+    assertEq("defined", c); 
     
   }-*/;
 

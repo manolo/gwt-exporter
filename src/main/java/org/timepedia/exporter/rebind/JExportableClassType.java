@@ -88,29 +88,29 @@ public class JExportableClassType implements JExportable, JExportableType {
     return exportableFields.toArray(new JExportableField[0]);
   }
 
+  private JExportableMethod[] exportableMethods;
+  
   public JExportableMethod[] getExportableMethods() {
-    ArrayList<JExportableMethod> exportableMethods
-        = new ArrayList<JExportableMethod>();
-    
-    // Create a set with all methods in this class and in in its type hierarchy
-    HashSet<JMethod> classMethods = new HashSet<JMethod>();
-    classMethods.addAll(Arrays.asList(type.getMethods()));
-    classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
-    
-    for (JMethod method : classMethods) {
-      if (method.isConstructor() != null) {
-        continue;
-      }
-      if (exportableTypeOracle.isExportable(method)) {
-        exportableMethods.add(new JExportableMethod(this, method));
-      }
-    }
-    return exportableMethods.toArray(new JExportableMethod[0]);
-  }
+    if (exportableMethods == null) {
+      
+      ArrayList<JExportableMethod> ret = new ArrayList<JExportableMethod>();
 
-  public JExportableClassType getExportableSuperClassType() {
-    return exportableTypeOracle
-        .findFirstExportableSuperClassType(type.getSuperclass());
+      // Create a set with all methods in this class
+      HashSet<JMethod> classMethods = new HashSet<JMethod>();
+      classMethods.addAll(Arrays.asList(type.getMethods()));
+      classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
+
+      for (JMethod method : classMethods) {
+        if (method.isConstructor() != null) {
+          continue;
+        }
+        if (exportableTypeOracle.isExportable(method)) {
+          ret.add(new JExportableMethod(this, method));
+        }
+      }
+      exportableMethods = ret.toArray(new JExportableMethod[0]);
+    }
+    return exportableMethods;
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {
