@@ -145,6 +145,31 @@ public class CoreTest extends GWTTestCase{
     public long test17(long a, long b) {
       return (a + b);
     }
+    
+    public static String test18(String a, String[] b) {
+      return a + "_" + b.length;
+    }
+
+    public static String test18(String a, String b, String[] c) {
+      return a + "_" + b + "_" + c.length;
+    }
+    
+    public String test19(String a, String[] b) {
+      return test18(a, b);
+    }
+
+    public String test19(String a, String b, String[] c) {
+      return test18(a, b, c);
+    }
+    
+    public static String test20(String a, long b, String...c) {
+      return a + "_" + b + "_" + c.length;
+    }
+
+    public String test21(String a, long b, String...c) {
+      return test20(a, b, c);
+    }
+        
   }
   
   @ExportPackage("gwt")
@@ -269,7 +294,7 @@ public class CoreTest extends GWTTestCase{
     assertEq("undefined", c); 
   }-*/;
   
-  static boolean debug = false;
+  static boolean debug = true;
   public static <T> void mAssertEqual(T a, T b) {
     if (!debug) {
       assertEquals(a.toString(), b.toString());
@@ -285,17 +310,6 @@ public class CoreTest extends GWTTestCase{
   
   public native JavaScriptObject runJsTests2() /*-{
     assertEq = function(a, b) {@org.timepedia.exporter.test.CoreTest::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
-    
-    var v1 = new $wnd.gwt.CoreTest.Foo();
-    assertEq("foo", v1);
-    var v2 = new $wnd.gwt.CoreTest.Foo("foo2");
-    assertEq("foo2", v2);
-    var v3 = new $wnd.gwt.CoreTest.Foo("foo3", "bbb");
-    assertEq("foo3bbb", v3);
-    assertEq("foo3bbb>ccc", v3.toString("ccc"));
-    assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
-        return arg1 + "," + arg2;
-    }));
     
     var h = new $wnd.gwt.CoreTest.HelloClass();
     assertEq("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,org.timepedia.exporter.test.CoreTest$HelloClass", $wnd.gwt.CoreTest.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
@@ -317,11 +331,31 @@ public class CoreTest extends GWTTestCase{
     assertEq("5", "" + $wnd.gwt.CoreTest.HelloClass.test13(2, 3));
     assertEq("4", "" + $wnd.gwt.CoreTest.HelloClass.test16(4));
     assertEq("14", "" + $wnd.gwt.CoreTest.HelloClass.test16(4, 10));
+    assertEq("a_2", "" + $wnd.gwt.CoreTest.HelloClass.test18("a", ["b", "c"]));
+    assertEq("a_b_1", "" + $wnd.gwt.CoreTest.HelloClass.test18("a", "b", ["c"]));
+    assertEq("a_1_0", "" + $wnd.gwt.CoreTest.HelloClass.test20("a", 1));
+    assertEq("a_1_3", "" + $wnd.gwt.CoreTest.HelloClass.test20("a", 1, "a", "e", "i"));    
+    
     var h = new $wnd.gwt.CoreTest.HelloClass();
     assertEq("102", "" + h.test14(1, 1, [100]));
     assertEq("100,200", "" + h.test15([100, 200]));
     assertEq("5", "" + h.test17(5));
     assertEq("15", "" + h.test17(5,10));
+    assertEq("a_2", "" + h.test19("a", ["b", "c"]));
+    assertEq("a_b_1", "" + h.test19("a", "b", ["c"]));
+    assertEq("a_1_0", "" + h.test21("a", 1));
+    assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));    
+    
+    var v1 = new $wnd.gwt.CoreTest.Foo();
+    assertEq("foo", v1);
+    var v2 = new $wnd.gwt.CoreTest.Foo("foo2");
+    assertEq("foo2", v2);
+    var v3 = new $wnd.gwt.CoreTest.Foo("foo3", "bbb");
+    assertEq("foo3bbb", v3);
+    assertEq("foo3bbb>ccc", v3.toString("ccc"));
+    assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
+        return arg1 + "," + arg2;
+    }));
     
     var m = new $wnd.gwt.CoreTest.MClass();
     assertEq("om0", m.m0());

@@ -19,7 +19,7 @@ public class SimpleDemo implements EntryPoint {
   public void onModuleLoad() {
     GWT.create(C.class);
     runJsTests1();
-
+    
     ExporterUtil.exportAll();
     runJsTests();
   }
@@ -155,6 +155,31 @@ public class SimpleDemo implements EntryPoint {
     public long test17(long a, long b) {
       return (a + b);
     }
+    
+    public static String test18(String a, String[] b) {
+      return a + "_" + b.length;
+    }
+
+    public static String test18(String a, String b, String[] c) {
+      return a + "_" + b + "_" + c.length;
+    }
+    
+    public String test19(String a, String[] b) {
+      return test18(a, b);
+    }
+
+    public String test19(String a, String b, String[] c) {
+      return test18(a, b, c);
+    }
+    
+    public static String test20(String a, long b, String...c) {
+      return a + "_" + b + "_" + c.length;
+    }
+
+    public String test21(String a, long b, String...c) {
+      return test20(a, b, c);
+    }
+    
   }
   
   @ExportPackage("gwt")
@@ -268,6 +293,40 @@ public class SimpleDemo implements EntryPoint {
     public A convertToA() {
       return new A();
     }
+
+    @Export
+    public String ma(String a, String[] b) {
+      return "kk2";
+    }
+    @Export
+    public String ma(String[] a) {
+      return "kk1";
+    }
+    @Export
+    public String m2(String[] a, long[] b) {
+      return "kk1";
+    }
+    
+    @Export
+    public String m2(long a) {
+      return "kk1";
+    }
+    @Export
+    public String mlong(int a, long b) {
+      return "";
+    }
+
+    @Export
+    public String mlong(long b) {
+      return "";
+    }
+    
+    @Export
+    public String marray(String a, String ... s) {
+      String ret = a + " - " + (s == null ? "null" : s.length) ;
+      System.out.println("Calling marray " + ret);
+      return ret ;
+    }
   }
   
   public native JavaScriptObject runJsTests1() /*-{
@@ -289,17 +348,6 @@ public class SimpleDemo implements EntryPoint {
   public native JavaScriptObject runJsTests() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
-    var v1 = new $wnd.gwt.SimpleDemo.Foo();
-    p("foo", v1);
-    var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
-    p("foo2", v2);
-    var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
-    p("foo3bbb", v3);
-    p("foo3bbb>ccc", v3.toString("ccc"));
-    p("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
-        return arg1 + "," + arg2;
-    }));
-    
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
     p("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
     p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
@@ -320,12 +368,31 @@ public class SimpleDemo implements EntryPoint {
     p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
     p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
     p("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
+    p("a_2", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", ["b", "c"]));
+    p("a_b_1", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", "b", ["c"]));
+    p("a_1_0", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1));
+    p("a_1_3", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1, "a", "e", "i"));
     
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
     p("102", "" + h.test14(1, 1, [100]));
     p("100,200", "" + h.test15([100, 200]));
     p("5", "" + h.test17(5));
     p("15", "" + h.test17(5,10));
+    p("a_2", "" + h.test19("a", ["b", "c"]));
+    p("a_b_1", "" + h.test19("a", "b", ["c"]));
+    p("a_1_0", "" + h.test21("a", 1));
+    p("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
+    
+    var v1 = new $wnd.gwt.SimpleDemo.Foo();
+    p("foo", v1);
+    var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
+    p("foo2", v2);
+    var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
+    p("foo3bbb", v3);
+    p("foo3bbb>ccc", v3.toString("ccc"));
+    p("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
+        return arg1 + "," + arg2;
+    }));    
     
     var m = new $wnd.gwt.SimpleDemo.MClass();
     p("om0", m.m0());

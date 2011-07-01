@@ -10,7 +10,15 @@ public class JExportableParameter {
 
   private JParameter param;
 
+  public JParameter getParam() {
+    return param;
+  }
+
   private JExportableClassType exportableEnclosingType;
+
+  public JExportableClassType getExportableEnclosingType() {
+    return exportableEnclosingType;
+  }
 
   public JExportableParameter(JExportableMethod exportableMethod,
       JParameter param) {
@@ -21,6 +29,10 @@ public class JExportableParameter {
 
   public String getTypeName() {
     return param.getType().getQualifiedSourceName();
+  }
+  
+  public String getJNISignature() {
+    return param.getType().getJNISignature();
   }
 
   public String getExportParameterValue(String argName) {
@@ -33,11 +45,7 @@ public class JExportableParameter {
 
     JExportableType type = xTypeOracle.findExportableType(paramTypeName);
     
-    if (type != null && type instanceof JExportableArrayType) {
-      JExportableArrayType t = (JExportableArrayType) type; 
-      ret = t.getToArrayFunc(argName);
-
-    } else if (type != null && type.needsExport()) {
+    if (type != null && type.needsExport()) {
       JExportableClassType cType = (JExportableClassType) type;
       if (exportableEnclosingType.getExportableTypeOracle()
           .isClosure(type.getQualifiedSourceName())) {
@@ -108,4 +116,29 @@ public class JExportableParameter {
     return exportableEnclosingType.getExportableTypeOracle()
         .findExportableClassType(getTypeName());
   }
+  
+  public String getToArrayFunc(String qsn, String argName) {
+    String ret = "ExporterUtil.";
+    if (qsn.equals("java.lang.String[]")) {
+      ret += "toArrString" ;
+    } else if (qsn.equals("double[]")) {
+      ret += "toArrDouble" ;
+    } else if (qsn.equals("float[]")) {
+      ret += "toArrFloat" ;
+    } else if (qsn.equals("long[]")) {
+      ret += "toArrLong" ;
+    } else if (qsn.equals("int[]")) {
+      ret += "toArrInt" ;
+    } else if (qsn.equals("byte[]")) {
+      ret += "toArrByte" ;
+    } else if (qsn.equals("char[]")) {
+      ret += "toArrChar" ;
+    } else if (qsn.endsWith("Object[]")) {
+      ret += "toArrObject" ;
+    } else {
+      ret += "toArrExport" ;
+    }
+    return ret + "(" + argName + ")";
+  }
+
 }

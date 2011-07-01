@@ -163,32 +163,32 @@ public class ExporterUtil {
     return impl.wrap(type);
   }
 
-  public static String[] toArrString(JsArrayString type) {
-    return impl.toArrString(type);
+  public static String[] toArrString(JavaScriptObject type) {
+    return impl.toArrString(type.<JsArrayString>cast());
   }
   
-  public static double[] toArrDouble(JsArrayNumber type) {
-    return impl.toArrDouble(type);
+  public static double[] toArrDouble(JavaScriptObject type) {
+    return impl.toArrDouble(type.<JsArrayNumber>cast());
   }
   
-  public static float[] toArrFloat(JsArrayNumber type) {
-    return impl.toArrFloat(type);
+  public static float[] toArrFloat(JavaScriptObject type) {
+    return impl.toArrFloat(type.<JsArrayNumber>cast());
   }
   
-  public static int[] toArrInt(JsArrayNumber type) {
-    return impl.toArrInt(type);
+  public static int[] toArrInt(JavaScriptObject type) {
+    return impl.toArrInt(type.<JsArrayNumber>cast());
   }
   
-  public static byte[] toArrByte(JsArrayNumber type) {
-    return impl.toArrByte(type);
+  public static byte[] toArrByte(JavaScriptObject type) {
+    return impl.toArrByte(type.<JsArrayNumber>cast());
   }
   
-  public static char[] toArrChar(JsArrayNumber type) {
-    return impl.toArrChar(type);
+  public static char[] toArrChar(JavaScriptObject type) {
+    return impl.toArrChar(type.<JsArrayNumber>cast());
   }
   
-  public static long[] toArrLong(JsArrayNumber type) {
-    return impl.toArrLong(type);
+  public static long[] toArrLong(JavaScriptObject type) {
+    return impl.toArrLong(type.<JsArrayNumber>cast());
   }
   
   public static Object[] toArrObject(JavaScriptObject type) {
@@ -204,4 +204,27 @@ public class ExporterUtil {
   public static boolean isTheSameClass(Object o, Class clazz) {
     return o.getClass() == clazz;
   }
+  
+  public static native JavaScriptObject computeVarArguments(int len, JavaScriptObject args) /*-{
+    var ret = [];
+    for (i = 0; i < len - 1; i++) 
+      ret.push(args[i]);
+    var alen = args.length;
+    var p = len - 1;
+    if (alen >= len && Object.prototype.toString.apply(args[p]) === '[object Array]') {
+        ret.push(args[p]);
+    } else {
+      var a = [];
+      for (i = p; i < alen; i++) 
+        a.push(args[i]);
+      ret.push(a);  
+    }
+    return ret;
+  }-*/;
+  
+  public static native JavaScriptObject unshift(Object o, JavaScriptObject arr) /*-{
+    var ret = [o];
+    for (i in arr) ret.push(arr[i]);
+    return ret;
+  }-*/;
 }

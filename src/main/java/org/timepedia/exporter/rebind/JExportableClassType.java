@@ -1,17 +1,17 @@
 package org.timepedia.exporter.rebind;
 
-import com.google.gwt.core.ext.typeinfo.JClassType;
-import com.google.gwt.core.ext.typeinfo.JConstructor;
-import com.google.gwt.core.ext.typeinfo.JField;
-import com.google.gwt.core.ext.typeinfo.JMethod;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.SType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import com.google.gwt.core.ext.typeinfo.JClassType;
+import com.google.gwt.core.ext.typeinfo.JConstructor;
+import com.google.gwt.core.ext.typeinfo.JField;
+import com.google.gwt.core.ext.typeinfo.JMethod;
 
 /**
  *

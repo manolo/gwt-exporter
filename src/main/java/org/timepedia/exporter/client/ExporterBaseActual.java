@@ -405,6 +405,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       SignatureJSO sig = sigs.get(i);
       if (sig.matches(arguments)) {
         JavaScriptObject javaFunc = sig.getFunction();
+        System.out.println(javaFunc);
         if (!GWT.isScript()) {
           JavaScriptObject wrapFunc = sig.getWrapperFunc();
           return wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;
@@ -462,13 +463,13 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       for (int i = 0; i < arguments.length(); i++) {
         Object jsType = getObject(i + 2);
         String argJsType = typeof(arguments, i);
-        if (argJsType.equals("object")) {
+        if (argJsType.equals("object") || argJsType.equals("array")) {
           Object gwtObject = getJavaObject(arguments, i);
           if (gwtObject != null) {
             if (!gwtObject.getClass().equals(jsType)) {
               return false;
             }
-          } else if (!jsType.equals("object")) {
+          } else if (!jsType.equals("object") && !jsType.equals("array")) {
             return false;
           }
         } else if (!jsType.equals(argJsType)) {

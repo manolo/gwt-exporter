@@ -19,6 +19,8 @@ public class JExportableMethod implements JExportable {
   protected JAbstractMethod method;
 
   private String exportName;
+  
+  JExportableParameter[] exportableParameters;
 
   public JExportableMethod(JExportableClassType exportableEnclosingType,
       JAbstractMethod method) {
@@ -30,6 +32,12 @@ public class JExportableMethod implements JExportable {
       exportName = ann.value();
     } else {
       exportName = method.getName();
+    }
+    
+    JParameter[] params = method.getParameters();
+    exportableParameters = new JExportableParameter[params.length];
+    for (int i = 0; i < params.length; i++) {
+      exportableParameters[i] = new JExportableParameter(this, params[i]);
     }
   }
 
@@ -50,13 +58,7 @@ public class JExportableMethod implements JExportable {
   }
 
   public JExportableParameter[] getExportableParameters() {
-    JParameter[] params = method.getParameters();
-    JExportableParameter[] eparams = new JExportableParameter[params.length];
-    int i = 0;
-    for (JParameter param : params) {
-      eparams[i++] = new JExportableParameter(this, param);
-    }
-    return eparams;
+    return exportableParameters;
   }
 
   public JExportableClassType getEnclosingExportType() {
@@ -76,13 +78,19 @@ public class JExportableMethod implements JExportable {
         reference += exportableEnclosingType.getJSNIReference();
       }
     }
-
-    JParameter[] params = method.getParameters();
-    for (int i = 0; i < params.length; i++) {
-      String signature = params[i].getType().getJNISignature();
-      // Here we replace long by double signatures
-      reference += needsWrapper() && "J".equals(signature) ? "D" : signature;
+    
+    int len = exportableParameters.length;
+    for (int i = 0; i < len; i++) {
+      String signature = exportableParameters[i].getJNISignature();
+      // Here we replace long by double signature
+      if ("J".equals(signature)) {
+        signature = "D";
+      } else if (signature.startsWith("[")) {
+        signature = "Lcom/google/gwt/core/client/JavaScriptObject;";
+      }
+      reference += signature;
     }
+    
     reference += ")";
     return reference;
   }
@@ -90,15 +98,19 @@ public class JExportableMethod implements JExportable {
   private Boolean wrap = null;
 
   // return true if this method needs a static wrapper. 
-  // Right now all methods which have a 'long' parameter or return 'long'
+  // - methods which have a 'long' parameter or return 'long'
+  // - methods which have array parameters
+  // - methods with variable arguments
   public boolean needsWrapper() {
     if (wrap == null) {
       wrap = false;
-      if (getExportableReturnType() != null &&
+      if (method.isVarArgs()) {
+        wrap = true;
+      } else if (getExportableReturnType() != null &&
           "long".equals(getExportableReturnType().getQualifiedSourceName())) {
         wrap = true;
       } else for (JExportableParameter p : getExportableParameters()) {
-        if ("long".equals(p.getTypeName())) {
+        if (p.getTypeName().matches("(long|.*\\[\\])$")) {
           wrap = true;
           break;
         }
@@ -134,5 +146,9 @@ public class JExportableMethod implements JExportable {
 
   public String getName() {
     return method.getName();
+  }
+  
+  public boolean isVarArgs() {
+    return method.isVarArgs();
   }
 }
