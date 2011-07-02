@@ -102,6 +102,11 @@ public class JExportableParameter {
       return "@"+param.getType().getQualifiedSourceName()+"::class";
     }
   }
+  
+  public boolean isExportable() {
+    String js = getJsTypeOf();
+    return !js.contains("@") || getExportableType() != null;
+  }
 
   @Override
   public int hashCode() {

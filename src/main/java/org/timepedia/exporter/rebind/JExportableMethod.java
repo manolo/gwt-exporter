@@ -20,18 +20,32 @@ public class JExportableMethod implements JExportable {
 
   private String exportName;
   
+  private String qualifiedExportName;
+  
   JExportableParameter[] exportableParameters;
 
   public JExportableMethod(JExportableClassType exportableEnclosingType,
       JAbstractMethod method) {
     this.exportableEnclosingType = exportableEnclosingType;
     this.method = method;
+    
     Export ann = method.getAnnotation(Export.class);
+    String anValue = ann != null ? ann.value().trim() : "";
 
-    if (ann != null && ann.value().length() > 0) {
-      exportName = ann.value();
+    if (!anValue.isEmpty()) {
+      exportName = anValue;
+      
+      // Static methods can be assigned to any name-space if it starts with $wnd
+      if (isStatic() && anValue.startsWith("$wnd.")) {
+        qualifiedExportName = anValue.replaceFirst("\\$wnd\\.", "");
+      }
     } else {
       exportName = method.getName();
+    }
+    
+    if (qualifiedExportName == null) {
+      qualifiedExportName = getEnclosingExportType().getJSQualifiedExportName()
+      + "." + getUnqualifiedExportName();
     }
     
     JParameter[] params = method.getParameters();
@@ -46,8 +60,7 @@ public class JExportableMethod implements JExportable {
   }
 
   public String getJSQualifiedExportName() {
-    return getEnclosingExportType().getJSQualifiedExportName() + "."
-        + getUnqualifiedExportName();
+    return qualifiedExportName;
   }
 
   public JExportableType getExportableReturnType() {

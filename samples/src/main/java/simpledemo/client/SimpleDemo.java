@@ -293,45 +293,40 @@ public class SimpleDemo implements EntryPoint {
     public A convertToA() {
       return new A();
     }
-
-    @Export
-    public String ma(String a, String[] b) {
-      return "kk2";
+  }
+  
+  public static class Parent {
+    public String m(String a) {
+      return a;
     }
-    @Export
-    public String ma(String[] a) {
-      return "kk1";
+    public String getParentName(Parent p) {
+      return p.getClass().getName().replaceAll("^.*[\\.\\$]", "");
     }
+    public Parent parent() {
+      return this;
+    }
+  }
+  
+  @Export(value = "$$", all = true)
+  @ExportPackage("")
+  public static class Child extends Parent implements Exportable {
     @Export
-    public String m2(String[] a, long[] b) {
-      return "kk1";
+    public String f = "F";
+    
+    @Export("childName")
+    public String getChildName(Child c) {
+      return super.getParentName(c);
     }
     
-    @Export
-    public String m2(long a) {
-      return "kk1";
-    }
-    @Export
-    public String mlong(int a, long b) {
-      return "";
-    }
-
-    @Export
-    public String mlong(long b) {
-      return "";
-    }
-    
-    @Export
-    public String marray(String a, String ... s) {
-      String ret = a + " - " + (s == null ? "null" : s.length) ;
-      System.out.println("Calling marray " + ret);
-      return ret ;
+    @Export("$wnd.$")
+    public static String $() {
+      return "$";
     }
   }
   
   public native JavaScriptObject runJsTests1() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
-    
+
     var c = new $wnd.gwt.SimpleDemo.C();
     p("C", c); 
     p("C", c.toString()); 
@@ -389,8 +384,8 @@ public class SimpleDemo implements EntryPoint {
     p("foo2", v2);
     var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
     p("foo3bbb", v3);
-    p("foo3bbb>ccc", v3.toString("ccc"));
-    p("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
+    p("foo>ccc", v1.toString("ccc"));
+    p("Hello,Friend", v1.executeJsClosure(function(arg1, arg2) {
         return arg1 + "," + arg2;
     }));    
     
@@ -407,6 +402,13 @@ public class SimpleDemo implements EntryPoint {
     // exportAll must export B
     var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
     p("defined", c); 
+    
+    var ch = new $wnd.$$();
+    p("Child", ch.childName(ch));
+    p("Child", ch.getParentName(ch.parent()));
+    p("$", $wnd.$());
+    
+    
   }-*/;
   
 }

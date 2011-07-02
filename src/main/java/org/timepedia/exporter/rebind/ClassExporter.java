@@ -120,7 +120,7 @@ public class ClassExporter {
       throw new UnableToCompleteException();
     }
 
-    if (retType.needsExport() && !exported
+    if (retType != null && retType.needsExport() && !exported
         .contains(retType.getQualifiedSourceName())) {
       if (exportDependentClass(retType.getQualifiedSourceName())) {
         exported.add((JExportableClassType) retType);
@@ -745,8 +745,8 @@ public class ClassExporter {
       return (double) simpledemo.client.SimpleDemo.HelloClass.test13((long) arg0,  arg1);
     }
     // wrapper for an instance method
-    public static double test14(simpledemo.client.SimpleDemo.HelloClass instance, double arg0, double arg1, long[] arg2) {
-      return (double) instance.test14((long) arg0,  arg1,  arg2);
+    public static double test14(simpledemo.client.SimpleDemo.HelloClass instance, double arg0, double arg1) {
+      return (double) instance.test14((long) arg0,  arg1);
     }
    * </pre>
    * @param method
@@ -813,12 +813,6 @@ public class ClassExporter {
       throws UnableToCompleteException {
     
     JExportableType retType = method.getExportableReturnType();
-    if (retType == null) {
-      logger.log(TreeLogger.ERROR,
-          "Return type of method " + method.toString() + " is not Exportable.",
-          null);
-      throw new UnableToCompleteException();
-    }
     
 //    int arity = method.getExportableParameters().length;
 //    String name = method.getUnqualifiedExportName();
@@ -843,10 +837,11 @@ public class ClassExporter {
 //      }
 //    }
 
-    // return type needs to be exported if it is not a primitive
-    // String,Number,JSO, etc and it hasn't already been exported
-    // we need to export it because we need it to wrap the returned value
-    if (retType.needsExport() && !exported.contains(retType)) {
+    boolean isVoid = retType != null && retType.getQualifiedSourceName().equals("void");
+    boolean needsExport = retType != null && retType.needsExport();
+    boolean isArray = retType != null && retType instanceof JExportableArrayType;
+    
+    if (needsExport && !exported.contains(retType)) {
       if (exportDependentClass(retType.getQualifiedSourceName())) {
         ;
       }
@@ -862,24 +857,15 @@ public class ClassExporter {
       return;
     }
     
-    String returnTypeCast = retType != null ? retType.getHostedModeJsTypeCast()
-        : null;
     if (method.isStatic()) {
       sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
     } else {
       sw.print("_." + method.getUnqualifiedExportName() + " = ");
     }
-    if (returnTypeCast != null) {
-      // GWT 2.0 hosted mode $entry requires deboxing return valus for JS
-      sw.println(
-          "@org.timepedia.exporter.client.ExporterHostedModeUtil::deboxHostedMode(Lcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)");
-      sw.print(" (" + returnTypeCast + ",");
-    }
     sw.print("$entry(function(");
     declareJSParameters(method, dt.isOverloaded() ? dt.maxArity() : -1);
     sw.println(") { ");
     sw.indent();
-    boolean isVoid = retType.getQualifiedSourceName().equals("void");
 //    debugJSPassedValues(method);
     
     if (method.isVarArgs()) {
@@ -914,10 +900,9 @@ public class ClassExporter {
       overloadExported.add(method.getJSQualifiedExportName());
     }
     
-    if (dt.isOverloaded() || !retType.needsExport()) {
+    if (dt.isOverloaded() || !needsExport) {
       sw.print(isVoid ? "" : "return (");
     } else {
-      boolean isArray = retType instanceof JExportableArrayType;
       String arrayType = isArray ? ((JExportableArrayType) retType)
           .getJSNIReference() : "";
       
@@ -937,9 +922,6 @@ public class ClassExporter {
     }
     sw.outdent();
     sw.print("})");
-    if (returnTypeCast != null) {
-      sw.print(")");
-    }
     sw.println(";");
   }
 

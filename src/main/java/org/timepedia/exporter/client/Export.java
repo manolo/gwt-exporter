@@ -18,4 +18,6 @@ import java.lang.annotation.Target;
 public @interface Export {
 
   String value() default "";
+
+  boolean all() default false;
 }

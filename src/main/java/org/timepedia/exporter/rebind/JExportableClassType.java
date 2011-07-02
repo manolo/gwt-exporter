@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.SType;
@@ -67,9 +68,9 @@ public class JExportableClassType implements JExportable, JExportableType {
         if (method.isConstructor() == null) {
           continue;
         }
-
-        if (exportableTypeOracle.isExportable(method)) {
-          exportableCons.add(new JExportableConstructor(this, method));
+        JExportableMethod m = exportableTypeOracle.isExportable(method, this);
+        if (m != null) {
+          exportableCons.add((JExportableConstructor)m);
         }
       }
     }
@@ -92,20 +93,20 @@ public class JExportableClassType implements JExportable, JExportableType {
   
   public JExportableMethod[] getExportableMethods() {
     if (exportableMethods == null) {
-      
       ArrayList<JExportableMethod> ret = new ArrayList<JExportableMethod>();
 
       // Create a set with all methods in this class
       HashSet<JMethod> classMethods = new HashSet<JMethod>();
       classMethods.addAll(Arrays.asList(type.getMethods()));
       classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
-
+      
       for (JMethod method : classMethods) {
         if (method.isConstructor() != null) {
           continue;
         }
-        if (exportableTypeOracle.isExportable(method)) {
-          ret.add(new JExportableMethod(this, method));
+        JExportableMethod m = exportableTypeOracle.isExportable(method, this);
+        if (m != null) {
+          ret.add(m);
         }
       }
       exportableMethods = ret.toArray(new JExportableMethod[0]);
@@ -130,7 +131,16 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getJSConstructor() {
-    return getJSExportPackage() + "." + type.getName();
+    String pkg = getJSExportPackage().trim();
+    if (!pkg.isEmpty()) {
+      pkg += ".";
+    }
+    return pkg + getJSExportName();
+  }
+  
+  public String getJSExportName () {
+    Export ann = type.getAnnotation(Export.class);
+    return ann != null && !ann.value().isEmpty() ? ann.value() : type.getName();
   }
 
   public String getJSExportPackage() {

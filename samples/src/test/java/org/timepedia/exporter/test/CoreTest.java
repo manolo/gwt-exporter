@@ -7,6 +7,9 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
+import simpledemo.client.SimpleDemo.Child;
+import simpledemo.client.SimpleDemo.Parent;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.junit.client.GWTTestCase;
@@ -27,6 +30,9 @@ public class CoreTest extends GWTTestCase{
     runJsTests2();
   }
   
+  
+  
+  ///////////////////// Classes used to test types, arrays, static, public, override
   @ExportPackage("gwt")
   @Export
   public static class HelloAbstract implements Exportable {
@@ -172,6 +178,7 @@ public class CoreTest extends GWTTestCase{
         
   }
   
+  ///////////////////// Classes used to test closures
   @ExportPackage("gwt")
   @Export
   public static class Foo implements Exportable {
@@ -202,6 +209,7 @@ public class CoreTest extends GWTTestCase{
     }
   }
   
+  ///////////////////// Classes used to test that we can mark methods in interfaces
   public static interface MInterface extends Exportable {
     @Export
     String m1();
@@ -230,6 +238,7 @@ public class CoreTest extends GWTTestCase{
     }
   }
   
+  ///////////////////// Classes used to test that unused parent classes are not exported
   @ExportPackage("gwt")
   public static class MClass extends MBase {
     @Export
@@ -275,6 +284,36 @@ public class CoreTest extends GWTTestCase{
     @Export
     public A convertToA() {
       return new A();
+    }
+  }
+  
+  ///////////////////// Classes used to test exported methods in parent classes if export.all = true. And name-spaces
+  public static class Parent {
+    public String m(String a) {
+      return a;
+    }
+    public String getParentName(Parent p) {
+      return p.getClass().getName().replaceAll("^.*[\\.\\$]", "");
+    }
+    public Parent parent() {
+      return this;
+    }
+  }
+  
+  @Export(value = "$$", all = true)
+  @ExportPackage("")
+  public static class Child extends Parent implements Exportable {
+    @Export
+    public String f = "F";
+    
+    @Export("childName")
+    public String getChildName(Child c) {
+      return super.getParentName(c);
+    }
+    
+    @Export("$wnd.$")
+    public static String $() {
+      return "$";
     }
   }
   
@@ -368,6 +407,11 @@ public class CoreTest extends GWTTestCase{
     // exportAll must export B
     var c = $wnd.gwt.CoreTest.B ? "defined" : "undefined";
     assertEq("defined", c); 
+    
+    var ch = new $wnd.$$();
+    assertEq("Child", ch.childName(ch));
+    assertEq("Child", ch.getParentName(ch.parent()));
+    assertEq("$", $wnd.$());
     
   }-*/;
 

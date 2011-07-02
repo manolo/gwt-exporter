@@ -50,60 +50,85 @@ public class ExportableTypeOracle {
   }
 
   public boolean isExportable(JClassType type) {
-    return isExportable(type.getAnnotation(Export.class)) || (
-        type.isInterface() != null && isExportable(
-            type.getAnnotation(ExportClosure.class)));
+    return isExportable(type.getAnnotation(Export.class)) || 
+        (type.isInterface() != null && 
+        isExportable(type.getAnnotation(ExportClosure.class)));
   }
 
-  public static boolean isExportable(Export annotation) {
+  public static <T> boolean isExportable(Export annotation) {
     return annotation != null;
   }
   
-  public boolean isExportable(JAbstractMethod method) {
-    if (method instanceof JConstructor) {
-      if (method.getParameters().length == 0 && method.isPublic()) {
-        // zero-arg constructors always exportable
-        return true;
-      }
-    }
-
+  public JExportableMethod isExportable(JAbstractMethod method, JExportableClassType type) {
+    boolean export = false;
+    
     // Only public methods are exported
     if (method.isPublic()) {
-      
-      // Do not export methods annotated as NoExport, although the 
-      // method is marked as export in an interface or the entire class
-      // is annotated as Export
-      if (isNotExportable(method.getAnnotation(NoExport.class))) {
-        return false;
-      }
-      
-      // Export this method if has the Export annotation
-      if (isExportable(method.getAnnotation(Export.class))) {
-        return true;
-      }
-      
-      // Export all method in a class annotated as Export
-      if (isExportable(method.getEnclosingType())) {
-        return true;
-      }
-      
-      // Export methods which are annotated in implemented interfaces
-      for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
-        for (JMethod m : c.getMethods()) {
-          if (!isNotExportable(m.getAnnotation(NoExport.class))
-              && (isExportable(c) || isExportable(m.getAnnotation(Export.class)))
-              && m.getName().equals(method.getName())) {
-            if (m.getReadableDeclaration(true, true, false, true, true).equals(
-                ((JMethod) method).getReadableDeclaration(true, true, false,
-                    true, true))) {
-              return true;
+      Export e;
+      if (method instanceof JConstructor && method.getParameters().length == 0) {
+        // zero-arg constructors always exportable
+        export =  true;
+      } else if (isNotExportable(method.getAnnotation(NoExport.class))) {
+        // Do not export methods annotated as NoExport, although the 
+        // method is marked as export in an interface or the entire class
+        // is annotated as Export
+        export = false;
+      } else if ((e = type.getType().getAnnotation(Export.class)) != null && e.all()) {
+        // Export this method if the class has the Export.all attribute set
+        export = true;
+      } else if (isExportable(method.getAnnotation(Export.class))) {
+        // Export this method if has the Export annotation
+        export = true;
+      } else if (isExportable(method.getEnclosingType())) {
+        // Export all method in a class annotated as Export
+        export = true;
+      } else {
+        // Export methods which are annotated in implemented interfaces
+        for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
+          for (JMethod m : c.getMethods()) {
+            if (!isNotExportable(m.getAnnotation(NoExport.class))
+                && (isExportable(c) || isExportable(m.getAnnotation(Export.class)))
+                && m.getName().equals(method.getName())) {
+              if (m.getReadableDeclaration(true, true, false, true, true).equals(
+                  ((JMethod) method).getReadableDeclaration(true, true, false,
+                      true, true))) {
+                export = true;
+                break;
+              }
             }
           }
         }
       }
     }
     
-    return false;
+    JExportableMethod m = null;
+    if (export) {
+      if (method instanceof JConstructor) {
+        m = new JExportableConstructor(type, method);
+      } else {
+        m = new JExportableMethod(type, method);
+        
+        // 
+        // Time ago, return type needed to be exported if it was not a primitive
+        // String,Number,JSO, etc and it hasn't already been exported
+        // we needed to export it because we needed it to wrap the returned value
+        // 
+        // Now we do not need check return type or parameters although
+        // we could could filter methods here
+        
+        /*
+        if (m.getExportableReturnType() == null) {
+          return null;
+        }
+        for (JExportableParameter p : m.getExportableParameters()) {
+          if (!p.isExportable()) {
+            return null;
+          }
+        } */
+        
+      }
+    }
+    return m;
   }
 
   private static boolean isExportable(ExportClosure annotation) {
