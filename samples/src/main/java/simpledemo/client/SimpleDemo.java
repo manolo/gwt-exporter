@@ -254,6 +254,12 @@ public class SimpleDemo implements EntryPoint {
     public String m5() {
       return "m5";
     }
+    /**
+     * Documented in super 
+     */
+    public String m3() {
+      return "m3";
+    }
   }
   
   @ExportPackage("gwt")

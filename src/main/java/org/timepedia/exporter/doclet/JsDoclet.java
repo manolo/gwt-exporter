@@ -105,7 +105,7 @@ public class JsDoclet extends HtmlDoclet {
       writer.table(1, "100%", 0, 0);
       java.util.Collections.sort(smethods);
       for (MethodDoc md: smethods) {
-        writeMethod(writer, false, true, md, filter(md.commentText()));
+        writeMethod(writer, false, true, md);
       }
       writer.tableEnd();
     }
@@ -185,19 +185,11 @@ public class JsDoclet extends HtmlDoclet {
       return;
     }
     for (MethodDoc md : clz.methods()) {
-      if (!md.isStatic() && md.isPublic()) {
+      if (!md.isStatic() && md.isPublic() && !md.isAbstract()) {
         String sig = getSignatureMethod(md);
         if (!visited.contains(sig)) {
-          String comments = filter(md.commentText().trim());
-          MethodDoc id = getMethodInInterface(md);
-          if ((all || !isExportable(md)) && id != null) {
-            md = id;
-          }
           if (all || isExportable(md)) {
-            if (comments.isEmpty() && id != null) {
-              comments = filter(md.commentText().trim());
-            }
-            writeMethod(writer, firstcon, false, md, comments);
+            writeMethod(writer, firstcon, false, md);
             firstcon = false;
           }
           visited.add(sig);
@@ -221,12 +213,25 @@ public class JsDoclet extends HtmlDoclet {
     return null;
   }
   
+  private MethodDoc getMethodInSuperclass(ClassDoc superc, MethodDoc md) {
+    if (superc != null) {
+      String sig = getSignatureMethod(md);
+      for (MethodDoc m : superc.methods()) {
+        if (sig.equals(getSignatureMethod(m))) {
+          return m;
+        }
+      }
+      return getMethodInSuperclass(superc.superclass(), md);
+    }
+    return null;
+  }
+  
   private String getSignatureMethod (MethodDoc md) {
     return md.returnType() + " " + md.name() + md.signature();
   }
 
   private void writeMethod(HtmlDocletWriter writer, boolean firstcon, boolean writePakage,
-      MethodDoc md, String comments) {
+      MethodDoc md) {
     ClassDoc cd = md.containingClass();
     String pkg = writePakage ? getExportedName(cd, false, true) : "";
     String name = getExportedName(md);
@@ -258,8 +263,23 @@ public class JsDoclet extends HtmlDoclet {
     writeParameters(writer, md.parameters());
     writer.print(")");
     writer.br();
+    
+    String comments = md.commentText();
+    if (!md.isStatic() && comments.isEmpty()) {
+      MethodDoc id = getMethodInInterface(md);
+      if (id != null) {
+        comments = id.commentText();
+      }
+      if (comments.isEmpty()) {
+        id = getMethodInSuperclass(cd.superclass(), md);
+      }
+      if (id != null) {
+        comments = id.commentText();
+      }
+    }
+    
     if (!comments.isEmpty()) {
-      writer.print("<span class=jsdocComment>" + comments + "</span>");
+      writer.print("<span class=jsdocComment>" + filter(comments) + "</span>");
     }
     writer.tdEnd();
     writer.trEnd();
@@ -342,18 +362,25 @@ public class JsDoclet extends HtmlDoclet {
     return export;
   }
 
-  private boolean isExportable(MethodDoc cd) {
-    boolean export = isExported(cd.containingClass());
-    for (AnnotationDesc a : cd.annotations()) {
+  private boolean isExportable(MethodDoc md) {
+    if (md == null) {
+      return false;
+    }
+    boolean export = isExported(md.containingClass());
+    for (AnnotationDesc a : md.annotations()) {
       if (a.annotationType().name().equals("Export")) {
-        export = true;
+        return true;
       }
       if (a.annotationType().name().equals("NoExport")) {
-        export = false;
+        return false;
       }
+    }
+    if (!export) {
+      export = isExportable(getMethodInInterface(md));
     }
     return export;
   }
+  
 
   private boolean isExportedClosure(ClassDoc clz) {
     for (AnnotationDesc a : clz.annotations()) {
