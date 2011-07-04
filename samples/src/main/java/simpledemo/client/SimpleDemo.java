@@ -213,9 +213,15 @@ public class SimpleDemo implements EntryPoint {
   }
   
   public static interface MInterface extends Exportable {
+    /**
+     * Exported and documented in interface
+     */
     @Export
     String m1();
     String m1(int a);
+    /**
+     * Exported and documented in interface
+     */
     @Export
     String m1(int a, int b);
   }
@@ -225,12 +231,18 @@ public class SimpleDemo implements EntryPoint {
     public String m0() {
       return "m0";
     }
+    /**
+     * Documented in class and exported in interface
+     */
     public String m1() {
       return "m1";
     }
     public String m1(int a) {
       return "m1-" + a;
     }
+    /* (non-Javadoc)
+     * @see simpledemo.client.SimpleDemo.MInterface#m1(int, int)
+     */
     public String m1(int a, int b) {
       return "m1-" + a + b;
     }

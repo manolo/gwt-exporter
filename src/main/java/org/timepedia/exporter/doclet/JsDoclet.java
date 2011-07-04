@@ -1,5 +1,11 @@
 package org.timepedia.exporter.doclet;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringTokenizer;
+
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.ConstructorDoc;
@@ -16,10 +22,6 @@ import com.sun.tools.doclets.internal.toolkit.util.DocletConstants;
 import com.sun.tools.doclets.internal.toolkit.util.PackageListWriter;
 import com.sun.tools.doclets.internal.toolkit.util.Util;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.StringTokenizer;
-
 /**
  * Generates Js and Gss docs.
  */
@@ -27,7 +29,6 @@ public class JsDoclet extends HtmlDoclet {
 
   public static boolean start(RootDoc rootDoc) {
     JsDoclet jsDoclet = new JsDoclet();
-
     try {
       return jsDoclet.startGeneration3(rootDoc);
     } catch (Exception e) {
@@ -85,109 +86,212 @@ public class JsDoclet extends HtmlDoclet {
     writer.headEnd();
     writer.body("white", true);
 
-    writer.h1("Exported JavaScript-API: Index of Classes");
-    writer.ul();
-    
     ClassDoc[] classes = rootDoc.classes();
     Arrays.sort(classes);
-    for (ClassDoc clz : classes) {
-      if (isExportable(clz) && hasMethods(clz) && clz.methods().length > 0
-          && !isExportedClosure(clz.methods()[0])) {
-        String packageName = getExportedPackage(clz);
-        String className = getExportedName(clz, false);
-        writer.li();
-        writer.println(packageName + "." + "<a href=#" + packageName + "."
-            + className + "><b>" + className + "</b></a>");
-      }
-    }
-    writer.ulEnd();
     
+    // Document static methods
+    List<MethodDoc> smethods = new ArrayList<MethodDoc>();
     for (ClassDoc clz : classes) {
-      if (isExportable(clz) && hasMethods(clz) && clz.methods().length > 0
-          && !isExportedClosure(clz.methods()[0])) {
-        String className = getExportedPackage(clz) + "." + getExportedName(clz, false);
-        writer.h2("<div id=" + className + ">"+ className + "</div>");
-        writer.println("<div class=jsdocText>" + filter(clz.commentText()) + "</div>");
-        writer.table(1, "100%", 0, 0);
-
-        boolean firstcon = true;
-        for (ConstructorDoc cd : clz.constructors()) {
-          if (isExportable(cd)) {
-            if (firstcon) {
-              writer.tr();
-              writer.tdColspanBgcolorStyle(2, "", "jsdocHeader");
-              writer.print("Constructors");
-              firstcon = false;
-              writer.tdEnd();
-              writer.trEnd();
-            }
-            writer.tr();
-            writer.tdVAlignClass("top", "jsdocRetType");
-            writer.print("&nbsp");
-            writer.tdEnd();
-            writer.tdVAlignClass("top", "jsdocMethod");
-            writer.print("<span class=jsdocMethodName>" + cd.name() + "</span>(");
-            writeParameters(writer, cd.parameters());
-            writer.print(")");
-            writer.br();
-            writer.print("<span class=jsdocComment>"
-                + filter(cd.commentText()) + "</span>");
-
-            writer.tdEnd();
-            writer.trEnd();
+      if (isExportable(clz) && hasStaticMethods(clz)) {
+        for (MethodDoc md : clz.methods()) {
+          if (md.isStatic() && isExportable(md)) {
+            smethods.add(md);
           }
         }
-        
-        firstcon = true;
-        for (MethodDoc cd : clz.methods()) {
-          if (isExportable(cd)) {
-            if (firstcon) {
-              writer.tr();
-              writer.tdColspanBgcolorStyle(2, "", "jsdocHeader");
-              writer.print("Methods");
-              firstcon = false;
-              writer.tdEnd();
-              writer.trEnd();
-            }
-            writer.tr();
-            writer.tdVAlignClass("top", "jsdocRetType");
-            writer.print(getExportedName(cd.returnType(), true));
-
-            writer.tdEnd();
-            writer.tdVAlignClass("top", "jsdocMethod");
-            writer.print(
-                "<b class=jsdocMethodName>" + getExportedName(cd) + "</b>"
-                    + "(");
-            writeParameters(writer, cd.parameters());
-            writer.print(")");
-            writer.br();
-            writer.print("<span class=jsdocComment>"
-                + filter(cd.commentText()) + "</span>");
-            writer.tdEnd();
-            writer.trEnd();
-          }
-        }
-
-        writer.tableEnd();
-        writer.br();
-        writer.hr();
       }
     }
+    if (smethods.size() > 0) {
+      writer.h1("Exported JavaScript-API: Index of static functions");
+      writer.table(1, "100%", 0, 0);
+      java.util.Collections.sort(smethods);
+      for (MethodDoc md: smethods) {
+        writeMethod(writer, false, true, md, filter(md.commentText()));
+      }
+      writer.tableEnd();
+    }
+    
+    List<ClassDoc> eclasses = new ArrayList<ClassDoc>();
+    for (ClassDoc clz : classes) {
+      if (isExportable(clz) && hasClassMethods(clz) && !isExportedClosure(clz)) {
+        eclasses.add(clz);
+      }
+    }
+    
+    if (eclasses.size() > 0) {
+      // Write an index of classes
+      writer.h1("Exported JavaScript-API: Index of Classes");
+      writer.ul();
+      for (ClassDoc clz : eclasses) {
+        writer.li();
+        writer.println(getExportedName(clz, true, true));
+      }
+      writer.ulEnd();
+      
+      // Write each class
+      for (ClassDoc clz : eclasses) {
+        String className = getExportedPackage(clz) + getExportedName(clz, false);
+        writer.h2("<div id=" + className + ">"+ className + "</div>");
+        String comments = clz.commentText().trim();
+        if (!comments.isEmpty()) {
+          writer.println("<div class=jsdocText>" + filter(clz.commentText()) + "</div>");
+        }
+
+        writer.table(1, "100%", 0, 0);
+        writeConstructors(writer, clz);
+        writeMethods(writer, clz, true, isExportedAll(clz), new ArrayList<String>());
+        writer.tableEnd();
+      }
+    }
+
     writer.bodyEnd();
     writer.htmlEnd();
     writer.flush();
     writer.close();
   }
 
-  private boolean hasMethods(ClassDoc clz) {
-    int countExportedMethods = 0;
+  private void writeConstructors(HtmlDocletWriter writer, ClassDoc clz) {
+    String cName = getExportedName(clz, false, true);
+    boolean firstcon = true;
     for (ConstructorDoc cd : clz.constructors()) {
       if (isExportable(cd)) {
-        countExportedMethods++;
+        if (firstcon) {
+          writer.tr();
+          writer.tdColspanBgcolorStyle(2, "", "jsdocHeader");
+          writer.print("Constructors");
+          firstcon = false;
+          writer.tdEnd();
+          writer.trEnd();
+        }
+        writer.tr();
+        writer.tdVAlignClass("top", "jsdocRetType");
+        writer.print("&nbsp");
+        writer.tdEnd();
+        writer.tdVAlignClass("top", "jsdocMethod");
+        writer.print("<span class=jsdocMethodName>" + cName + "</span>(");
+        writeParameters(writer, cd.parameters());
+        writer.print(")");
+        writer.br();
+        writer.print("<span class=jsdocComment>"
+            + filter(cd.commentText()) + "</span>");
+
+        writer.tdEnd();
+        writer.trEnd();
       }
     }
+  }
+  
+  private void writeMethods(HtmlDocletWriter writer, ClassDoc clz, boolean firstcon, boolean all, List<String> visited) {
+    if (clz == null) {
+      return;
+    }
     for (MethodDoc md : clz.methods()) {
-      if (isExportable(md)) {
+      if (!md.isStatic() && md.isPublic()) {
+        String sig = getSignatureMethod(md);
+        if (!visited.contains(sig)) {
+          String comments = filter(md.commentText().trim());
+          MethodDoc id = getMethodInInterface(md);
+          if ((all || !isExportable(md)) && id != null) {
+            md = id;
+          }
+          if (all || isExportable(md)) {
+            if (comments.isEmpty() && id != null) {
+              comments = filter(md.commentText().trim());
+            }
+            writeMethod(writer, firstcon, false, md, comments);
+            firstcon = false;
+          }
+          visited.add(sig);
+        }
+      }
+    }
+    writeMethods(writer, clz.superclass(), firstcon, all, visited);
+  }
+  
+  private MethodDoc getMethodInInterface(MethodDoc md) {
+    if (!md.containingClass().isInterface()) {
+      String sig = getSignatureMethod(md);
+      for (ClassDoc cd: md.containingClass().interfaces()) {
+        for (MethodDoc m: cd.methods()) {
+          if (sig.equals(getSignatureMethod(m)) && isExportable(m)) {
+            return m;
+          }
+        }
+      }
+    }
+    return null;
+  }
+  
+  private String getSignatureMethod (MethodDoc md) {
+    return md.returnType() + " " + md.name() + md.signature();
+  }
+
+  private void writeMethod(HtmlDocletWriter writer, boolean firstcon, boolean writePakage,
+      MethodDoc md, String comments) {
+    ClassDoc cd = md.containingClass();
+    String pkg = writePakage ? getExportedName(cd, false, true) : "";
+    String name = getExportedName(md);
+    if (name.startsWith("$wnd")) {
+      pkg = "";
+      name = name.replaceFirst("^\\$wnd\\.", "");
+    }
+    if (!pkg.isEmpty()) {
+      pkg += ".";
+    }
+    
+    if (firstcon) {
+      writer.tr();
+      writer.tdColspanBgcolorStyle(2, "", "jsdocHeader");
+      writer.print("Methods");
+      firstcon = false;
+      writer.tdEnd();
+      writer.trEnd();
+    }
+    writer.tr();
+    writer.tdVAlignClass("top", "jsdocRetType");
+    writer.print(getExportedName(md.returnType(), true));
+
+    writer.tdEnd();
+    writer.tdVAlignClass("top", "jsdocMethod");
+    writer.print(
+        "<b class=jsdocMethodName>" + pkg + name + "</b>"
+            + "(");
+    writeParameters(writer, md.parameters());
+    writer.print(")");
+    writer.br();
+    if (!comments.isEmpty()) {
+      writer.print("<span class=jsdocComment>" + comments + "</span>");
+    }
+    writer.tdEnd();
+    writer.trEnd();
+  }
+  
+  private boolean hasClassMethods(ClassDoc clz) {
+    if (clz != null && !clz.isInterface() && !clz.isAbstract()) {
+      for (ConstructorDoc cd : clz.constructors()) {
+        if (isExportable(cd)) {
+          return true;
+        }
+      }
+      for (MethodDoc md : clz.methods()) {
+        if (!md.isStatic()) {
+          boolean exportable = isExportable(md);
+          if (!exportable && (md = getMethodInInterface(md)) != null) {
+            exportable = isExportable(md);
+          }
+          if (exportable) {
+            return true;
+          }
+        }
+      }
+      return hasClassMethods(clz.superclass());
+    }
+    return false;
+  }
+  
+  private boolean hasStaticMethods(ClassDoc clz) {
+    int countExportedMethods = 0;
+    for (MethodDoc md : clz.methods()) {
+      if (isExportable(md) && md.isStatic()) {
         countExportedMethods++;
       }
     }
@@ -199,7 +303,7 @@ public class JsDoclet extends HtmlDoclet {
     for (AnnotationDesc a : cd.annotations()) {
       if (a.annotationType().name().equals("Export")) {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
-          ename = p.value().toString();
+          ename = p.value().toString().trim();
           break;
         }
       }
@@ -218,7 +322,7 @@ public class JsDoclet extends HtmlDoclet {
 
   private String getExportedName(Type clz, boolean link) {
     return (clz.isPrimitive() ? "void".equals(clz.typeName()) ? "&nbsp;" 
-        : clz.typeName() : getExportedName(clz.asClassDoc(), link)) + clz.dimension();
+        : clz.typeName() : getExportedName(clz.asClassDoc(), link, false)) + clz.dimension();
   }
 
   private void writeParameters(HtmlDocletWriter writer, Parameter[] ps) {
@@ -251,10 +355,8 @@ public class JsDoclet extends HtmlDoclet {
     return export;
   }
 
-  private boolean isExportedClosure(MethodDoc md) {
-    ClassDoc clz = md.containingClass();
+  private boolean isExportedClosure(ClassDoc clz) {
     for (AnnotationDesc a : clz.annotations()) {
-
       String aname = a.annotationType().name();
       if (aname.equals("ExportClosure")) {
         return true;
@@ -262,7 +364,21 @@ public class JsDoclet extends HtmlDoclet {
     }
     return false;
   }
-
+  
+  private boolean isExportedAll(ClassDoc clz) {
+    for (AnnotationDesc a : clz.annotations()) {
+      String aname = a.annotationType().name();
+      if (aname.equals("Export") || aname.equals("ExportClosure")) {
+        for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
+          if ("all".equals(p.element().name())) {
+            return "true".equals(p.value().toString());
+          }
+        }
+      }
+    }
+    return false;
+  }
+  
   private boolean isExported(ClassDoc clz) {
     for (AnnotationDesc a : clz.annotations()) {
       String aname = a.annotationType().name();
@@ -273,13 +389,13 @@ public class JsDoclet extends HtmlDoclet {
     return false;
   }
 
-  private String getExportedName(ClassDoc clz, boolean link) {
+  private String getExportedName(ClassDoc clz, boolean withLink, boolean withPkg) {
     if (clz == null) {
       return "";
     }
 
     PackageDoc cpkg = clz.containingPackage();
-    String pkg = cpkg == null ? "" : (cpkg.name() + ".");
+    String pkg = cpkg == null ? "" : cpkg.name();
     String name = clz.name();
     
     boolean isClosure = false;
@@ -287,14 +403,16 @@ public class JsDoclet extends HtmlDoclet {
     for (AnnotationDesc a : clz.annotations()) {
       if (a.annotationType().name().equals("ExportPackage")) {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
-          pkg = p.value().toString();
+          pkg = p.value().toString().trim();
           break;
         }
       }
       if (a.annotationType().name().equals("Export")) {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
-          name = p.value().toString();
-          break;
+          if ("value".equals(p.element().name())) {
+            name = p.value().toString().trim().replaceAll("\"", "");
+            break;
+          }
         }
       }
       if (a.annotationType().name().equals("ExportClosure")) {
@@ -305,9 +423,21 @@ public class JsDoclet extends HtmlDoclet {
         pkg = "";
       }
     }
+    
     pkg = pkg.replaceAll("\"", "").replaceFirst("\\.+$", "");
-    if (link && !isClosure && !"String".equals(name)) {
-      name = "<a href=#" + pkg + "." + name + ">" + name + "</a>";  
+    if (!pkg.isEmpty()) {
+      pkg += ".";
+    }
+
+    if (withLink && !isClosure && 
+        !name.matches("String|JavaScriptObject|Object|Exportable|Class")) {
+      if (withPkg) {
+        name = pkg + "<a href=#" + pkg + name + "><b>" + name + "</b></a>";  
+      } else {
+        name = "<a href=#" + pkg + name + ">" + name + "</a>";  
+      }
+    } else if (withPkg) {
+      name = pkg + name;
     }
     return name;
   }
@@ -334,27 +464,37 @@ public class JsDoclet extends HtmlDoclet {
     }
 
     PackageDoc cpkg = clz.containingPackage();
-    String pkg = cpkg == null ? "" : (cpkg.name());
+    String pkg = cpkg == null ? "" : (cpkg.name().trim());
 
     for (AnnotationDesc a : clz.annotations()) {
       if (a.annotationType().name().equals("ExportPackage")) {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
-          pkg = p.value().toString();
+          pkg = p.value().toString().replaceAll("\"", "");
+          if (!pkg.isEmpty()) {
+            pkg += ".";
+          }
           break;
         }
       }
     }
-    pkg = pkg.replaceAll("\"", "");
     return pkg;
   }
 
   private static boolean isExportable(ClassDoc clz) {
+    if (clz == null) {
+      return false;
+    }
     for (ClassDoc i : clz.interfaces()) {
       if (i.name().contains("Exportable")) {
         return true;
       }
+      for (ClassDoc j : i.interfaces()) {
+        if (j.name().contains("Exportable")) {
+          return true;
+        }
+      }
     }
-    return false;
+    return isExportable(clz.superclass());
   }
   
   public String getCSS() {
