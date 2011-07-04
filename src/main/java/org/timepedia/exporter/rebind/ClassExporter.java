@@ -755,10 +755,15 @@ public class ClassExporter {
   private void createStaticWrapperMethod(JExportableMethod method, JExportableClassType requestedType) {
     String function = "public static ";
     String body = "return ";
+    String end = "";
     String r = method.getExportableReturnType().getQualifiedSourceName();
     if (r.equals("long")) {
       function += "double";
       body += "(double) ";
+    } else if (r.equals("java.util.Date")) {
+      function += "JavaScriptObject";
+      body += "ExporterUtil.dateToJsDate(";
+      end = ")";
     } else {
       function += method.getExportableReturnType().getQualifiedSourceName();
     }
@@ -778,10 +783,12 @@ public class ClassExporter {
       body += pr;
       String type = p.getTypeName();
       String argName = ARG_PREFIX + i++;
-      
       if (type.equals("long")) {
         function += "double";
         body += "(long)" + argName;
+      } else if (type.equals("java.util.Date")) {
+        body += "ExporterUtil.jsDateToDate(" + argName + ")";
+        function += "JavaScriptObject";
       } else if (type.contains("[]")) {  
         body += p.getToArrayFunc(type, argName);
         function += "JavaScriptObject";
@@ -792,7 +799,7 @@ public class ClassExporter {
       function +=  " " + argName; 
     }
 
-    sw.println(function + ") {\n  " + body + ");\n}" );
+    sw.println(function + ") {\n  " + body + end + ");\n}" );
   }
   
   /**
@@ -906,7 +913,7 @@ public class ClassExporter {
       String arrayType = isArray ? ((JExportableArrayType) retType)
           .getJSNIReference() : "";
       
-      arrayType = arrayType.matches("^\\[(.|Ljava/lang/String;)") ? arrayType
+      arrayType = arrayType.matches("^\\[(.|Ljava/lang/String;|Ljava/util/Date;)") ? arrayType
           : "[Lorg/timepedia/exporter/client/Exportable;";
       
       sw.print((isVoid ? "" : "return ")
@@ -950,8 +957,10 @@ public class ClassExporter {
       JExportableType xcompType = ((JExportableArrayType) xType)
           .getComponentType();
       
-      if (xcompType instanceof JExportablePrimitiveType ||
-          qualifiedSourceName.equals("java.lang.String[]")) {
+      if (xcompType instanceof JExportablePrimitiveType
+          || qualifiedSourceName.equals("java.lang.String[]")
+          || qualifiedSourceName.equals("java.util.Date[]")
+          ) {
         return false;
       } else {
         return exportDependentClass(xcompType.getQualifiedSourceName());

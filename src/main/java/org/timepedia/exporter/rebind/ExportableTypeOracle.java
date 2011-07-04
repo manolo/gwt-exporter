@@ -39,6 +39,7 @@ public class ExportableTypeOracle {
       = "org.timepedia.exporter.client.ExportOverlay";
 
   private static final String STRING_CLASS = "java.lang.String";
+  private static final String DATE_CLASS = "java.util.Date";
 
   private JClassType exportAllType;
 
@@ -148,6 +149,7 @@ public class ExportableTypeOracle {
   private JClassType jsoType = null;
 
   private JClassType stringType = null;
+  private JClassType dateType = null;
 
   private JClassType exportOverlayType;
 
@@ -163,6 +165,7 @@ public class ExportableTypeOracle {
 
     jsoType = typeOracle.findType(JSO_CLASS);
     stringType = typeOracle.findType(STRING_CLASS);
+    dateType = typeOracle.findType(DATE_CLASS);
     assert exportableType != null;
     assert exportOverlayType != null;
     assert jsoType != null;
@@ -204,8 +207,9 @@ public class ExportableTypeOracle {
       } else if (cType.isAssignableTo(exportOverlayType)) {
         return new JExportOverlayClassType(this, type.isClassOrInterface());
       } else if (cType != null && (cType.isAssignableTo(exportableType)
-          || cType.isAssignableTo(stringType) || cType
-          .isAssignableTo(jsoType))) {
+          || cType.isAssignableTo(stringType) 
+          || cType.isAssignableTo(dateType) 
+          || cType.isAssignableTo(jsoType))) {
         return new JExportableClassType(this, type.isClassOrInterface());
       } else {
         return null;
@@ -259,6 +263,10 @@ public class ExportableTypeOracle {
 
   public boolean isString(JExportableClassType type) {
     return type.getType().isAssignableTo(stringType);
+  }
+  
+  public boolean isDate(JExportableClassType type) {
+    return type.getType().isAssignableTo(dateType);
   }
 
   public boolean isString(JType type) {

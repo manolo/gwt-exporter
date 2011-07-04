@@ -126,6 +126,8 @@ public class JExportableParameter {
     String ret = "ExporterUtil.";
     if (qsn.equals("java.lang.String[]")) {
       ret += "toArrString" ;
+    } else if (qsn.equals("java.util.Date[]")) {
+      ret += "toArrDate" ;
     } else if (qsn.equals("double[]")) {
       ret += "toArrDouble" ;
     } else if (qsn.equals("float[]")) {

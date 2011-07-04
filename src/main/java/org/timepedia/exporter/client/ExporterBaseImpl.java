@@ -1,5 +1,7 @@
 package org.timepedia.exporter.client;
 
+import java.util.Date;
+
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
@@ -79,6 +81,10 @@ public class ExporterBaseImpl {
     return null;
   }
 
+  public JavaScriptObject wrap(Date[] type) {
+    return null;
+  }
+
   public String[] toArrString(JsArrayString type) {
     return null;
   }
@@ -112,6 +118,27 @@ public class ExporterBaseImpl {
   }
 
   public Exportable[] toArrExport(JavaScriptObject p) {
+    return null;
+  }
+  
+  public Date[] toArrDate(JavaScriptObject j) {
+    return null;
+  }
+
+  
+  public JavaScriptObject computeVarArguments(int len, JavaScriptObject args) {
+    return null;
+  }
+  
+  public JavaScriptObject unshift(Object o, JavaScriptObject arr){
+    return null;
+  }
+
+  public JavaScriptObject dateToJsDate(Date d) {
+    return null;
+  }
+
+  public Date jsDateToDate(JavaScriptObject jd) {
     return null;
   }
 }

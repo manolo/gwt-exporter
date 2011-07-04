@@ -1,14 +1,13 @@
 package org.timepedia.exporter.test;
 
+import java.util.Date;
+
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
-
-import simpledemo.client.SimpleDemo.Child;
-import simpledemo.client.SimpleDemo.Parent;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -175,7 +174,25 @@ public class CoreTest extends GWTTestCase{
     public String test21(String a, long b, String...c) {
       return test20(a, b, c);
     }
-        
+    
+    public static Date test22(Date d) {
+      return d;
+    }
+
+    @SuppressWarnings("deprecation")
+    public String test23(Date...ds) {
+      String ret = "";
+      for (Date d : ds) {
+        ret += d.getYear() + "-";
+      }
+      return ret;
+    }
+    
+    public Date[] test24() {
+      Date[] ret = new Date[1];
+      ret[0] = new Date(0);
+      return ret;
+    }    
   }
   
   ///////////////////// Classes used to test closures
@@ -333,7 +350,7 @@ public class CoreTest extends GWTTestCase{
     assertEq("undefined", c); 
   }-*/;
   
-  static boolean debug = true;
+  static boolean debug = false;
   public static <T> void mAssertEqual(T a, T b) {
     if (!debug) {
       assertEquals(a.toString(), b.toString());
@@ -373,7 +390,8 @@ public class CoreTest extends GWTTestCase{
     assertEq("a_2", "" + $wnd.gwt.CoreTest.HelloClass.test18("a", ["b", "c"]));
     assertEq("a_b_1", "" + $wnd.gwt.CoreTest.HelloClass.test18("a", "b", ["c"]));
     assertEq("a_1_0", "" + $wnd.gwt.CoreTest.HelloClass.test20("a", 1));
-    assertEq("a_1_3", "" + $wnd.gwt.CoreTest.HelloClass.test20("a", 1, "a", "e", "i"));    
+    assertEq("a_1_3", "" + $wnd.gwt.CoreTest.HelloClass.test20("a", 1, "a", "e", "i"));   
+    assertEq("1970", "" + ($wnd.gwt.CoreTest.HelloClass.test22(new Date(0)).getYear() + 1900));
     
     var h = new $wnd.gwt.CoreTest.HelloClass();
     assertEq("102", "" + h.test14(1, 1, [100]));
@@ -383,7 +401,9 @@ public class CoreTest extends GWTTestCase{
     assertEq("a_2", "" + h.test19("a", ["b", "c"]));
     assertEq("a_b_1", "" + h.test19("a", "b", ["c"]));
     assertEq("a_1_0", "" + h.test21("a", 1));
-    assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));    
+    assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i")); 
+    assertEq("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
+    assertEq("70", "" + h.test24()[0].getYear());   
     
     var v1 = new $wnd.gwt.CoreTest.Foo();
     assertEq("foo", v1);

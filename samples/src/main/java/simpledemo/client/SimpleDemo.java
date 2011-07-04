@@ -1,5 +1,7 @@
 package simpledemo.client;
 
+import java.util.Date;
+
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportPackage;
@@ -180,6 +182,24 @@ public class SimpleDemo implements EntryPoint {
       return test20(a, b, c);
     }
     
+    public static Date test22(Date d) {
+      return d;
+    }
+
+    @SuppressWarnings("deprecation")
+    public String test23(Date...ds) {
+      String ret = "";
+      for (Date d : ds) {
+        ret += d.getYear() + "-";
+      }
+      return ret;
+    }
+    
+    public Date[] test24() {
+      Date[] ret = new Date[1];
+      ret[0] = new Date(0);
+      return ret;
+    }
   }
   
   @ExportPackage("gwt")
@@ -385,6 +405,7 @@ public class SimpleDemo implements EntryPoint {
     p("a_b_1", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", "b", ["c"]));
     p("a_1_0", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1));
     p("a_1_3", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1, "a", "e", "i"));
+    p("1970", "" + ($wnd.gwt.SimpleDemo.HelloClass.test22(new Date(0)).getYear() + 1900));
     
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
     p("102", "" + h.test14(1, 1, [100]));
@@ -395,6 +416,9 @@ public class SimpleDemo implements EntryPoint {
     p("a_b_1", "" + h.test19("a", "b", ["c"]));
     p("a_1_0", "" + h.test21("a", 1));
     p("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
+    p("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
+    p("70", "" + h.test24()[0].getYear());
+    
     
     var v1 = new $wnd.gwt.SimpleDemo.Foo();
     p("foo", v1);

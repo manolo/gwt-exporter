@@ -95,10 +95,14 @@ public class JExportableMethod implements JExportable {
     int len = exportableParameters.length;
     for (int i = 0; i < len; i++) {
       String signature = exportableParameters[i].getJNISignature();
-      // Here we replace long by double signature
+      // Here we replace 
+      // - long by double signature
+      // - arrays and date by javascriptobject
       if ("J".equals(signature)) {
         signature = "D";
-      } else if (signature.startsWith("[")) {
+      } else if (
+          signature.startsWith("[")
+          || signature.equals("Ljava/util/Date;")) {
         signature = "Lcom/google/gwt/core/client/JavaScriptObject;";
       }
       reference += signature;
@@ -123,7 +127,7 @@ public class JExportableMethod implements JExportable {
           "long".equals(getExportableReturnType().getQualifiedSourceName())) {
         wrap = true;
       } else for (JExportableParameter p : getExportableParameters()) {
-        if (p.getTypeName().matches("(long|.*\\[\\])$")) {
+        if (p.getTypeName().matches("(long|.*\\[\\])$|java.util.Date")) {
           wrap = true;
           break;
         }

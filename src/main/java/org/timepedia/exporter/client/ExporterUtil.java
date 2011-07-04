@@ -1,11 +1,12 @@
 package org.timepedia.exporter.client;
 
+import java.util.Date;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
 import com.google.gwt.core.client.JsArrayString;
-import com.google.gwt.user.client.Window;
 
 /**
  * Holds utility methods and wrapper state
@@ -162,6 +163,10 @@ public class ExporterUtil {
   public static JavaScriptObject wrap(short[] type) {
     return impl.wrap(type);
   }
+  
+  public static JavaScriptObject wrap(Date[] type) {
+    return impl.wrap(type);
+  }
 
   public static String[] toArrString(JavaScriptObject type) {
     return impl.toArrString(type.<JsArrayString>cast());
@@ -194,6 +199,10 @@ public class ExporterUtil {
   public static Object[] toArrObject(JavaScriptObject type) {
     return impl.toArrObject(type);
   }
+
+  public static Date[] toArrDate(JavaScriptObject type) {
+    return impl.toArrDate(type);
+  }
   
   // Although in Compiled mode we could cast an Exportable[] to any other T[] array
   // In hosted mode it is not possible, so we only support Exportable[] parameter
@@ -205,26 +214,20 @@ public class ExporterUtil {
     return o.getClass() == clazz;
   }
   
-  public static native JavaScriptObject computeVarArguments(int len, JavaScriptObject args) /*-{
-    var ret = [];
-    for (i = 0; i < len - 1; i++) 
-      ret.push(args[i]);
-    var alen = args.length;
-    var p = len - 1;
-    if (alen >= len && Object.prototype.toString.apply(args[p]) === '[object Array]') {
-        ret.push(args[p]);
-    } else {
-      var a = [];
-      for (i = p; i < alen; i++) 
-        a.push(args[i]);
-      ret.push(a);  
-    }
-    return ret;
-  }-*/;
+  public static JavaScriptObject computeVarArguments(int len, JavaScriptObject args) {
+    return impl.computeVarArguments(len, args);
+  }
   
-  public static native JavaScriptObject unshift(Object o, JavaScriptObject arr) /*-{
-    var ret = [o];
-    for (i in arr) ret.push(arr[i]);
-    return ret;
-  }-*/;
+  public static JavaScriptObject unshift(Object o, JavaScriptObject arr) {
+    return impl.unshift(o, arr);
+  }
+  
+  public static JavaScriptObject dateToJsDate(Date d) {
+    return impl.dateToJsDate(d);
+  }
+  
+  public static Date jsDateToDate(JavaScriptObject jd) {
+    return impl.jsDateToDate(jd);
+  }
+  
 }

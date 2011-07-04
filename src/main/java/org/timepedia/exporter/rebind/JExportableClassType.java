@@ -242,8 +242,9 @@ public class JExportableClassType implements JExportable, JExportableType {
 
   public boolean isTransparentType() {
     return exportableTypeOracle.isJavaScriptObject(this)
-        || exportableTypeOracle.isString(this) || exportableTypeOracle
-        .isArray(this);
+        || exportableTypeOracle.isString(this) 
+        || exportableTypeOracle.isDate(this) 
+        || exportableTypeOracle.isArray(this);
   }
 
   public boolean needsExport() {

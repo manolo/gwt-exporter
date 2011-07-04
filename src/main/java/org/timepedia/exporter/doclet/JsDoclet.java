@@ -457,7 +457,7 @@ public class JsDoclet extends HtmlDoclet {
     }
 
     if (withLink && !isClosure && 
-        !name.matches("String|JavaScriptObject|Object|Exportable|Class")) {
+        !name.matches("String|JavaScriptObject|Object|Exportable|Class|Date")) {
       if (withPkg) {
         name = pkg + "<a href=#" + pkg + name + "><b>" + name + "</b></a>";  
       } else {

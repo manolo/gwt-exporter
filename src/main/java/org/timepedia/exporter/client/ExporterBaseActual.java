@@ -1,5 +1,6 @@
 package org.timepedia.exporter.client;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -136,6 +137,15 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     } else {
       return reinterpretCast(type);
     }
+  }
+  
+  @Override
+  public JavaScriptObject wrap(Date[] type) {
+    JsArray<JavaScriptObject> ret = JavaScriptObject.createArray().cast();
+    for (Date d : type) {
+      ret.push(dateToJsDate(d));
+    }
+    return ret;
   }
 
   @Override
@@ -346,6 +356,50 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
     return ret;
   }
+  public Date[] toArrDate(JavaScriptObject j) {
+    JsArray<JavaScriptObject> s = j.cast();
+    int l = s.length();
+    Date[] ret = new Date[l];
+    for (int i = 0; i < l; i++) {
+      ret[i] = jsDateToDate(s.get(i));
+    }
+   return ret;
+  }
+  
+  @Override
+  public native JavaScriptObject computeVarArguments(int len, JavaScriptObject args) /*-{
+    var ret = [];
+    for (i = 0; i < len - 1; i++) 
+      ret.push(args[i]);
+    var alen = args.length;
+    var p = len - 1;
+    if (alen >= len && Object.prototype.toString.apply(args[p]) === '[object Array]') {
+        ret.push(args[p]);
+    } else {
+      var a = [];
+      for (i = p; i < alen; i++) 
+        a.push(args[i]);
+      ret.push(a);  
+    }
+    return ret;
+  }-*/;
+
+  @Override
+  public native JavaScriptObject unshift(Object o, JavaScriptObject arr) /*-{
+    var ret = [o];
+    for (i in arr) ret.push(arr[i]);
+    return ret;
+  }-*/;
+  
+  @Override
+  public JavaScriptObject dateToJsDate(Date d) {
+    return numberToJsDateObject(d.getTime());
+  }
+
+  @Override
+  public Date jsDateToDate(JavaScriptObject jd) {
+    return new Date((long)jsDateObjectToNumber(jd));
+  }
 
   private native JavaScriptObject getWrapperJS(Object type, String wrapProp) /*-{
     return type[wrapProp];
@@ -434,6 +488,16 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       String meth, int arity) /*-{
     return jsoMap[meth][arity];
   }-*/;
+  
+  private static native JavaScriptObject numberToJsDateObject(double time) /*-{
+    return new Date(time);
+  }-*/;
+
+  private static native double jsDateObjectToNumber(JavaScriptObject d) /*-{
+    return (d && d.getTime) ? d.getTime(): 0;
+  }-*/;
+
+
 
   @Override
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
