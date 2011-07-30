@@ -49,7 +49,7 @@ public class JExportableParameter {
       JExportableClassType cType = (JExportableClassType) type;
       if (exportableEnclosingType.getExportableTypeOracle()
           .isClosure(type.getQualifiedSourceName())) {
-        ret = "(" + argName + ".constructor == $wnd."
+        ret = argName + " == null ? null : (" + argName + ".constructor == $wnd."
             + cType.getJSQualifiedExportName() + " ? " + argName
             + ".__gwt_instance : " 
 // typeMarker makes Hosted mode fail in gwt-2.2.0 and gwt-2.3.0
@@ -60,10 +60,6 @@ public class JExportableParameter {
             + argName 
 //            + ")"
             + "))";
-//        value = "@" 
-//        + cType.getQualifiedExporterImplementationName() + "::"
-//        + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
-//        + argName + ")";
       } else if (!(type instanceof JExportableArrayType)){
         ret += ".__gwt_instance";
       }

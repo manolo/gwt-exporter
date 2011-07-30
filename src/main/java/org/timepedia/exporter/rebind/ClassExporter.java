@@ -546,6 +546,7 @@ public class ClassExporter {
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
     sw.println("if (arguments.length == 1 && "
+        + "(typeof arguments[0]) == 'object' && "
         + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)\n  (arguments[0], @"  
         + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
