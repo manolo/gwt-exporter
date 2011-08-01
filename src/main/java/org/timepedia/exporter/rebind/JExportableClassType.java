@@ -55,28 +55,29 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public JExportableConstructor[] getExportableConstructors() {
-    ArrayList<JExportableConstructor> exportableCons
-        = new ArrayList<JExportableConstructor>();
+    ArrayList<JExportableConstructor> exportableCons = new ArrayList<JExportableConstructor>();
 
-    if (isInstantiable()) {
-      JClassType exportType = type;
-      if (exportableTypeOracle.isExportOverlay(type)) {
-        // export public no-arg constructor for overlay types
-        exportType = exportableTypeOracle.getExportOverlayType(type);
-      }
-      for (JConstructor method : exportType.getConstructors()) {
-        if (method.isConstructor() == null) {
-          continue;
-        }
-        JExportableMethod m = exportableTypeOracle.isExportable(method, this);
-        if (m != null) {
-          exportableCons.add((JExportableConstructor)m);
-        }
+    // export public no-arg constructor for overlay types
+    JClassType exportType = getTypeToExport(); 
+        
+    for (JConstructor method : exportType.getConstructors()) {
+      if (exportableTypeOracle.isExportable(method, this)) {
+        exportableCons.add(new JExportableConstructor(this, method));
       }
     }
     return exportableCons.toArray(new JExportableConstructor[0]);
   }
-
+  
+  public JExportableMethod[] getExportableFactoryMethods() {
+   ArrayList<JExportableMethod> exportableMethods = new ArrayList<JExportableMethod>();
+   for (JMethod method : type.getMethods()) {
+     if (exportableTypeOracle.isExportableFactoryMethod(method)) {
+       exportableMethods.add(new JExportableMethod(this, method));
+     }
+   }
+   return exportableMethods.toArray(new JExportableMethod[0]);
+  }
+  
   public JExportableField[] getExportableFields() {
     ArrayList<JExportableField> exportableFields
         = new ArrayList<JExportableField>();
@@ -101,12 +102,11 @@ public class JExportableClassType implements JExportable, JExportableType {
       classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
       
       for (JMethod method : classMethods) {
-        if (method.isConstructor() != null) {
+        if (exportableTypeOracle.isConstructor(method, this)) {
           continue;
         }
-        JExportableMethod m = exportableTypeOracle.isExportable(method, this);
-        if (m != null) {
-          ret.add(m);
+        if (exportableTypeOracle.isExportable(method, this)) {
+          ret.add(new JExportableMethod(this, method));
         }
       }
       exportableMethods = ret.toArray(new JExportableMethod[0]);
@@ -217,7 +217,8 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public JClassType getTypeToExport() {
-    return type;
+    return exportableTypeOracle.isExportOverlay(type)
+        ? exportableTypeOracle.getExportOverlayType(type) : type;
   }
 
   public String getWrapperFunc() {
@@ -246,12 +247,23 @@ public class JExportableClassType implements JExportable, JExportableType {
         || exportableTypeOracle.isDate(this) 
         || exportableTypeOracle.isArray(this);
   }
+  
+  public String getJsniSigForArrays() {
+    if (exportableTypeOracle.isJavaScriptObject(this)) {
+      return "[Lcom/google/gwt/core/client/JavaScriptObject;";
+    } else if (isTransparentType()){
+      return "[" + type.getJNISignature();
+    } else {
+      return "[Lorg/timepedia/exporter/client/Exportable;";
+    }
+  }
 
   public boolean needsExport() {
     return !isPrimitive() && !isTransparentType();
   }
 
   public boolean isInstantiable() {
-    return type.isInterface() == null && !type.isAbstract();                
+    return exportableTypeOracle.isInstantiable(type);                
   }
+  
 }

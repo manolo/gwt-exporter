@@ -1,9 +1,13 @@
 package simpledemo.client;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.ExportConstructor;
+import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
@@ -12,11 +16,12 @@ import org.timepedia.exporter.client.NoExport;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
-
   
   public void onModuleLoad() {
     GWT.create(C.class);
@@ -215,6 +220,12 @@ public class SimpleDemo implements EntryPoint {
     public Foo(String id, String a) {
       n= id + a;
     }
+    
+    @ExportConstructor
+    public static Foo getInstance(String a, String b, String c) {
+      return new Foo(a, b + "@" + c);
+    }
+    
     public String toString(){
       return n;
     }
@@ -356,101 +367,195 @@ public class SimpleDemo implements EntryPoint {
       return super.getParentName(c);
     }
     
-    @Export("$wnd.$")
+    @Export("$wnd.$$$")
     public static String $() {
-      return "$";
+      return "$$$";
+    }
+  }
+  
+  public static class GQ implements Exportable {
+    private String echoMsg = "empty";
+
+    @ExportConstructor
+    public static GQ $(String s) {
+      GQ ret = new GQ();
+      ret.echoMsg = s;
+      return ret;
+    }
+    public String echo() {
+      return echoMsg;
+    };
+    public Element element() {
+      return Document.get().getDocumentElement();
+    };
+    public Element[] elements() {
+      ArrayList<Element> e = new ArrayList<Element>();
+      e.add(element());
+      return e.toArray(new Element[0]);
+    };
+    public String countElements(Element... elms) {
+      System.out.println(new ArrayList<Element>(Arrays.asList(elms)).toString());
+      return "" + elms.length;
+    }
+    public GQ[] exports() {
+      ArrayList<GQ> j = new ArrayList<SimpleDemo.GQ>();
+      j.add(this);
+      return j.toArray(new GQ[0]);
+    }
+    public GQ gq() {
+      return this;
+    }
+  }
+  
+  @ExportPackage("gwt")
+  @Export("j")
+  public static class JQ implements  ExportOverlay<GQ> {
+    public String echo() {return null;}
+
+    public Element element(){return null;}
+    public Element[] elements(){return null;}
+    public String countElements(Element... elms){return null;}
+    
+    public GQ[] exports() {return null;}
+    
+    public GQ gq() {return null;}
+    
+    @Export("$wnd.$")
+    public static GQ $(String s){return null;};
+  }
+  
+  @ExportPackage("gwt")
+  @Export("c")
+  public static class TestConstructors implements Exportable {
+    private static TestConstructors instance;
+    private String msg;
+
+    @ExportConstructor
+    public static TestConstructors constructor(String msg) {
+      if (instance == null) {
+        instance = new TestConstructors();
+        instance.msg = msg;
+      }
+      return instance;
+    }
+    // Constructor is private
+    private TestConstructors() {
+    }
+    public String echo() {
+      return msg;
     }
   }
   
   public native JavaScriptObject runJsTests1() /*-{
-    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+    assertEq =function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
 
     var c = new $wnd.gwt.SimpleDemo.C();
-    p("C", c); 
-    p("C", c.toString()); 
+    assertEq("C", c); 
+    assertEq("C", c.toString()); 
     var a = c.convertToA();
-    p("A", a);
+    assertEq("A", a);
     a = new $wnd.simpledemo.SimpleDemo.A();
-    p("A", a);
+    assertEq("A", a);
     
     // GWT.create(C) should not export B
     var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
-    p("undefined", c); 
+    assertEq("undefined", c); 
   }-*/;
 
   public native JavaScriptObject runJsTests() /*-{
-    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+    assertEq =function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
-    p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
-    p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
-    p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
+    assertEq("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
+    assertEq("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
+    assertEq("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
+    assertEq("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
+    assertEq("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
     
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
-    p("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
-    p("3", "" + $wnd.gwt.SimpleDemo.HelloClass.test6());
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test7());
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test8());
-    p("A", "" + $wnd.gwt.SimpleDemo.HelloClass.test9());
-    p("div", "" + $wnd.gwt.SimpleDemo.HelloClass.test10().tagName.toLowerCase());
-    p("6", "" + $wnd.gwt.SimpleDemo.HelloClass.test11());
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
-    p("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
-    p("a_2", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", ["b", "c"]));
-    p("a_b_1", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", "b", ["c"]));
-    p("a_1_0", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1));
-    p("a_1_3", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1, "a", "e", "i"));
-    p("1970", "" + ($wnd.gwt.SimpleDemo.HelloClass.test22(new Date(0)).getYear() + 1900));
+    assertEq("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
+    assertEq("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
+    assertEq("3", "" + $wnd.gwt.SimpleDemo.HelloClass.test6());
+    assertEq("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test7());
+    assertEq("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test8());
+    assertEq("A", "" + $wnd.gwt.SimpleDemo.HelloClass.test9());
+    assertEq("div", "" + $wnd.gwt.SimpleDemo.HelloClass.test10().tagName.toLowerCase());
+    assertEq("6", "" + $wnd.gwt.SimpleDemo.HelloClass.test11());
+    assertEq("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
+    assertEq("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
+    assertEq("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
+    assertEq("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
+    assertEq("a_2", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", ["b", "c"]));
+    assertEq("a_b_1", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", "b", ["c"]));
+    assertEq("a_1_0", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1));
+    assertEq("a_1_3", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1, "a", "e", "i"));
+    assertEq("1970", "" + ($wnd.gwt.SimpleDemo.HelloClass.test22(new Date(0)).getYear() + 1900));
     
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("102", "" + h.test14(1, 1, [100]));
-    p("100,200", "" + h.test15([100, 200]));
-    p("5", "" + h.test17(5));
-    p("15", "" + h.test17(5,10));
-    p("a_2", "" + h.test19("a", ["b", "c"]));
-    p("a_b_1", "" + h.test19("a", "b", ["c"]));
-    p("a_1_0", "" + h.test21("a", 1));
-    p("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
-    p("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
-    p("70", "" + h.test24()[0].getYear());
+    assertEq("102", "" + h.test14(1, 1, [100]));
+    assertEq("100,200", "" + h.test15([100, 200]));
+    assertEq("5", "" + h.test17(5));
+    assertEq("15", "" + h.test17(5,10));
+    assertEq("a_2", "" + h.test19("a", ["b", "c"]));
+    assertEq("a_b_1", "" + h.test19("a", "b", ["c"]));
+    assertEq("a_1_0", "" + h.test21("a", 1));
+    assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
+    assertEq("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
+    assertEq("70", "" + h.test24()[0].getYear());
     
     
     var v1 = new $wnd.gwt.SimpleDemo.Foo();
-    p("foo", v1);
+    assertEq("foo", v1);
     var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
-    p("foo2", v2);
+    assertEq("foo2", v2);
     var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
-    p("foo3bbb", v3);
-    p("foo>ccc", v1.toString("ccc"));
-    p("Hello,Friend", v1.executeJsClosure(function(arg1, arg2) {
+    assertEq("foo3bbb", v3);
+    assertEq("foo>ccc", v1.toString("ccc"));
+    assertEq("Hello,Friend", v1.executeJsClosure(function(arg1, arg2) {
         return arg1 + "," + arg2;
     }));    
+    var v4 = new $wnd.gwt.SimpleDemo.Foo("foo4", "bbb", "ccc");
+    assertEq("foo4bbb@ccc", v4);
     
     var m = new $wnd.gwt.SimpleDemo.MClass();
-    p("om0", m.m0());
-    p("m1", m.m1());
-    p("m1-23", m.m1(2, 3));
-    p("m2", m.m2());
-    p("m2", m.m2());
-    p("m3", m.m3());
+    assertEq("om0", m.m0());
+    assertEq("m1", m.m1());
+    assertEq("m1-23", m.m1(2, 3));
+    assertEq("m2", m.m2());
+    assertEq("m2", m.m2());
+    assertEq("m3", m.m3());
     var m5 = $wnd.gwt.SimpleDemo.MClass.m5 ? "defined" : "undefined";
-    p("undefined", m5);
+    assertEq("undefined", m5);
     
     // exportAll must export B
     var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
-    p("defined", c); 
+    assertEq("defined", c); 
     
     var ch = new $wnd.$$();
-    p("Child", ch.childName(ch));
-    p("Child", ch.getParentName(ch.parent()));
-    p("$", $wnd.$());
+    assertEq("Child", ch.childName(ch));
+    assertEq("Child", ch.getParentName(ch.parent()));
+    assertEq("$$$", $wnd.$$$());
     
+    // export overlay
+    var gq = new  $wnd.$('hello'); 
+    assertEq("hello", gq.echo());
+    assertEq("hello", gq.gq().echo());
+     
+    var ex = gq.exports();
+    assertEq("hello", ex[0].echo());
+    
+    assertEq("0", gq.countElements());
+    assertEq("1", gq.countElements(document));
+    assertEq("2", gq.countElements([document, window]));
+    
+    assertEq("object", (typeof gq.element()));
+    assertEq("object", (typeof gq.elements()[0]));
+    
+    // export static constructors
+    var cs1 = new $wnd.gwt.c('hello');
+    assertEq("hello", cs1.echo());
+    var cs2 = new $wnd.gwt.c('by');
+    assertEq("hello", cs2.echo());
     
   }-*/;
-  
 }

@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -18,7 +19,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   
   public static final String WRAPPER_PROPERTY = "__gwtex_wrap";
 
-  private native static JavaScriptObject wrap0(Exportable type,
+  private native static JavaScriptObject wrap0(Object type,
       JavaScriptObject constructor, String wrapProp) /*-{
            return new (constructor)(type);
       }-*/;
@@ -50,57 +51,13 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     typeMap.put(type, exportedConstructor);
   }
 
-  public void setWrapper(Object instance, JavaScriptObject wrapper) {
-    if (GWT.isScript()) {
-      setWrapperJS(instance, wrapper, WRAPPER_PROPERTY);
-    } else {
-      setWrapperHosted(instance, wrapper);
-    }
-  }
-
-  public JavaScriptObject typeConstructor(Exportable type) {
+  public JavaScriptObject typeConstructor(Object type) {
     return typeConstructor(type.getClass());
   }
 
   public JavaScriptObject typeConstructor(Class type) {
     Object o = typeMap.get(type);
     return (JavaScriptObject) o;
-  }
-
-  public JavaScriptObject wrap(Exportable type) {
-    if (type == null) {
-      return null;
-    }
-
-    if (!GWT.isScript()) {
-      JavaScriptObject wrapper = wrapperMap.get(type);
-      if (wrapper != null) {
-        return wrapper;
-      }
-    } else {
-      JavaScriptObject wrapper = getWrapperJS(type, WRAPPER_PROPERTY);
-      if (wrapper != null) {
-        return wrapper;
-      }
-    }
-    JavaScriptObject wrapper = wrap0(type, typeConstructor(type),
-        WRAPPER_PROPERTY);
-    setWrapper(type, wrapper);
-    return wrapper;
-  }
-
-  public JavaScriptObject wrap(Exportable[] type) {
-    if (type == null) {
-      return null;
-    }
-
-    JavaScriptObject wrapper = getWrapper(type);
-
-    JsArray<JavaScriptObject> wrapperArray = wrapper.cast();
-    for (int i = 0; i < type.length; i++) {
-      wrapperArray.set(i, wrap(type[i]));
-    }
-    return wrapper;
   }
 
   private JavaScriptObject getWrapper(Object type) {
@@ -119,8 +76,12 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   private static native JavaScriptObject reinterpretCast(Object nl) /*-{
-        return nl;
-    }-*/;
+    return nl;
+  }-*/;
+  
+  private static native JavaScriptObject[] reinterpretArray(Object nl) /*-{
+    return nl;
+  }-*/;
 
   @Override
   public JavaScriptObject wrap(float[] type) {
@@ -266,6 +227,68 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return reinterpretCast(type);
     }
   }
+
+  @Override
+  public JavaScriptObject wrap(Exportable type) {
+    if (type == null) {
+      return null;
+    }
+
+    JavaScriptObject wrapper = getWrapper(type);
+    if (wrapper != null) {
+      return wrapper;
+    }
+
+    return setWrapper(type);
+  }
+
+  @Override
+  public JavaScriptObject wrap(Exportable[] type) {
+    if (type == null) {
+      return null;
+    }
+
+    JavaScriptObject wrapper = getWrapper(type);
+    JsArray<JavaScriptObject> wrapperArray = wrapper.cast();
+    for (int i = 0; i < type.length; i++) {
+      wrapperArray.set(i, wrap(type[i]));
+    }
+    return wrapper;
+  }
+
+  public JavaScriptObject setWrapper(Object type) {
+    JavaScriptObject wrapper = wrap0(type, typeConstructor(type), WRAPPER_PROPERTY);
+    if (GWT.isScript()) {
+      setWrapperJS(type, wrapper, WRAPPER_PROPERTY);
+    } else {
+      setWrapperHosted(type, wrapper);
+    }
+    return wrapper;
+  }
+  
+  public JavaScriptObject getWrapper(Exportable type) {
+    JavaScriptObject wrapper = null;
+    if (GWT.isScript()) {
+      wrapper = getWrapperJS(type, WRAPPER_PROPERTY);
+    } else {
+      wrapper = wrapperMap.get(type);
+    }
+    return wrapper;
+  }
+
+  
+  @Override
+  public JavaScriptObject wrap(JavaScriptObject[] type) {
+    if (type == null) {
+      return null;
+    }
+    JsArray<JavaScriptObject> wrapperArray = JavaScriptObject.createArray().cast();
+    for (int i = 0; i < type.length; i++) {
+      wrapperArray.set(i, type[i]);
+    }
+    return wrapperArray;
+  }
+
   
   public Object[] toArrObject(JavaScriptObject p) {
     JsArray<JavaScriptObject> s = p.cast();
@@ -275,6 +298,21 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       ret[i] = s.get(i);
     }
     return ret;
+  }
+
+  @Override
+  public JavaScriptObject[] toArrJsObject(JavaScriptObject p) {
+    if (!GWT.isScript()) {
+      JsArray<JavaScriptObject> s = p.cast();
+      int l = s.length();
+      JavaScriptObject[] ret = new JavaScriptObject[l];
+      for (int i = 0; i < l; i++) {
+        ret[i] = s.get(i);
+      }
+      return ret;
+    } else {
+      return reinterpretArray(p);
+    }
   }
   
   private final static native Object getGwtInstance(JavaScriptObject o) /*-{
@@ -459,7 +497,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       SignatureJSO sig = sigs.get(i);
       if (sig.matches(arguments)) {
         JavaScriptObject javaFunc = sig.getFunction();
-        System.out.println(javaFunc);
         if (!GWT.isScript()) {
           JavaScriptObject wrapFunc = sig.getWrapperFunc();
           return wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;

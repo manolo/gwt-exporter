@@ -120,6 +120,12 @@ public class JExportableParameter {
   
   public String getToArrayFunc(String qsn, String argName) {
     String ret = "ExporterUtil.";
+    ExportableTypeOracle o = exportableEnclosingType.getExportableTypeOracle();
+    JExportableType t = o.findExportableType(qsn.replace("[]", ""));
+    JExportableClassType e = null;
+    if (t != null && (t instanceof JExportableClassType)) {
+      e = (JExportableClassType) t; 
+    }
     if (qsn.equals("java.lang.String[]")) {
       ret += "toArrString" ;
     } else if (qsn.equals("java.util.Date[]")) {
@@ -136,10 +142,15 @@ public class JExportableParameter {
       ret += "toArrByte" ;
     } else if (qsn.equals("char[]")) {
       ret += "toArrChar" ;
-    } else if (qsn.endsWith("Object[]")) {
-      ret += "toArrObject" ;
     } else {
-      ret += "toArrExport" ;
+      ret = "(" + qsn + ")" + ret;
+      if (e != null && o.isJavaScriptObject(e)) {
+        ret += "toArrJsObject";
+      } else if (t != null) {
+        ret += "toArrExport" ;
+      } else {
+        ret += "toArrObject" ;
+      }
     }
     return ret + "(" + argName + ")";
   }

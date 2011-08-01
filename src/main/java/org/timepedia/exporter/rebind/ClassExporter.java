@@ -2,8 +2,10 @@ package org.timepedia.exporter.rebind;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
@@ -272,7 +274,7 @@ public class ClassExporter {
       // the Javascript constructors refer to static factory methods
       // on the Exporter implementation, referenced via JSNI
       // We generate them here
-      if (requestedType.isInstantiable()) {
+      if (xTypeOracle.isInstantiable(requestedType.getTypeToExport())) {
         exportStaticFactoryConstructors(requestedType);
       }
 
@@ -440,6 +442,10 @@ public class ClassExporter {
     }
   }
   
+  /**
+   * Creates static methods to wrap functions with return or argument
+   * types problematic in jsni (long, date, etc).
+   */
   private void createStaticWrappers(JExportableClassType requestedType)
       throws UnableToCompleteException {
     for (JExportableMethod method : requestedType.getExportableMethods()) {
@@ -546,7 +552,7 @@ public class ClassExporter {
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
     sw.println("if (arguments.length == 1 && "
-        + "(typeof arguments[0]) == 'object' && "
+        + "((typeof arguments[0]) == 'object' || (typeof arguments[0]) == 'function') && "
         + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)\n  (arguments[0], @"  
         + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
@@ -555,16 +561,18 @@ public class ClassExporter {
     sw.outdent();
     sw.println("}");
 
-    JExportableConstructor[] constructors = requestedType
-        .getExportableConstructors();
 
     // used to hold arity of constructors that have been generated
-    HashMap<Integer, JExportableConstructor> arity
-        = new HashMap<Integer, JExportableConstructor>();
+    HashMap<Integer, JExportableMethod> arity
+        = new HashMap<Integer, JExportableMethod>();
+    
+    List<JExportableMethod> constructors = new ArrayList<JExportableMethod>();
+    constructors.addAll(Arrays.asList(requestedType.getExportableConstructors()));
+    constructors.addAll(Arrays.asList(requestedType.getExportableFactoryMethods()));
 
-    for (JExportableConstructor constructor : constructors) {
+    for (JExportableMethod constructor : constructors) {
       int numArguments = constructor.getExportableParameters().length;
-      JExportableConstructor conflicting = arity.get(numArguments);
+      JExportableMethod conflicting = arity.get(numArguments);
       if (conflicting != null) {
         logger.log(TreeLogger.ERROR,
             "Constructor " + conflicting + " with " + numArguments + " "
@@ -576,12 +584,17 @@ public class ClassExporter {
       arity.put(numArguments, constructor);
       sw.println("else if (arguments.length == " + numArguments + ") {");
       sw.indent();
-
+      
       // else someone is calling the constructor normally
       // we generate a JSNI call to the matching static factory method
       // and store it in this.instance
-      sw.print("this.__gwt_instance = @"
-          + constructor.getStaticFactoryJSNIReference() + "(");
+      String jsniCall;
+      if (constructor instanceof JExportableConstructor) {
+        jsniCall = ((JExportableConstructor)constructor).getStaticFactoryJSNIReference();
+      } else {
+        jsniCall =  constructor.getJSNIReference();
+      }
+      sw.print("this.__gwt_instance = @"+ jsniCall + "(");
 
       // pass arguments[0], ..., arguments[n] to the JSNI call
       declareJSPassedValues(constructor, "arguments", true);
@@ -670,14 +683,9 @@ public class ClassExporter {
     for (int i = 0; i < params.length; i++) {
       JExportableType eType = params[i].getExportableType();
       boolean needExport = eType != null && eType.needsExport();
-      boolean isArray = eType instanceof JExportableArrayType;
-      String arrayType = needExport && isArray ? ("L"
-          + ((JExportableArrayType) eType).getJSNIReference()) : "";
-
+      
       if (wrap && needExport) {
-        sw.print("@org.timepedia.exporter.client.ExporterUtil::wrap("
-            + (isArray ? arrayType
-            : "Lorg/timepedia/exporter/client/Exportable;") + ")(");
+        sw.print(getGwtToJsWrapper(eType) + "(");
       }
       sw.print(ARG_PREFIX + i);
       if (wrap && needExport) {
@@ -754,10 +762,10 @@ public class ClassExporter {
    * @param requestedType
    */
   private void createStaticWrapperMethod(JExportableMethod method, JExportableClassType requestedType) {
+    String r = method.getExportableReturnType() != null ? method.getExportableReturnType().getQualifiedSourceName() : "Object";
+    String body = r.equals("void") ? "" : "return ";
     String function = "public static ";
-    String body = "return ";
     String end = "";
-    String r = method.getExportableReturnType().getQualifiedSourceName();
     if (r.equals("long")) {
       function += "double";
       body += "(double) ";
@@ -766,7 +774,7 @@ public class ClassExporter {
       body += "ExporterUtil.dateToJsDate(";
       end = ")";
     } else {
-      function += method.getExportableReturnType().getQualifiedSourceName();
+      function += r;
     }
     function += " " + JExportableMethod.WRAPPER_PREFIX + method.getName() + "(";
     if (method.isStatic()) {
@@ -847,7 +855,6 @@ public class ClassExporter {
 
     boolean isVoid = retType != null && retType.getQualifiedSourceName().equals("void");
     boolean needsExport = retType != null && retType.needsExport();
-    boolean isArray = retType != null && retType instanceof JExportableArrayType;
     
     if (needsExport && !exported.contains(retType)) {
       if (exportDependentClass(retType.getQualifiedSourceName())) {
@@ -911,17 +918,7 @@ public class ClassExporter {
     if (dt.isOverloaded() || !needsExport) {
       sw.print(isVoid ? "" : "return (");
     } else {
-      String arrayType = isArray ? ((JExportableArrayType) retType)
-          .getJSNIReference() : "";
-      
-      arrayType = arrayType.matches("^\\[(.|Ljava/lang/String;|Ljava/util/Date;)") ? arrayType
-          : "[Lorg/timepedia/exporter/client/Exportable;";
-      
-      sw.print((isVoid ? "" : "return ")
-          + "@org.timepedia.exporter.client.ExporterUtil::wrap("
-          + (isArray ? arrayType
-          : "Lorg/timepedia/exporter/client/Exportable;") + ")("
-      );
+      sw.print((isVoid ? "" : "return ") + getGwtToJsWrapper(retType) + "(");
     }
 
     // end wrap() or non-exportable return case call
@@ -931,6 +928,24 @@ public class ClassExporter {
     sw.outdent();
     sw.print("})");
     sw.println(";");
+  }
+  
+  private String getGwtToJsWrapper(JExportableType retType) {
+    String rType = "null";
+    if (retType == null ) {
+      rType = "Ljava/lang/Object;";
+    } else if (retType instanceof JExportableArrayType) {
+      JExportableType xcompType = ((JExportableArrayType) retType).getComponentType();
+      if (xcompType instanceof JExportablePrimitiveType) {
+        rType = ((JExportableArrayType) retType).getJSNIReference();
+      } else if (xcompType instanceof JExportableClassType) {
+        JExportableClassType ct = (JExportableClassType) xcompType;
+        rType = ct.getJsniSigForArrays();
+      }
+    } else {
+      rType = "Lorg/timepedia/exporter/client/Exportable;";
+    }
+    return "@org.timepedia.exporter.client.ExporterUtil::wrap(" + rType + ")";
   }
 
   private void exportDependentParams(JExportableMethod method)
@@ -952,16 +967,15 @@ public class ClassExporter {
     if (visited.contains(qualifiedSourceName)) {
       return false;
     }
+
     JExportableType xType = xTypeOracle.findExportableType(qualifiedSourceName);
     if (xType instanceof JExportableArrayType) {
-
       JExportableType xcompType = ((JExportableArrayType) xType)
           .getComponentType();
-      
-      if (xcompType instanceof JExportablePrimitiveType
-          || qualifiedSourceName.equals("java.lang.String[]")
-          || qualifiedSourceName.equals("java.util.Date[]")
-          ) {
+      if (xcompType instanceof JExportablePrimitiveType) {
+        return false;
+      } else if (xcompType instanceof JExportableClassType 
+          && ((JExportableClassType)xcompType).isTransparentType()) {
         return false;
       } else {
         return exportDependentClass(xcompType.getQualifiedSourceName());

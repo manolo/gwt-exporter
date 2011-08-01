@@ -108,7 +108,8 @@ public class DispatchTable {
       }
       sb.append(",");
       
-      sb.append(method.getExportableReturnType().getWrapperFunc()+",");
+      String wrap = method.getExportableReturnType() == null ? null : method.getExportableReturnType().getWrapperFunc();
+      sb.append(wrap + ", ");
       for (JExportableParameter param : exportableParameters) {
         String jsType = param.getJsTypeOf();
         if (jsType.equals("number") || jsType.equals("object") ||

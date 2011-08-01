@@ -1,9 +1,13 @@
 package org.timepedia.exporter.test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.ExportConstructor;
+import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
@@ -11,6 +15,8 @@ import org.timepedia.exporter.client.NoExport;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.Label;
 
@@ -28,8 +34,6 @@ public class CoreTest extends GWTTestCase{
     ExporterUtil.exportAll();
     runJsTests2();
   }
-  
-  
   
   ///////////////////// Classes used to test types, arrays, static, public, override
   @ExportPackage("gwt")
@@ -328,9 +332,98 @@ public class CoreTest extends GWTTestCase{
       return super.getParentName(c);
     }
     
-    @Export("$wnd.$")
+    @Export("$wnd.$$$")
     public static String $() {
-      return "$";
+      return "$$$";
+    }
+  }
+  
+  ///////////////////// Classes used to test export overlay
+  public static class GQ implements Exportable {
+    private String echoMsg = "empty";
+
+    @ExportConstructor
+    public static GQ $(String s) {
+      GQ ret = new GQ();
+      ret.echoMsg = s;
+      return ret;
+    }
+    public String echo() {
+      return echoMsg;
+    };
+    public Element element() {
+      return Document.get().getDocumentElement();
+    };
+    public Element[] elements() {
+      ArrayList<Element> e = new ArrayList<Element>();
+      e.add(element());
+      return e.toArray(new Element[0]);
+    };
+    public String countElements(Element... elms) {
+      System.out.println(new ArrayList<Element>(Arrays.asList(elms)).toString());
+      return "" + elms.length;
+    }
+    public GQ[] exports() {
+      ArrayList<GQ> j = new ArrayList<GQ>();
+      j.add(this);
+      return j.toArray(new GQ[0]);
+    }
+    public GQ gq() {
+      return this;
+    }
+  }
+  
+  @ExportPackage("gwt")
+  @Export("j")
+  public static class JQ implements  ExportOverlay<GQ> {
+    public String echo() {return null;}
+
+    public Element element(){return null;}
+    public Element[] elements(){return null;}
+    public String countElements(Element... elms){return null;}
+    
+    public GQ[] exports() {return null;}
+    
+    public GQ gq() {return null;}
+    
+    @Export("$wnd.$")
+    public static GQ $(String s){return null;};
+  }
+  
+  ///////////////////// Class used to test static constructors
+  @ExportPackage("gwt")
+  @Export("c")
+  public static class TestConstructors implements Exportable {
+    private static TestConstructors instance;
+    private String msg;
+
+    @ExportConstructor
+    public static TestConstructors constructor(String msg) {
+      if (instance == null) {
+        instance = new TestConstructors();
+        instance.msg = msg;
+      }
+      return instance;
+    }
+    // Constructor is private
+    private TestConstructors() {
+    }
+    public String echo() {
+      return msg;
+    }
+  }
+  
+  static boolean debug = false;
+  public static <T> void mAssertEqual(T a, T b) {
+    if (!debug) {
+      assertEquals(a.toString(), b.toString());
+    } else {
+      if (a.toString().equals(b.toString())) {
+        System.out.println("OK -> " + b);
+      } else {
+        System.out.println("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
+            + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+      }
     }
   }
   
@@ -349,21 +442,7 @@ public class CoreTest extends GWTTestCase{
     var c = $wnd.gwt.CoreTest.B ? "defined" : "undefined";
     assertEq("undefined", c); 
   }-*/;
-  
-  static boolean debug = false;
-  public static <T> void mAssertEqual(T a, T b) {
-    if (!debug) {
-      assertEquals(a.toString(), b.toString());
-    } else {
-      if (a.toString().equals(b.toString())) {
-        System.out.println("OK -> " + b);
-      } else {
-        System.out.println("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
-            + a.getClass().getName() + ", " + b.getClass().getName() + "]");
-      }
-    }
-  }
-  
+
   public native JavaScriptObject runJsTests2() /*-{
     assertEq = function(a, b) {@org.timepedia.exporter.test.CoreTest::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
@@ -431,7 +510,28 @@ public class CoreTest extends GWTTestCase{
     var ch = new $wnd.$$();
     assertEq("Child", ch.childName(ch));
     assertEq("Child", ch.getParentName(ch.parent()));
-    assertEq("$", $wnd.$());
+    assertEq("$$$", $wnd.$$$());
+    
+        // export overlay
+    var gq = new  $wnd.$('hello'); 
+    assertEq("hello", gq.echo());
+    assertEq("hello", gq.gq().echo());
+     
+    var ex = gq.exports();
+    assertEq("hello", ex[0].echo());
+    
+    assertEq("0", gq.countElements());
+    assertEq("1", gq.countElements(document));
+    assertEq("2", gq.countElements([document, window]));
+    
+    assertEq("object", (typeof gq.element()));
+    assertEq("object", (typeof gq.elements()[0]));
+    
+    // export static constructors
+    var cs1 = new $wnd.gwt.c('hello');
+    assertEq("hello", cs1.echo());
+    var cs2 = new $wnd.gwt.c('by');
+    assertEq("hello", cs2.echo());
     
   }-*/;
 

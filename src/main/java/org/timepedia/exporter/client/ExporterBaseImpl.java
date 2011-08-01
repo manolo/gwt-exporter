@@ -38,6 +38,10 @@ public class ExporterBaseImpl {
     return null;
   }
 
+  public JavaScriptObject wrap(JavaScriptObject[] type) {
+    return null;
+  }
+
   public JavaScriptObject wrap(double[] type) {
     return null;
   }
@@ -125,6 +129,9 @@ public class ExporterBaseImpl {
     return null;
   }
 
+  public Object[] toArrJsObject(JavaScriptObject type) {
+    return null;
+  }
   
   public JavaScriptObject computeVarArguments(int len, JavaScriptObject args) {
     return null;
@@ -141,5 +148,6 @@ public class ExporterBaseImpl {
   public Date jsDateToDate(JavaScriptObject jd) {
     return null;
   }
+
 }
 

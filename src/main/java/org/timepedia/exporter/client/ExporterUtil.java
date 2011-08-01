@@ -127,6 +127,10 @@ public class ExporterUtil {
   public static JavaScriptObject wrap(Exportable type) {
     return impl.wrap(type);
   }
+  
+  public static JavaScriptObject wrap(JavaScriptObject[] type) {
+    return impl.wrap(type);
+  }
 
   public static JavaScriptObject wrap(Exportable[] type) {
     return impl.wrap(type);
@@ -199,7 +203,11 @@ public class ExporterUtil {
   public static Object[] toArrObject(JavaScriptObject type) {
     return impl.toArrObject(type);
   }
-
+  
+  public static Object[] toArrJsObject(JavaScriptObject type) {
+    return impl.toArrJsObject(type);
+  }
+  
   public static Date[] toArrDate(JavaScriptObject type) {
     return impl.toArrDate(type);
   }

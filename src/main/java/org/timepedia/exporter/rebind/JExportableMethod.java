@@ -88,7 +88,7 @@ public class JExportableMethod implements JExportable {
       reference = exportableEnclosingType.getQualifiedExporterImplementationName() + "::" + WRAPPER_PREFIX + method.getName() + "(";
       // Wrappers are static, so we pass the instance in the first argument.
       if (!isStatic()) {
-        reference += exportableEnclosingType.getJSNIReference();
+        reference += exportableEnclosingType.getTypeToExport().getJNISignature();
       }
     }
     

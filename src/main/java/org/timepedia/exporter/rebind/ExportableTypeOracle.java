@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.NoExport;
 import org.timepedia.exporter.client.StructuralType;
 
@@ -42,6 +43,10 @@ public class ExportableTypeOracle {
   private static final String DATE_CLASS = "java.util.Date";
 
   private JClassType exportAllType;
+  
+  public boolean isConstructor(JAbstractMethod method, JExportableClassType type) {
+    return method.isConstructor() != null || method.getAnnotation(ExportConstructor.class) !=null;
+  }
 
   public boolean isExportable(JField field) {
     return field.isStatic() && field.isPublic() && field.isFinal() && (
@@ -60,13 +65,12 @@ public class ExportableTypeOracle {
     return annotation != null;
   }
   
-  public JExportableMethod isExportable(JAbstractMethod method, JExportableClassType type) {
+  public boolean isExportable(JAbstractMethod method, JExportableClassType type) {
     boolean export = false;
-    
     // Only public methods are exported
     if (method.isPublic()) {
       Export e;
-      if (method instanceof JConstructor && method.getParameters().length == 0) {
+      if (method instanceof JConstructor && isInstantiable(method.getEnclosingType()) && method.getParameters().length == 0) {
         // zero-arg constructors always exportable
         export =  true;
       } else if (isNotExportable(method.getAnnotation(NoExport.class))) {
@@ -74,15 +78,16 @@ public class ExportableTypeOracle {
         // method is marked as export in an interface or the entire class
         // is annotated as Export
         export = false;
-      } else if ((e = type.getType().getAnnotation(Export.class)) != null && e.all()) {
-        // Export this method if the class has the Export.all attribute set
-        export = true;
       } else if (isExportable(method.getAnnotation(Export.class))) {
         // Export this method if has the Export annotation
         export = true;
       } else if (isExportable(method.getEnclosingType())) {
         // Export all method in a class annotated as Export
         export = true;
+      } else if (type != null && (e = type.getType().getAnnotation(Export.class)) != null && e.all()) {
+        // Export this method if the class has the Export.all attribute set
+        // Filter some generic methods present in Object
+        export = !method.getName().matches("getClass|hashCode|equals|notify|notifyAll|wait");
       } else {
         // Export methods which are annotated in implemented interfaces
         for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
@@ -101,35 +106,7 @@ public class ExportableTypeOracle {
         }
       }
     }
-    
-    JExportableMethod m = null;
-    if (export) {
-      if (method instanceof JConstructor) {
-        m = new JExportableConstructor(type, method);
-      } else {
-        m = new JExportableMethod(type, method);
-        
-        // 
-        // Time ago, return type needed to be exported if it was not a primitive
-        // String,Number,JSO, etc and it hasn't already been exported
-        // we needed to export it because we needed it to wrap the returned value
-        // 
-        // Now we do not need check return type or parameters although
-        // we could could filter methods here
-        
-        /*
-        if (m.getExportableReturnType() == null) {
-          return null;
-        }
-        for (JExportableParameter p : m.getExportableParameters()) {
-          if (!p.isExportable()) {
-            return null;
-          }
-        } */
-        
-      }
-    }
-    return m;
+    return export;
   }
 
   private static boolean isExportable(ExportClosure annotation) {
@@ -138,6 +115,16 @@ public class ExportableTypeOracle {
 
   private static boolean isNotExportable(NoExport annotation) {
     return annotation != null;
+  }
+  
+  private static boolean isExportable(ExportConstructor annotation) {
+    return annotation != null;
+  }
+  
+  public boolean isExportableFactoryMethod(JMethod method) {
+    return isExportable(method, null) && method.isStatic()
+        && isExportable(method.getAnnotation(ExportConstructor.class))
+        && method.getReturnType() == method.getEnclosingType();
   }
 
   private TypeOracle typeOracle;
@@ -246,7 +233,6 @@ public class ExportableTypeOracle {
     if (cType != null && cType.isAssignableTo(exportableType)) {
       ExportClosure ann = cType.getAnnotation(ExportClosure.class);
       if (ann != null && cType.isInterface() != null) {
-
         return cType.getMethods().length == 1;
       }
     }
@@ -255,6 +241,10 @@ public class ExportableTypeOracle {
 
   public boolean isExportOverlay(JClassType i) {
     return i.isAssignableTo(exportOverlayType);
+  }
+  
+  public boolean isInstantiable(JClassType i) {
+    return !i.isAbstract() && i.isInterface() == null;
   }
 
   public boolean isJavaScriptObject(JExportableClassType type) {
