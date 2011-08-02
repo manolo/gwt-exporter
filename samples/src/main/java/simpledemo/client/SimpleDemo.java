@@ -373,6 +373,12 @@ public class SimpleDemo implements EntryPoint {
     }
   }
   
+  public static class Func {
+    public boolean f(Element e) {
+      return true;
+    }
+  }
+  
   public static class GQ implements Exportable {
     private String echoMsg = "empty";
 
@@ -405,6 +411,14 @@ public class SimpleDemo implements EntryPoint {
     public GQ gq() {
       return this;
     }
+    
+    public boolean executeFunction(Func f) {
+      return f.f(element());
+    }
+    
+    public String executeClosure(Clos f) {
+      return f.execute("A", "B");
+    }
   }
   
   @ExportPackage("gwt")
@@ -420,8 +434,22 @@ public class SimpleDemo implements EntryPoint {
     
     public GQ gq() {return null;}
     
+    public boolean executeFunction(Func f) {return false;}
+    
+    public String executeClosure(Clos f) {return null;}
+    
     @Export("$wnd.$")
     public static GQ $(String s){return null;};
+  }
+  
+  @ExportClosure
+  public interface Clos extends Exportable {
+    public String execute(String par1, String par2);
+  }
+  
+  @ExportClosure()
+  public interface FuncClos extends ExportOverlay<Func>  {
+    public boolean f(Element e);
   }
   
   @ExportPackage("gwt")
@@ -550,6 +578,10 @@ public class SimpleDemo implements EntryPoint {
     
     assertEq("object", (typeof gq.element()));
     assertEq("object", (typeof gq.elements()[0]));
+    
+    assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
+    assertEq('false', gq.executeFunction(function(e){return e == null;}));
+    assertEq('true', gq.executeFunction(function(e){return e != null;}));
     
     // export static constructors
     var cs1 = new $wnd.gwt.c('hello');

@@ -339,6 +339,12 @@ public class CoreTest extends GWTTestCase{
   }
   
   ///////////////////// Classes used to test export overlay
+  public static class Func {
+    public boolean f(Element e) {
+      return true;
+    }
+  }
+  
   public static class GQ implements Exportable {
     private String echoMsg = "empty";
 
@@ -371,6 +377,14 @@ public class CoreTest extends GWTTestCase{
     public GQ gq() {
       return this;
     }
+    
+    public boolean executeFunction(Func f) {
+      return f.f(element());
+    }
+    
+    public String executeClosure(Clos f) {
+      return f.execute("A", "B");
+    }
   }
   
   @ExportPackage("gwt")
@@ -386,8 +400,22 @@ public class CoreTest extends GWTTestCase{
     
     public GQ gq() {return null;}
     
+    public boolean executeFunction(Func f) {return false;}
+    
+    public String executeClosure(Clos f) {return null;}
+    
     @Export("$wnd.$")
     public static GQ $(String s){return null;};
+  }
+  
+  @ExportClosure
+  public interface Clos extends Exportable {
+    public String execute(String par1, String par2);
+  }
+  
+  @ExportClosure()
+  public interface FuncClos extends ExportOverlay<Func>  {
+    public boolean f(Element e);
   }
   
   ///////////////////// Class used to test static constructors

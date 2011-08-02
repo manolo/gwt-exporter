@@ -216,6 +216,10 @@ public class JExportableClassType implements JExportable, JExportableType {
     return type;
   }
 
+  public JClassType getRequestedType() {
+    return type;
+  }
+
   public JClassType getTypeToExport() {
     return exportableTypeOracle.isExportOverlay(type)
         ? exportableTypeOracle.getExportOverlayType(type) : type;

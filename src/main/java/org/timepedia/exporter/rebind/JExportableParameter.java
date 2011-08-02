@@ -48,7 +48,7 @@ public class JExportableParameter {
     if (type != null && type.needsExport()) {
       JExportableClassType cType = (JExportableClassType) type;
       if (exportableEnclosingType.getExportableTypeOracle()
-          .isClosure(type.getQualifiedSourceName())) {
+          .isClosure(cType)) {
         ret = argName + " == null ? null : (" + argName + ".constructor == $wnd."
             + cType.getJSQualifiedExportName() + " ? " + argName
             + ".__gwt_instance : " 

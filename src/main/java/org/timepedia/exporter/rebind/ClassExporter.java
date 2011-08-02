@@ -206,17 +206,20 @@ public class ClassExporter {
     // get a fully qualified reference to the Exporter implementation
     String qualName = requestedType.getQualifiedExporterImplementationName();
     
-    boolean isClosure = xTypeOracle.isClosure(requestedClass);
+    boolean isClosure = xTypeOracle.isClosure(requestedType);
     String superClass = xTypeOracle.isStructuralType(requestedType.getType())
         ? requestedClass : null;
 
     // try to construct a sourcewriter for the qualified name
     if (isClosure) {
-      sw = getSourceWriter(logger, ctx, packageName, genName, superClass,
-          "Exporter", requestedType.getQualifiedSourceName());
+      String rtype = requestedType.getQualifiedSourceName();
+      if (requestedType.getType().isInterface() != null) {
+        sw = getSourceWriter(logger, ctx, packageName, genName, null, "Exporter", rtype);
+      } else {
+        sw = getSourceWriter(logger, ctx, packageName, genName, rtype, "Exporter");
+      }
     } else {
-      sw = getSourceWriter(logger, ctx, packageName, genName, superClass,
-          "Exporter");
+      sw = getSourceWriter(logger, ctx, packageName, genName, superClass, "Exporter");
     }
     if (sw == null) {
       return qualName; // null, already generated
@@ -252,7 +255,6 @@ public class ClassExporter {
       // if not defined, we create a Javascript package hierarchy
       // foo.bar.baz to hold the Javascript bridge
       declarePackages(requestedType);
-
 
       // export Javascript constructors
       exportConstructor(requestedType);
@@ -483,7 +485,7 @@ public class ClassExporter {
       }
     }
     if (!xTypeOracle
-        .isClosure(requestedType.getType().getQualifiedSourceName())) {
+        .isClosure(requestedType)) {
       if (DispatchTable.isAnyOverridden(dispatchMap)) {
         registerDispatchMap(requestedType, dispatchMap, false);
       }
@@ -1026,7 +1028,6 @@ public class ClassExporter {
     sw.println("exported=true;");
 
     // first, export our dependencies
-    int exprCount = 0;
     for (JExportableClassType classType : exported) {
       if (requestedType.getQualifiedSourceName()
           .equals(classType.getQualifiedSourceName())
@@ -1034,11 +1035,7 @@ public class ClassExporter {
         continue;
       }
       String qualName = classType.getQualifiedSourceName();
-
-      String var = "export" + exprCount++;
-      sw.println(ExportableTypeOracle.EXPORTER_CLASS + " " + var + " = ("
-          + ExportableTypeOracle.EXPORTER_CLASS + ") GWT.create(" + qualName
-          + ".class);");
+      sw.println("GWT.create(" + qualName  + ".class);");
     }
 
     // now export our class

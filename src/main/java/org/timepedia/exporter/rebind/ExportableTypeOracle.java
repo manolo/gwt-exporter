@@ -219,21 +219,28 @@ public class ExportableTypeOracle {
   public boolean isArray(JExportableClassType jExportableClassType) {
     return jExportableClassType.getType().isArray() != null;
   }
+  
+  static HashMap<String, JExportableClassType> closuresCache = new HashMap<String, JExportableClassType>();
 
-  public boolean isClosure(String qualifiedSourceName) {
-    if (qualifiedSourceName == null) {
+  public boolean isClosure(JExportableClassType jExportableClassType) {
+    if (jExportableClassType == null) {
       return false;
     }
-    JType type = typeOracle.findType(qualifiedSourceName);
-    if (type == null) {
-      return false;
+    
+    String cType = jExportableClassType.getType().getQualifiedSourceName();
+    if (closuresCache.containsKey(cType)) {
+      return true;
     }
-    JClassType cType = type.isClassOrInterface();
 
-    if (cType != null && cType.isAssignableTo(exportableType)) {
-      ExportClosure ann = cType.getAnnotation(ExportClosure.class);
-      if (ann != null && cType.isInterface() != null) {
-        return cType.getMethods().length == 1;
+    JClassType rType = jExportableClassType.getRequestedType();
+    if (rType != null && rType.isAssignableTo(exportableType)) {
+      ExportClosure ann = rType.getAnnotation(ExportClosure.class);
+      if (ann != null && rType.isInterface() != null) {
+        if (rType.getMethods().length > 0) {
+          closuresCache.put(rType.getQualifiedSourceName(), jExportableClassType);
+          closuresCache.put(cType, jExportableClassType);
+          return true;
+        }
       }
     }
     return false;
