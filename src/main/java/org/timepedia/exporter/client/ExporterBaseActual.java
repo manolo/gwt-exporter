@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -20,7 +19,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   public static final String WRAPPER_PROPERTY = "__gwtex_wrap";
 
   private native static JavaScriptObject wrap0(Object type,
-      JavaScriptObject constructor, String wrapProp) /*-{
+      JavaScriptObject constructor) /*-{
            return new (constructor)(type);
       }-*/;
 
@@ -69,8 +68,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
 
     if (wrapper == null) {
-      wrapper = JavaScriptObject.createArray();
-      setWrapper(type, wrapper);
+      setWrapper(type);
     }
     return wrapper;
   }
@@ -229,7 +227,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   @Override
-  public JavaScriptObject wrap(Exportable type) {
+  public JavaScriptObject wrap(Object type) {
     if (type == null) {
       return null;
     }
@@ -257,15 +255,20 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   public JavaScriptObject setWrapper(Object type) {
-    JavaScriptObject wrapper = wrap0(type, typeConstructor(type), WRAPPER_PROPERTY);
-    if (GWT.isScript()) {
-      setWrapperJS(type, wrapper, WRAPPER_PROPERTY);
-    } else {
-      setWrapperHosted(type, wrapper);
-    }
+    JavaScriptObject wrapper = wrap0(type, typeConstructor(type));
+    setWrapper(type, wrapper);
     return wrapper;
   }
   
+  @Override
+  public void setWrapper(Object instance, JavaScriptObject wrapper) {
+    if (GWT.isScript()) {
+      setWrapperJS(instance, wrapper, WRAPPER_PROPERTY);
+    } else {
+      setWrapperHosted(instance, wrapper);
+    }
+  }
+
   public JavaScriptObject getWrapper(Exportable type) {
     JavaScriptObject wrapper = null;
     if (GWT.isScript()) {

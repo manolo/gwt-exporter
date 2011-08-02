@@ -934,9 +934,7 @@ public class ClassExporter {
   
   private String getGwtToJsWrapper(JExportableType retType) {
     String rType = "null";
-    if (retType == null ) {
-      rType = "Ljava/lang/Object;";
-    } else if (retType instanceof JExportableArrayType) {
+    if (retType != null && retType instanceof JExportableArrayType) {
       JExportableType xcompType = ((JExportableArrayType) retType).getComponentType();
       if (xcompType instanceof JExportablePrimitiveType) {
         rType = ((JExportableArrayType) retType).getJSNIReference();
@@ -945,7 +943,7 @@ public class ClassExporter {
         rType = ct.getJsniSigForArrays();
       }
     } else {
-      rType = "Lorg/timepedia/exporter/client/Exportable;";
+      rType = "Ljava/lang/Object;";
     }
     return "@org.timepedia.exporter.client.ExporterUtil::wrap(" + rType + ")";
   }

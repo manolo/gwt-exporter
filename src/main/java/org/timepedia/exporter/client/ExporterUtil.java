@@ -20,6 +20,8 @@ public class ExporterUtil {
   }
 
   private static ExporterBaseImpl impl = GWT.create(ExporterBaseImpl.class);
+  static {
+  }
 
   public static void addTypeMap(Exportable type,
       JavaScriptObject exportedConstructor) {
@@ -123,8 +125,8 @@ public class ExporterUtil {
   public static JavaScriptObject typeConstructor(String type) {
     return impl.typeConstructor(type);
   }
-
-  public static JavaScriptObject wrap(Exportable type) {
+  
+  public static JavaScriptObject wrap(Object type) {
     return impl.wrap(type);
   }
   
