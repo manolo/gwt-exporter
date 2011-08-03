@@ -230,7 +230,7 @@ public class JExportableClassType implements JExportable, JExportableType {
       return null;
     }
     return "@" + ExporterUtil.class.getName()
-        + "::wrap(Lorg/timepedia/exporter/client/Exportable;)";
+          + "::wrap(Ljava/lang/Object;)";
   }
 
   public int hashCode() {

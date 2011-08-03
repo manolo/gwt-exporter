@@ -311,7 +311,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
         ret[i] = (T)o;
       }
     } else {
-      return reinterpretArray(j);
+      return (T[])reinterpretArray(j);
     }
     return ret;
   }
