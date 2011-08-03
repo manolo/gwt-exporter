@@ -7,27 +7,37 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gwt.core.ext.typeinfo.JArrayType;
+import com.google.gwt.core.ext.typeinfo.JType;
+
 /**
  * Information to assist quick overloaded type resolution at runtime.
  */
 public class DispatchTable {
 
-  private boolean isOverloaded;
+  public DispatchTable(ExportableTypeOracle x) {
+    xTypeOracle = x;
+  }
 
-  private JExportableMethod method;
+  private boolean isOverloaded;
+  private static ExportableTypeOracle xTypeOracle;
 
   /**
    * Add a signature to the dispatch table. Returns false if the same signature
    * occurs more than once.
    */
-  public boolean addSignature(JExportableMethod method,
-      JExportableParameter[] exportableParameters) {
+  public boolean addSignature(JExportableMethod method) {
+    
+    JExportableParameter[] exportableParameters = method.getExportableParameters();
+
+    isOverloaded |= method.isVarArgs();
+    
     Set<Signature> sigs = sigMap.get(exportableParameters.length);
     if (sigs == null) {
       sigs = new HashSet<Signature>();
       sigMap.put(exportableParameters.length, sigs);
     }
-    isOverloaded = sigMap.size() > 1 || isOverloaded;
+    isOverloaded |= sigMap.size() > 1;
 
     Signature sig = new Signature(method, exportableParameters);
     if (sigs.contains(sig)) {
@@ -35,7 +45,7 @@ public class DispatchTable {
     } else {
       sigs.add(sig);
     }
-    isOverloaded = sigs.size() > 1 || isOverloaded;
+    isOverloaded |= sigs.size() > 1;
     return true;
   }
 
@@ -109,7 +119,7 @@ public class DispatchTable {
       sb.append(",");
       
       String wrap = method.getExportableReturnType() == null ? null : method.getExportableReturnType().getWrapperFunc();
-      sb.append(wrap + ", ");
+      sb.append(wrap + "," + generateWrapArgumentsFunction(method) + ",");
       for (JExportableParameter param : exportableParameters) {
         String jsType = param.getJsTypeOf();
         if (jsType.equals("number") || jsType.equals("object") ||
@@ -154,4 +164,53 @@ public class DispatchTable {
 
   private Map<Integer, Set<Signature>> sigMap
       = new HashMap<Integer, Set<Signature>>();
+  
+  private static String generateWrapArgumentsFunction(JExportableMethod method) {
+    String ret = "function(instance, args){return ";
+    String args = "[";
+    JExportableParameter params[] = method.getExportableParameters();
+    boolean hasClosures = false;
+    for (int i = 0; i < params.length; i++) {
+      args += (i > 0 ? "," : "");
+      String argName = "args[" + i + "]";
+      JType t = params[i].getParam().getType();
+      JArrayType a = t.isArray();
+      if (a != null) {
+        JExportableClassType requestedType = xTypeOracle.findExportableClassType(a.getComponentType().getQualifiedSourceName());
+        if (xTypeOracle.isClosure(requestedType)) {
+          hasClosures = true;
+          args += argName
+              + " == null ? null :function(a) {for (var i = 0; i < a.length ; i++) {a[i] = a[i].constructor == $wnd."
+              + requestedType.getJSQualifiedExportName()
+              + " ? a[i].__gwt_instance : @"
+              + requestedType.getQualifiedExporterImplementationName()
+              + "::makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)(a[i]);}return a;}("
+              + argName + ")";
+        } else {
+          args += argName;
+        }
+      } else {
+        JExportableClassType requestedType = xTypeOracle.findExportableClassType(t.getQualifiedSourceName());
+        if (xTypeOracle.isClosure(requestedType)) {
+          hasClosures = true;
+          args += argName
+              + " == null ? null : function(a) { a = a.constructor == $wnd."
+              + requestedType.getJSQualifiedExportName()
+              + " ? a.__gwt_instance : @"
+              + requestedType.getQualifiedExporterImplementationName()
+              + "::makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)(a); return a;}("
+              + argName + ")";
+        } else {
+          args += argName;
+        }
+      }
+    }
+    args = hasClosures ? (args + "]") : "args";
+    
+    if (!method.isStatic() && method.needsWrapper()) {
+      args = "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(instance, " + args + ")";
+    }
+    
+    return ret + args + "}";
+  }  
 }

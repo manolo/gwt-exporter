@@ -26,7 +26,10 @@ public class SimpleDemo implements EntryPoint {
   public void onModuleLoad() {
     GWT.create(C.class);
     runJsTests1();
-    
+
+    // Overlay types should be exported first
+    // TODO: sort classes in exportAll
+    GWT.create(FuncClos.class);
     ExporterUtil.exportAll();
     runJsTests();
   }
@@ -36,11 +39,11 @@ public class SimpleDemo implements EntryPoint {
   }
   
   public static <T> void mAssertEqual(T a, T b) {
-    if (a.toString().equals(b.toString())) {
+    if (a == null && b == null || a != null && b != null && a.toString().equals(b.toString())) {
       print("OK -> " + b);
     } else {
-      print("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
-          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+      print("ERROR -> " + a + " <=> " + b + " ["
+          + (a != null ? a.getClass().getName() : "") + ", " + (b != null ? b.getClass().getName() : b) + "]");
     }
   }
 
@@ -412,11 +415,23 @@ public class SimpleDemo implements EntryPoint {
       return this;
     }
     
-    public boolean executeFunction(Func f) {
-      return f.f(element());
+    public boolean executeFunction(Func... f) {
+      boolean ret = false;
+      for (Func ff : f) {
+        ret |= ff.f(element());
+      }
+      return ret;
+    }
+    
+    public boolean executeFunction(String s, Func... f) {
+      return executeFunction(f);
     }
     
     public String executeClosure(Clos f) {
+      return f.execute("A", "B");
+    }
+    
+    public String executeClosure(int i, Clos f) {
       return f.execute("A", "B");
     }
   }
@@ -434,9 +449,13 @@ public class SimpleDemo implements EntryPoint {
     
     public GQ gq() {return null;}
     
-    public boolean executeFunction(Func f) {return false;}
+    public boolean executeFunction(Func... f) {return false;}
+    public boolean executeFunction(String s, Func... f) {return false;}
     
     public String executeClosure(Clos f) {return null;}
+    public String executeClosure(int a, Clos f) {return null;}
+
+    public static String[] test0(char c, byte b, int i, double d, float f, String s, Object o) {return null;}
     
     @Export("$wnd.$")
     public static GQ $(String s){return null;};
@@ -531,7 +550,6 @@ public class SimpleDemo implements EntryPoint {
     assertEq("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
     assertEq("70", "" + h.test24()[0].getYear());
     
-    
     var v1 = new $wnd.gwt.SimpleDemo.Foo();
     assertEq("foo", v1);
     var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
@@ -581,7 +599,7 @@ public class SimpleDemo implements EntryPoint {
     
     assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
     assertEq('false', gq.executeFunction(function(e){return e == null;}));
-    assertEq('true', gq.executeFunction(function(e){return e != null;}));
+    assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
     
     // export static constructors
     var cs1 = new $wnd.gwt.c('hello');

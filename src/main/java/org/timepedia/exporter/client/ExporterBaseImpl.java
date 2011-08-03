@@ -72,9 +72,9 @@ public class ExporterBaseImpl {
 
   public void declarePackage(String packageName, String enclosingClasses) {
   }
-
+  
   public JavaScriptObject getDispatch(Class clazz, String meth,
-      JsArray<JavaScriptObject> arguments, boolean isStatic) {
+      JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     return null;
   }
 
@@ -117,7 +117,7 @@ public class ExporterBaseImpl {
     return null;
   }
 
-  public Object[] toArrObject(JavaScriptObject type) {
+  public <T> T[] toArrObject(JavaScriptObject type, T[] ret) {
     return null;
   }
 
@@ -130,10 +130,6 @@ public class ExporterBaseImpl {
   }
 
   public Object[] toArrJsObject(JavaScriptObject type) {
-    return null;
-  }
-  
-  public JavaScriptObject computeVarArguments(int len, JavaScriptObject args) {
     return null;
   }
   

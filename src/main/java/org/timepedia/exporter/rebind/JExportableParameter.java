@@ -81,6 +81,8 @@ public class JExportableParameter {
   }
 
   public String getJsTypeOf() {
+    ExportableTypeOracle xto = exportableEnclosingType.getExportableTypeOracle();
+
     if (param == null) {
       return "null";
     } else if (param.getType().isArray() != null) {
@@ -88,14 +90,19 @@ public class JExportableParameter {
     } else if (param.getType().isPrimitive() != null) {
       JPrimitiveType prim = param.getType().isPrimitive();
       return prim == JPrimitiveType.BOOLEAN ? "boolean" : "number";
-    } else if (exportableEnclosingType.getExportableTypeOracle()
-        .isString(param.getType())) {
+    } else if (xto.isString(param.getType())) {
       return "string";
-    } else if (exportableEnclosingType.getExportableTypeOracle()
-        .isJavaScriptObject(param.getType())) {
+    } else if (xto.isJavaScriptObject(param.getType())) {
       return "object";
     } else {
-      return "@"+param.getType().getQualifiedSourceName()+"::class";
+      String paramTypeName = param.getType().getQualifiedSourceName();
+      JExportableType type = xto.findExportableType(paramTypeName);
+      System.out.println(paramTypeName);
+      if (type != null && type instanceof JExportableClassType
+          && xto.isClosure((JExportableClassType) type)) {
+        return "'function'";
+      }
+      return "@" + param.getType().getQualifiedSourceName() + "::class";
     }
   }
   
@@ -120,6 +127,7 @@ public class JExportableParameter {
   
   public String getToArrayFunc(String qsn, String argName) {
     String ret = "ExporterUtil.";
+    String after = ")";
     ExportableTypeOracle o = exportableEnclosingType.getExportableTypeOracle();
     JExportableType t = o.findExportableType(qsn.replace("[]", ""));
     JExportableClassType e = null;
@@ -143,16 +151,17 @@ public class JExportableParameter {
     } else if (qsn.equals("char[]")) {
       ret += "toArrChar" ;
     } else {
-      ret = "(" + qsn + ")" + ret;
-      if (e != null && o.isJavaScriptObject(e)) {
-        ret += "toArrJsObject";
-      } else if (t != null) {
-        ret += "toArrExport" ;
-      } else {
-        ret += "toArrObject" ;
-      }
+      ret += "toArrObject";
+      after = ", new " + qsn.replace("]", argName + ".<com.google.gwt.core.client.JsArray>cast().length()]") + after; 
+//      if (e != null && o.isJavaScriptObject(e)) {
+//        ret += "toArrJsObject";
+//      } else if (t != null) {
+//        ret += "toArrExport" ;
+//      } else {
+//        ret += "toArrObject" ;
+//      }
     }
-    return ret + "(" + argName + ")";
+    return ret + "(" + argName + after;
   }
 
 }

@@ -58,10 +58,10 @@ public class ExporterUtil {
 //      }-*/;
 //    });
 //  }
-
+  
   public static JavaScriptObject getDispatch(Class clazz, String meth,
-      JsArray arguments, boolean isStatic) {
-    return impl.getDispatch(clazz, meth, arguments, isStatic);
+      JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
+    return impl.getDispatch(clazz, meth, arguments, isStatic, isVarArgs);
   }
 
   public static native byte getStructuralFieldbyte(JavaScriptObject jso,
@@ -202,8 +202,8 @@ public class ExporterUtil {
     return impl.toArrLong(type.<JsArrayNumber>cast());
   }
   
-  public static Object[] toArrObject(JavaScriptObject type) {
-    return impl.toArrObject(type);
+  public static <T> T[] toArrObject(JavaScriptObject type, T[] ret) {
+    return impl.toArrObject(type, ret);
   }
   
   public static Object[] toArrJsObject(JavaScriptObject type) {
@@ -222,10 +222,6 @@ public class ExporterUtil {
   
   public static boolean isTheSameClass(Object o, Class clazz) {
     return o.getClass() == clazz;
-  }
-  
-  public static JavaScriptObject computeVarArguments(int len, JavaScriptObject args) {
-    return impl.computeVarArguments(len, args);
   }
   
   public static JavaScriptObject unshift(Object o, JavaScriptObject arr) {

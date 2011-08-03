@@ -77,27 +77,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return nl;
   }-*/;
   
-  private static native JavaScriptObject[] reinterpretArray(Object nl) /*-{
+  private static native <T> T[] reinterpretArray(Object nl) /*-{
     return nl;
   }-*/;
 
-  @Override
-  public JavaScriptObject wrap(float[] type) {
-    if (!GWT.isScript()) {
-      if (type == null) {
-        return null;
-      }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
-      for (int i = 0; i < type.length; i++) {
-        wrapperArray.set(i, type[i]);
-      }
-      return wrapper;
-    } else {
-      return reinterpretCast(type);
-    }
-  }
-  
   @Override
   public JavaScriptObject wrap(Date[] type) {
     JsArray<JavaScriptObject> ret = JavaScriptObject.createArray().cast();
@@ -106,6 +89,22 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
     return ret;
   }
+  
+  @Override
+  public JavaScriptObject wrap(float[] type) {
+    if (!GWT.isScript()) {
+      if (type == null) {
+        return null;
+      }
+      JsArrayNumber wrapperArray = JavaScriptObject.createArray().cast();
+      for (int i = 0; i < type.length; i++) {
+        wrapperArray.set(i, type[i]);
+      }
+      return wrapperArray;
+    } else {
+      return reinterpretCast(type);
+    }
+  }  
 
   @Override
   public JavaScriptObject wrap(byte[] type) {
@@ -113,12 +112,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -130,12 +128,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -147,12 +144,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -164,12 +160,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -181,12 +176,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -198,12 +192,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayNumber wrapperArray = wrapper.cast();
+      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -215,12 +208,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       if (type == null) {
         return null;
       }
-      JavaScriptObject wrapper = getWrapper(type);
-      JsArrayString wrapperArray =  wrapper.cast();
+      JsArrayString wrapperArray =  JavaScriptObject.createArray().cast();
       for (int i = 0; i < type.length; i++) {
         wrapperArray.set(i, type[i]);
       }
-      return wrapper;
+      return wrapperArray;
     } else {
       return reinterpretCast(type);
     }
@@ -245,16 +237,17 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     if (type == null) {
       return null;
     }
-
-    JavaScriptObject wrapper = getWrapper(type);
-    JsArray<JavaScriptObject> wrapperArray = wrapper.cast();
+    JsArrayObject wrapperArray = JavaScriptObject.createArray().cast();
     for (int i = 0; i < type.length; i++) {
-      wrapperArray.set(i, wrap(type[i]));
+      wrapperArray.setObject(i, wrap(type[i]));
     }
-    return wrapper;
+    return wrapperArray;
   }
 
   public JavaScriptObject setWrapper(Object type) {
+    if (type.getClass().isArray()) {
+      return JavaScriptObject.createArray();
+    }
     JavaScriptObject wrapper = wrap0(type, typeConstructor(type));
     setWrapper(type, wrapper);
     return wrapper;
@@ -291,18 +284,38 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
     return wrapperArray;
   }
-
   
-  public Object[] toArrObject(JavaScriptObject p) {
-    JsArray<JavaScriptObject> s = p.cast();
-    int l = s.length();
-    Object[] ret = new Object[l];
-    for (int i = 0; i < l; i++) {
-      ret[i] = s.get(i);
+  // JsArray.get() returns a JavaScriptObject, so we need this wrapper 
+  // class to avoid a casting exception at runtime.
+  static class JsArrayObject extends JsArray<JavaScriptObject> {
+    protected JsArrayObject(){}
+    final public native <T> T getObject(int i) /*-{
+      return this[i];
+    }-*/;
+    final public native <T> void setObject(int i, T o) /*-{
+      this[i] = o;
+    }-*/;
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> T[] toArrObject(JavaScriptObject j, T[] ret) {
+    if (!GWT.isScript()) {
+      JsArrayObject s = j.cast();
+      int l = s.length();
+      for (int i = 0; i < l; i++) {
+        Object o = s.getObject(i);
+        if (o instanceof JavaScriptObject && getGwtInstance((JavaScriptObject)o) != null) {
+          o = getGwtInstance((JavaScriptObject)o);
+        }
+        ret[i] = (T)o;
+      }
+    } else {
+      return reinterpretArray(j);
     }
     return ret;
   }
-
+  
   @Override
   public JavaScriptObject[] toArrJsObject(JavaScriptObject p) {
     if (!GWT.isScript()) {
@@ -407,8 +420,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
    return ret;
   }
   
-  @Override
-  public native JavaScriptObject computeVarArguments(int len, JavaScriptObject args) /*-{
+  private native JsArray<JavaScriptObject> computeVarArguments(int len, JavaScriptObject args) /*-{
     var ret = [];
     for (i = 0; i < len - 1; i++) 
       ret.push(args[i]);
@@ -488,24 +500,55 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return jso[key];
   }-*/;
 
-  @Override
-  public JavaScriptObject getDispatch(Class clazz, String meth,
-      JsArray<JavaScriptObject> arguments, boolean isStatic) {
-    Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap
-        : dispatchMap;
+  private JavaScriptObject getDispatch(Map<Class, JavaScriptObject> dmap,
+      Class clazz, String meth, JsArray<JavaScriptObject> arguments) {
+
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
         arguments.length());
-
+    JavaScriptObject wFunc = null;
+    JavaScriptObject cFunc = null;
     for (int i = 0; i < sigs.length(); i++) {
       SignatureJSO sig = sigs.get(i);
       if (sig.matches(arguments)) {
         JavaScriptObject javaFunc = sig.getFunction();
         if (!GWT.isScript()) {
           JavaScriptObject wrapFunc = sig.getWrapperFunc();
-          return wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;
+          wFunc = wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;
         } else {
-          return javaFunc;
+          wFunc = javaFunc;
         }
+        cFunc = sig.getWrapArgumentsFunc();
+        break;
+      }
+    }
+    if (wFunc == null) {
+      return null;
+    } else {
+      JsArray<JavaScriptObject>ret = JavaScriptObject.createArray().cast();
+      ret.push(wFunc);
+      ret.push(arguments);
+      ret.push(cFunc);
+      return ret;
+    }
+  }
+  
+  
+  @Override
+  public JavaScriptObject getDispatch(Class clazz, String meth,
+      JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
+    Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
+    if (isVarArgs) {
+      for (int i = 1, l = getMaxArity(dmap.get(clazz).cast(), meth); i <= l; i++) {
+        JsArray<JavaScriptObject> args = computeVarArguments(i, arguments);
+        JavaScriptObject ret = getDispatch(dmap, clazz, meth, args);
+        if (ret != null) {
+          return ret;
+        }
+      }
+    } else {
+      JavaScriptObject ret = getDispatch(dmap, clazz, meth, arguments);
+      if (ret != null) {
+        return ret;
       }
     }
     throw new RuntimeException(
@@ -529,6 +572,14 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return jsoMap[meth][arity];
   }-*/;
   
+  private native int getMaxArity(JavaScriptObject jsoMap,
+      String meth) /*-{
+      var o = jsoMap[meth];
+      var r = 0;
+      for (k in o) r = Math.max(r, k);
+      return r;
+  }-*/;
+  
   private static native JavaScriptObject numberToJsDateObject(double time) /*-{
     return new Date(time);
   }-*/;
@@ -536,8 +587,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private static native double jsDateObjectToNumber(JavaScriptObject d) /*-{
     return (d && d.getTime) ? d.getTime(): 0;
   }-*/;
-
-
 
   @Override
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
@@ -565,7 +614,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       // add argument matching logic
       // add structural type checks
       for (int i = 0; i < arguments.length(); i++) {
-        Object jsType = getObject(i + 2);
+        Object jsType = getObject(i + 3);
         String argJsType = typeof(arguments, i);
         if (argJsType.equals("object") || argJsType.equals("array")) {
           Object gwtObject = getJavaObject(arguments, i);
@@ -601,6 +650,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
     public native JavaScriptObject getWrapperFunc() /*-{
       return this[1];
+    }-*/;
+    
+    public native JavaScriptObject getWrapArgumentsFunc() /*-{
+      return this[2];
     }-*/;
   }
 }

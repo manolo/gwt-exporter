@@ -10,7 +10,9 @@ import java.util.List;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
+import com.google.gwt.core.ext.typeinfo.JArrayType;
 import com.google.gwt.core.ext.typeinfo.JClassType;
+import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -515,10 +517,10 @@ public class ClassExporter {
       }
       DispatchTable dt = dispMap.get(meth.getUnqualifiedExportName());
       if (dt == null) {
-        dt = new DispatchTable();
+        dt = new DispatchTable(xTypeOracle);
         dispMap.put(meth.getUnqualifiedExportName(), dt);
       }
-      if (!dt.addSignature(meth, meth.getExportableParameters())) {
+      if (!dt.addSignature(meth)) {
         logger.log(TreeLogger.ERROR,
             "Ambiguous method signature " + meth.getJSNIReference()
                 + " would conflict in JS with another method");
@@ -884,35 +886,26 @@ public class ClassExporter {
     sw.println(") { ");
     sw.indent();
 //    debugJSPassedValues(method);
-    
-    if (method.isVarArgs()) {
-      int len = method.getExportableParameters().length;
-      sw.println("var " + ARG_PREFIX + " = @org.timepedia.exporter.client.ExporterUtil::computeVarArguments(ILcom/google/gwt/core/client/JavaScriptObject;)(" + len + ", arguments)");
-    } else if (dt.isOverloaded()){
-      sw.println("var " + ARG_PREFIX + " = arguments;");  
-    }
 
+    boolean isStatic = method.isStatic();
+    if (dt.isOverloaded()) {
+      sw.println("var d = @org.timepedia.exporter.client.ExporterUtil::getDispatch("
+          + "Ljava/lang/Class;Ljava/lang/String;"
+          + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (@"
+          + method.getEnclosingExportType().getQualifiedSourceName()
+          + "::class,'" + method.getUnqualifiedExportName() + "', arguments, "
+          + isStatic + ", " + method.isVarArgs() + ");");
+      sw.println("var dispFunc = d[0], args = d[1]; argFunc = d[2]");    
+    }
+    
     sw.print(isVoid ? "" : "var x = ");
     if (!dt.isOverloaded()) {
       sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this.__gwt_instance.@") + method.getJSNIReference() + "(" );
       declareJSPassedValues(method, ARG_PREFIX, method.isVarArgs());
       sw.println(");");
     } else {
-      boolean isStatic = method.isStatic();
-      String appyArgs = (isStatic ? "null" : "this.__gwt_instance") + ", ";
-
-      if (!isStatic && method.needsWrapper()) {
-        appyArgs += "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(this.__gwt_instance, " + ARG_PREFIX + ")";
-      } else {
-        appyArgs += ARG_PREFIX;
-      }
-      
-      sw.println("@org.timepedia.exporter.client.ExporterUtil::getDispatch("
-          + "Ljava/lang/Class;Ljava/lang/String;"
-          + "Lcom/google/gwt/core/client/JsArray;Z)\n (@"
-          + method.getEnclosingExportType().getQualifiedSourceName()
-          + "::class,'" + method.getUnqualifiedExportName() + "', " + ARG_PREFIX + ", "
-          + isStatic + ").apply(" + appyArgs + ");");
+      String args = (isStatic ? "null" : "this.__gwt_instance") + ", argFunc(this.__gwt_instance, args)";
+      sw.println("dispFunc.apply(" + args + ");");
       
       overloadExported.add(method.getJSQualifiedExportName());
     }
