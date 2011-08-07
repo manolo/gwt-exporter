@@ -25,6 +25,10 @@
             <localWorkers>${gwt.workers}</localWorkers>
             <extraJvmArgs>-Xmx256m</extraJvmArgs>
             <inplace>${gwt.inplace}</inplace>
+            <modules>
+              <module>exporterdemo.ExporterDemo</module>
+              <module>simpledemo.SimpleDemo</module>
+            </modules>
           </configuration>
           <executions>
             <execution>

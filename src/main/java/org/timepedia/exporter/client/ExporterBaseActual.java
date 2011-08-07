@@ -20,8 +20,8 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   private native static JavaScriptObject wrap0(Object type,
       JavaScriptObject constructor) /*-{
-           return new (constructor)(type);
-      }-*/;
+    return constructor && ((typeof constructor == 'function')) ? new (constructor)(type) : type;
+  }-*/;
 
   private HashMap typeMap = new HashMap();
 
@@ -156,18 +156,14 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   @Override
   public JavaScriptObject wrap(long[] type) {
-    if (!GWT.isScript()) {
-      if (type == null) {
-        return null;
-      }
-      JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
-      for (int i = 0; i < type.length; i++) {
-        wrapperArray.set(i, type[i]);
-      }
-      return wrapperArray;
-    } else {
-      return reinterpretCast(type);
+    if (type == null) {
+      return null;
     }
+    JsArrayNumber wrapperArray =  JavaScriptObject.createArray().cast();
+    for (int i = 0; i < type.length; i++) {
+      wrapperArray.set(i, type[i]);
+    }
+    return wrapperArray;
   }
 
   @Override
@@ -248,7 +244,9 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     if (type.getClass().isArray()) {
       return JavaScriptObject.createArray();
     }
-    JavaScriptObject wrapper = wrap0(type, typeConstructor(type));
+    JavaScriptObject cons = typeConstructor(type);
+    assert cons != null : "No constructor for type: " + type.getClass().getName() + " " + type; 
+    JavaScriptObject wrapper = wrap0(type, cons);
     setWrapper(type, wrapper);
     return wrapper;
   }
@@ -287,7 +285,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   
   // JsArray.get() returns a JavaScriptObject, so we need this wrapper 
   // class to avoid a casting exception at runtime.
-  static class JsArrayObject extends JsArray<JavaScriptObject> {
+  public static class JsArrayObject extends JsArray<JavaScriptObject> {
     protected JsArrayObject(){}
     final public native <T> T getObject(int i) /*-{
       return this[i];
@@ -440,7 +438,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   @Override
   public native JavaScriptObject unshift(Object o, JavaScriptObject arr) /*-{
     var ret = [o];
-    for (i in arr) ret.push(arr[i]);
+    for (i = 0; i<arr.length; i++) ret.push(arr[i]);
     return ret;
   }-*/;
   
@@ -505,29 +503,30 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
         arguments.length());
+    JavaScriptObject jFunc = null;
     JavaScriptObject wFunc = null;
-    JavaScriptObject cFunc = null;
-    for (int i = 0; i < sigs.length(); i++) {
+    JavaScriptObject aFunc = null;
+    for (int i = 0, l = sigs == null ? 0 : sigs.length(); i < l; i++) {
       SignatureJSO sig = sigs.get(i);
       if (sig.matches(arguments)) {
-        JavaScriptObject javaFunc = sig.getFunction();
-        if (!GWT.isScript()) {
-          JavaScriptObject wrapFunc = sig.getWrapperFunc();
-          wFunc = wrapFunc != null ? wrapFunction(wrapFunc, javaFunc) : javaFunc;
-        } else {
-          wFunc = javaFunc;
-        }
-        cFunc = sig.getWrapArgumentsFunc();
+        jFunc = sig.getFunction();
+        wFunc = sig.getWrapperFunc();
+        aFunc = sig.getWrapArgumentsFunc();
         break;
       }
     }
-    if (wFunc == null) {
+    if (jFunc == null) {
       return null;
     } else {
       JsArray<JavaScriptObject>ret = JavaScriptObject.createArray().cast();
-      ret.push(wFunc);
+      // javaFunction
+      ret.push(jFunc);
+      // function to wrap arguments (create closures)
+      ret.push(aFunc);
+      // arguments used to get the dispatcher
       ret.push(arguments);
-      ret.push(cFunc);
+      // wrapper function for the return type
+      ret.push(wFunc);
       return ret;
     }
   }
@@ -554,18 +553,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     throw new RuntimeException(
         "Can't find exported method for given arguments");
   }
-
-  // this is way more complicated than it needs to be, thanks to hosted mode
-  private native static JavaScriptObject wrapFunction(JavaScriptObject wrapFunc,
-      JavaScriptObject javaFunc) /*-{
-     return function() {
-         var i, newArgs = [];
-         for(i = 0; i < arguments.length; i++) {
-             newArgs[i] = arguments[i].__gwt_instance || arguments[i];
-         }
-         return wrapFunc.apply(null, [javaFunc.apply(this, newArgs)]);
-     };
-  }-*/;
 
   private native JsArray<SignatureJSO> getSigs(JavaScriptObject jsoMap,
       String meth, int arity) /*-{

@@ -18,6 +18,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
@@ -26,10 +27,6 @@ public class SimpleDemo implements EntryPoint {
   public void onModuleLoad() {
     GWT.create(C.class);
     runJsTests1();
-
-    // Overlay types should be exported first
-    // TODO: sort classes in exportAll
-    GWT.create(FuncClos.class);
     ExporterUtil.exportAll();
     runJsTests();
   }
@@ -38,11 +35,25 @@ public class SimpleDemo implements EntryPoint {
     RootPanel.get().add(new Label(s.toString()));
   }
   
+  private static native <T> String arrToStr(T o) /*-{
+    var ret = '';
+    for (var i=0; i<o.length; i++)
+      ret += (i>0 ? "," : "") + String(o[i]);
+    return ret;
+  }-*/;
+  
   public static <T> void mAssertEqual(T a, T b) {
-    if (a == null && b == null || a != null && b != null && a.toString().equals(b.toString())) {
-      print("OK -> " + b);
+    String sb = (b != null && b.toString().contains("Array")) ? arrToStr(b) : b == null ? "null" : b.toString();
+    String ss = "";
+    while (!ss.equals(sb)) {
+      ss = sb;
+      sb = sb.replaceAll("(^|,)[^,]+[\\$\\.]([A-Z][\\w]+)\\$*(,|$)", "$1$2$3");
+    }
+    sb = sb.replaceAll("\\.0", "");
+    if (a == null && b == null || a != null && a.toString().equals(sb.toString())) { 
+      print("OK -> " + sb);
     } else {
-      print("ERROR -> " + a + " <=> " + b + " ["
+      print("ERROR -> " + a + " <=> " + sb + " ["
           + (a != null ? a.getClass().getName() : "") + ", " + (b != null ? b.getClass().getName() : b) + "]");
     }
   }
@@ -193,7 +204,8 @@ public class SimpleDemo implements EntryPoint {
     public static Date test22(Date d) {
       return d;
     }
-
+    
+ 
     @SuppressWarnings("deprecation")
     public String test23(Date...ds) {
       String ret = "";
@@ -208,7 +220,23 @@ public class SimpleDemo implements EntryPoint {
       ret[0] = new Date(0);
       return ret;
     }
-  }
+
+    public boolean test25(boolean a) {
+      return a;
+    }
+
+    public boolean test26(long l) {
+      return l > 2;
+    }
+
+    public boolean test27(boolean a) {
+      return a;
+    }
+
+    public boolean test27(boolean a, boolean b, long l) {
+      return a && b && l > 2;
+    }
+ }
   
   @ExportPackage("gwt")
   @Export
@@ -418,13 +446,19 @@ public class SimpleDemo implements EntryPoint {
     public boolean executeFunction(Func... f) {
       boolean ret = false;
       for (Func ff : f) {
-        ret |= ff.f(element());
+        ret = ret || ff.f(element());
       }
       return ret;
     }
     
     public boolean executeFunction(String s, Func... f) {
-      return executeFunction(f);
+      boolean ret = executeFunction(f);
+      return ret;
+    }
+    
+    public GQ executeFunction2(Func... f) {
+      echoMsg = "ret-" + executeFunction(f);
+      return this;
     }
     
     public String executeClosure(Clos f) {
@@ -451,12 +485,11 @@ public class SimpleDemo implements EntryPoint {
     
     public boolean executeFunction(Func... f) {return false;}
     public boolean executeFunction(String s, Func... f) {return false;}
+    public GQ executeFunction2(Func... f) {return null;}
     
     public String executeClosure(Clos f) {return null;}
     public String executeClosure(int a, Clos f) {return null;}
 
-    public static String[] test0(char c, byte b, int i, double d, float f, String s, Object o) {return null;}
-    
     @Export("$wnd.$")
     public static GQ $(String s){return null;};
   }
@@ -511,14 +544,15 @@ public class SimpleDemo implements EntryPoint {
 
   public native JavaScriptObject runJsTests() /*-{
     assertEq =function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
-    
+
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    assertEq("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    assertEq("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
     assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
     assertEq("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
-    assertEq("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    assertEq("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
+    assertEq("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
+    assertEq("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
     assertEq("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
+    
     
     assertEq("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
     assertEq("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
@@ -549,6 +583,10 @@ public class SimpleDemo implements EntryPoint {
     assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
     assertEq("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
     assertEq("70", "" + h.test24()[0].getYear());
+    assertEq("true", "" + h.test25(true)); 
+    assertEq("false", "" + h.test25(false)); 
+    assertEq("true", "" + h.test26(3)); 
+    assertEq("true", "" + h.test27(true, true, 3)); 
     
     var v1 = new $wnd.gwt.SimpleDemo.Foo();
     assertEq("foo", v1);
@@ -600,6 +638,8 @@ public class SimpleDemo implements EntryPoint {
     assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
     assertEq('false', gq.executeFunction(function(e){return e == null;}));
     assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
+    assertEq('ret-true', gq.executeFunction2(function(e){return true;}).gq().echo());
+    assertEq('ret-false', gq.executeFunction2(function(e){return false;}).echo());
     
     // export static constructors
     var cs1 = new $wnd.gwt.c('hello');

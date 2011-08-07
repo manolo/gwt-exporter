@@ -13,6 +13,11 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
+import simpledemo.client.SimpleDemo;
+import simpledemo.client.SimpleDemo.Clos;
+import simpledemo.client.SimpleDemo.Func;
+import simpledemo.client.SimpleDemo.GQ;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
@@ -197,6 +202,23 @@ public class CoreTest extends GWTTestCase{
       ret[0] = new Date(0);
       return ret;
     }    
+    
+
+    public boolean test25(boolean a) {
+      return a;
+    }
+
+    public boolean test26(long l) {
+      return l > 2;
+    }
+
+    public boolean test27(boolean a) {
+      return a;
+    }
+
+    public boolean test27(boolean a, boolean b, long l) {
+      return a && b && l > 2;
+    }
   }
   
   ///////////////////// Classes used to test closures
@@ -378,11 +400,29 @@ public class CoreTest extends GWTTestCase{
       return this;
     }
     
-    public boolean executeFunction(Func f) {
-      return f.f(element());
+    public boolean executeFunction(Func... f) {
+      boolean ret = false;
+      for (Func ff : f) {
+        ret = ret || ff.f(element());
+      }
+      return ret;
+    }
+    
+    public boolean executeFunction(String s, Func... f) {
+      boolean ret = executeFunction(f);
+      return ret;
+    }
+    
+    public GQ executeFunction2(Func... f) {
+      echoMsg = "ret-" + executeFunction(f);
+      return this;
     }
     
     public String executeClosure(Clos f) {
+      return f.execute("A", "B");
+    }
+    
+    public String executeClosure(int i, Clos f) {
       return f.execute("A", "B");
     }
   }
@@ -400,10 +440,13 @@ public class CoreTest extends GWTTestCase{
     
     public GQ gq() {return null;}
     
-    public boolean executeFunction(Func f) {return false;}
+    public boolean executeFunction(Func... f) {return false;}
+    public boolean executeFunction(String s, Func... f) {return false;}
+    public GQ executeFunction2(Func... f) {return null;}
     
     public String executeClosure(Clos f) {return null;}
-    
+    public String executeClosure(int a, Clos f) {return null;}
+
     @Export("$wnd.$")
     public static GQ $(String s){return null;};
   }
@@ -511,6 +554,10 @@ public class CoreTest extends GWTTestCase{
     assertEq("a_1_3", "" + h.test21("a", 1, "a", "e", "i")); 
     assertEq("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
     assertEq("70", "" + h.test24()[0].getYear());   
+    assertEq("true", "" + h.test25(true)); 
+    assertEq("false", "" + h.test25(false)); 
+    assertEq("true", "" + h.test26(3)); 
+    assertEq("true", "" + h.test27(true, true, 3));    
     
     var v1 = new $wnd.gwt.CoreTest.Foo();
     assertEq("foo", v1);
@@ -540,7 +587,7 @@ public class CoreTest extends GWTTestCase{
     assertEq("Child", ch.getParentName(ch.parent()));
     assertEq("$$$", $wnd.$$$());
     
-        // export overlay
+    // export overlay
     var gq = new  $wnd.$('hello'); 
     assertEq("hello", gq.echo());
     assertEq("hello", gq.gq().echo());
@@ -554,6 +601,12 @@ public class CoreTest extends GWTTestCase{
     
     assertEq("object", (typeof gq.element()));
     assertEq("object", (typeof gq.elements()[0]));
+    
+    assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
+    assertEq('false', gq.executeFunction(function(e){return e == null;}));
+    assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
+    assertEq('ret-true', gq.executeFunction2(function(e){return true;}).gq().echo());
+    assertEq('ret-false', gq.executeFunction2(function(e){return false;}).echo());
     
     // export static constructors
     var cs1 = new $wnd.gwt.c('hello');

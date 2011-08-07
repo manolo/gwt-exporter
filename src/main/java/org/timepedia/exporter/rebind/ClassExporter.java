@@ -10,9 +10,7 @@ import java.util.List;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
-import com.google.gwt.core.ext.typeinfo.JArrayType;
 import com.google.gwt.core.ext.typeinfo.JClassType;
-import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -105,74 +103,56 @@ public class ClassExporter {
     sw.println("}");
     sw.println();
 
-    JExportableMethod[] methods = requestedType.getExportableMethods();
+    for (JExportableMethod method: requestedType.getExportableMethods()) {
+      JExportableType retType = method.getExportableReturnType();
 
-    if (methods.length != 1) {
-      logger.log(TreeLogger.ERROR,
-          "Interface " + requestedType.getQualifiedSourceName()
-              + " has more than one "
-              + "declared method. @gwt.exportClosure only currently works for "
-              + "single method interfaces.", null);
-      throw new UnableToCompleteException();
-    }
-
-    JExportableMethod method = methods[0];
-    JExportableType retType = method.getExportableReturnType();
-    if (retType == null) {
-      logger.log(TreeLogger.ERROR,
-          "Return type of method " + method + " is not exportable.", null);
-      throw new UnableToCompleteException();
-    }
-
-    if (retType != null && retType.needsExport() && !exported
-        .contains(retType.getQualifiedSourceName())) {
-      if (exportDependentClass(retType.getQualifiedSourceName())) {
-        exported.add((JExportableClassType) retType);
+      if (retType != null && retType.needsExport() && !exported
+          .contains(retType.getQualifiedSourceName())) {
+        if (exportDependentClass(retType.getQualifiedSourceName())) {
+          exported.add((JExportableClassType) retType);
+        }
       }
-    }
+      exportDependentParams(method);
 
-    exportDependentParams(method);
+      boolean isVoid = retType != null && retType.getQualifiedSourceName().equals("void");
+      boolean noParams = method.getExportableParameters().length == 0;
+      String rType = retType == null ? "Object" : retType.getQualifiedSourceName();
+      sw.print("public " + rType);
 
-    boolean isVoid = retType.getQualifiedSourceName().equals("void");
-    boolean noParams = method.getExportableParameters().length == 0;
-    sw.print(
-        "public " + method.getExportableReturnType().getQualifiedSourceName());
+      sw.print(" " + method.getName() + "(");
+      declareParameters(method, -1, true);
+      sw.println(") {");
+      sw.indent();
+      sw.print((isVoid ? "" : "return ") + "invoke(jso " + (noParams ? "" : ","));
+      declareJavaPassedValues(method, false);
+      sw.println(");");
+      sw.outdent();
+      sw.println("}");
+      sw.print("public native " + rType);
+      sw.print(" invoke(" + ExportableTypeOracle.JSO_CLASS + " closure");
+      if (method.getExportableParameters().length > 0) {
+        sw.print(", ");
+      }
 
-    sw.print(" " + method.getName() + "(");
-    declareParameters(method, -1, true);
-    sw.println(") {");
-    sw.indent();
-    sw.print((isVoid ? "" : "return ") + "invoke(jso" + (noParams ? "" : ","));
-    declareJavaPassedValues(method, false);
-    sw.println(");");
-    sw.outdent();
-    sw.println("}");
-    sw.println();
-    sw.print("public native " + (isVoid ? "void"
-        : method.getExportableReturnType().getQualifiedSourceName()));
-    sw.print(" invoke(" + ExportableTypeOracle.JSO_CLASS + " closure");
-    if (method.getExportableParameters().length > 0) {
-      sw.print(", ");
+      declareParameters(method, -1, true);
+      sw.println(") /*-{");
+      sw.indent();
+      sw.print((!isVoid ? "var result= " : "") + "closure(");
+      declareJavaPassedValues(method, true);
+      sw.println(");");
+      boolean isArray = retType != null && retType instanceof JExportableArrayType;
+      if (retType != null && retType.needsExport() && !isVoid && !isArray) {
+        sw.println("if(result != null && result != undefined) "
+            + "result=result.instance;");
+        sw.println("else if(result == undefined) result=null;");
+      }
+      if (!isVoid) {
+        sw.println("return result;");
+      }
+      sw.outdent();
+      sw.println("}-*/;");
+      sw.println();
     }
-
-    declareParameters(method, -1, true);
-    sw.println(") /*-{");
-    sw.indent();
-    sw.print((!isVoid ? "var result= " : "") + "closure(");
-    declareJavaPassedValues(method, true);
-    sw.println(");");
-    boolean isArray = retType instanceof JExportableArrayType;
-    if (retType.needsExport() && !isVoid && !isArray) {
-      sw.println("if(result != null && result != undefined) "
-          + "result=result.instance;");
-      sw.println("else if(result == undefined) result=null;");
-    }
-    if (!isVoid) {
-      sw.println("return result;");
-    }
-    sw.outdent();
-    sw.println("}-*/;");
-    sw.println();
     sw.outdent();
   }
 
@@ -895,7 +875,7 @@ public class ClassExporter {
           + method.getEnclosingExportType().getQualifiedSourceName()
           + "::class,'" + method.getUnqualifiedExportName() + "', arguments, "
           + isStatic + ", " + method.isVarArgs() + ");");
-      sw.println("var dispFunc = d[0], args = d[1]; argFunc = d[2]");    
+      sw.println("var javaFunc = d[0], args = d[1] ? d[1] (this.__gwt_instance, d[2]) : d[2], wrapFunc = d[3];");    
     }
     
     sw.print(isVoid ? "" : "var x = ");
@@ -904,22 +884,22 @@ public class ClassExporter {
       declareJSPassedValues(method, ARG_PREFIX, method.isVarArgs());
       sw.println(");");
     } else {
-      String args = (isStatic ? "null" : "this.__gwt_instance") + ", argFunc(this.__gwt_instance, args)";
-      sw.println("dispFunc.apply(" + args + ");");
+      String args = (isStatic ? "null" : "this.__gwt_instance") + ", args";
+      sw.println("javaFunc.apply(" + args + ");");
       
       overloadExported.add(method.getJSQualifiedExportName());
     }
     
-    if (dt.isOverloaded() || !needsExport) {
-      sw.print(isVoid ? "" : "return (");
+    if (isVoid) {
+      sw.println();
+    } else if (dt.isOverloaded()) {
+      sw.println("return wrapFunc ? wrapFunc(this.__gwt_instance, [x]) : x;");
+    } else if (needsExport){
+      sw.println("return " + getGwtToJsWrapper(retType) + "(x);");
     } else {
-      sw.print((isVoid ? "" : "return ") + getGwtToJsWrapper(retType) + "(");
+      sw.println("return (x);");
     }
 
-    // end wrap() or non-exportable return case call
-    if (!isVoid) {
-      sw.println("x);");
-    }
     sw.outdent();
     sw.print("})");
     sw.println(";");
@@ -1020,11 +1000,13 @@ public class ClassExporter {
 
     // first, export our dependencies
     for (JExportableClassType classType : exported) {
-      if (requestedType.getQualifiedSourceName()
-          .equals(classType.getQualifiedSourceName())
-          || classType instanceof JExportableArrayType) {
+      if (requestedType.getQualifiedSourceName().equals(
+          classType.getQualifiedSourceName())
+          || classType instanceof JExportableArrayType
+          || classType.getType().isAbstract()) {
         continue;
       }
+      
       String qualName = classType.getQualifiedSourceName();
       sw.println("GWT.create(" + qualName  + ".class);");
     }

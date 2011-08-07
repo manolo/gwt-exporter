@@ -1,6 +1,8 @@
 package org.timepedia.exporter.rebind;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -220,6 +222,7 @@ public class ExportableTypeOracle {
     return jExportableClassType.getType().isArray() != null;
   }
   
+  // We maintain a cache with overlay classes exported via export closure
   static HashMap<String, JExportableClassType> closuresCache = new HashMap<String, JExportableClassType>();
 
   public boolean isClosure(JExportableClassType jExportableClassType) {
@@ -280,13 +283,29 @@ public class ExportableTypeOracle {
 
   public List<JClassType> findAllExportableTypes() {
     ArrayList<JClassType> types = new ArrayList<JClassType>();
+    // Closures should be exported first
     for (JClassType t : typeOracle.getTypes()) {
-      if (t.equals(exportAllType) || t.equals(exportableType) || t
-          .equals(exportOverlayType)) {
+      if (t.isAssignableTo(exportableType) && isClosure(t)) {
+        types.add(t);
+      }
+    }
+    // ExportOverlays should be exported before other classes
+    for (JClassType t : typeOracle.getTypes()) {
+      if (types.contains(t) || t.equals(exportAllType)
+          || t.equals(exportableType) || t.equals(exportOverlayType)) {
         continue;
       }
-      if (t.isAssignableTo(exportableType)
-          || t.isAssignableTo(exportOverlayType)) {
+      if (t.isAssignableTo(exportOverlayType)) {
+        types.add(t);
+      }
+    }
+    // Finally all exportable classes
+    for (JClassType t : typeOracle.getTypes()) {
+      if (types.contains(t) || t.equals(exportAllType)
+          || t.equals(exportableType) || t.equals(exportOverlayType)) {
+        continue;
+      }
+      if (t.isAssignableTo(exportableType)) {
         if (t.isDefaultInstantiable()
             && t.isPublic()
             && new JExportableClassType(this, t).getExportableMethods().length > 0) {
@@ -295,6 +314,10 @@ public class ExportableTypeOracle {
       }
     }
     return types;
+  }
+  
+  public boolean isClosure(JClassType type) {
+    return type.getAnnotation(ExportClosure.class) != null;
   }
 
   public boolean isStructuralType(JClassType type) {
