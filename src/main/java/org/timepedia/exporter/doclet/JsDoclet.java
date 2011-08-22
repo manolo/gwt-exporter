@@ -47,8 +47,8 @@ public class JsDoclet extends HtmlDoclet {
       return false;
     }
     configuration.setOptions();
-    configuration.getDocletSpecificMsg().notice("doclet.build_version",
-        configuration.getDocletSpecificBuildDate());
+    //configuration.getDocletSpecificMsg().notice("doclet.build_version",
+        //configuration.getDocletSpecificBuildDate());
     ClassTree classtree = new ClassTree(configuration,
         configuration.nodeprecated);
 
