@@ -35,7 +35,10 @@ public class ClassExporter {
 
   private HashSet<String> visited;
 
-  private static final String ARG_PREFIX = "arg";
+  // These constants had the values: arg_ and __gwt_instance, but
+  // having just a letter decreases the final size of javascript code in large classes.
+  public static final String ARG_PREFIX = "a";
+  public static final String GWT_INSTANCE = "g";
 
   public ClassExporter(TreeLogger logger, GeneratorContext ctx) {
     this(logger, ctx, new HashSet<String>());
@@ -541,7 +544,7 @@ public class ClassExporter {
         + requestedType.getQualifiedSourceName() + "::class)) {");
     sw.indent();
 
-    sw.println(" this.__gwt_instance = arguments[0];");
+    sw.println(" this." + GWT_INSTANCE + " = arguments[0];");
     sw.outdent();
     sw.println("}");
 
@@ -578,13 +581,13 @@ public class ClassExporter {
       } else {
         jsniCall =  constructor.getJSNIReference();
       }
-      sw.print("this.__gwt_instance = @"+ jsniCall + "(");
+      sw.print("this." + GWT_INSTANCE + " = @"+ jsniCall + "(");
 
       // pass arguments[0], ..., arguments[n] to the JSNI call
       declareJSPassedValues(constructor, "arguments", true);
       sw.println(");");
       sw.println(
-          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)\n (this.__gwt_instance, this);");
+          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)\n (this." + GWT_INSTANCE + ", this);");
       sw.outdent();
       sw.println("}");
     }
@@ -645,7 +648,7 @@ public class ClassExporter {
   private void declareJSPassedValues(JExportableMethod method, String prefix, boolean useArgumentsArray) {
     JExportableParameter params[] = method.getExportableParameters();
     if (method.needsWrapper() && !method.isStatic()) {
-      sw.print("this.__gwt_instance" + (params.length > 0 ? ", " : ""));
+      sw.print("this." + GWT_INSTANCE + "" + (params.length > 0 ? ", " : ""));
     }
     for (int i = 0; i < params.length; i++) {
       sw.print(params[i].getExportParameterValue(prefix
@@ -866,40 +869,31 @@ public class ClassExporter {
     sw.println(") { ");
     sw.indent();
 //    debugJSPassedValues(method);
-
+    
     boolean isStatic = method.isStatic();
-    if (dt.isOverloaded()) {
-      sw.println("var d = @org.timepedia.exporter.client.ExporterUtil::getDispatch("
-          + "Ljava/lang/Class;Ljava/lang/String;"
-          + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (@"
-          + method.getEnclosingExportType().getQualifiedSourceName()
-          + "::class,'" + method.getUnqualifiedExportName() + "', arguments, "
-          + isStatic + ", " + method.isVarArgs() + ");");
-      sw.println("var javaFunc = d[0], args = d[1] ? d[1] (this.__gwt_instance, d[2]) : d[2], wrapFunc = d[3];");    
-    }
-    
-    sw.print(isVoid ? "" : "var x = ");
-    if (!dt.isOverloaded()) {
-      sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this.__gwt_instance.@") + method.getJSNIReference() + "(" );
-      declareJSPassedValues(method, ARG_PREFIX, method.isVarArgs());
-      sw.println(");");
-    } else {
-      String args = (isStatic ? "null" : "this.__gwt_instance") + ", args";
-      sw.println("javaFunc.apply(" + args + ");");
+    try {
+      sw.print(isVoid ? "" : "return ");
+      if (!dt.isOverloaded()) {
+        if (needsExport) sw.print(getGwtToJsWrapper(retType) + "(");
+        sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this." + GWT_INSTANCE + ".@") + method.getJSNIReference() + "(" );
+        declareJSPassedValues(method, ARG_PREFIX, method.isVarArgs());
+        sw.print(")");
+        if (needsExport) sw.print(")");
+      } else {
+        sw.print("@org.timepedia.exporter.client.ExporterUtil::runDispatch("
+            + "Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;"
+            + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (" + (isStatic ? "null" : "this." + GWT_INSTANCE + "") + ", @"
+            + method.getEnclosingExportType().getQualifiedSourceName()
+            + "::class,'" + method.getUnqualifiedExportName() + "', arguments, "
+            + isStatic + ", " + method.isVarArgs() + ")[0]");
+        
+        overloadExported.add(method.getJSQualifiedExportName());
+      }
       
-      overloadExported.add(method.getJSQualifiedExportName());
+    } catch (Exception e) {
+      e.printStackTrace();
     }
-    
-    if (isVoid) {
-      sw.println();
-    } else if (dt.isOverloaded()) {
-      sw.println("return wrapFunc ? wrapFunc(this.__gwt_instance, [x]) : x;");
-    } else if (needsExport){
-      sw.println("return " + getGwtToJsWrapper(retType) + "(x);");
-    } else {
-      sw.println("return (x);");
-    }
-
+    sw.println(";");
     sw.outdent();
     sw.print("})");
     sw.println(";");

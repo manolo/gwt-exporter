@@ -73,7 +73,7 @@ public class ExporterBaseImpl {
   public void declarePackage(String packageName, String enclosingClasses) {
   }
   
-  public JavaScriptObject getDispatch(Class clazz, String meth,
+  public JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     return null;
   }

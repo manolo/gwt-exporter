@@ -182,7 +182,7 @@ public class DispatchTable {
           args += argName
               + " == null ? null :function(a) {for (var i = 0; i < a.length ; i++) {a[i] = a[i].constructor == $wnd."
               + requestedType.getJSQualifiedExportName()
-              + " ? a[i].__gwt_instance : @"
+              + " ? a[i]." + ClassExporter.GWT_INSTANCE + " : @"
               + requestedType.getQualifiedExporterImplementationName()
               + "::makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)(a[i]);}return a;}("
               + argName + ")";
@@ -196,7 +196,7 @@ public class DispatchTable {
           args += argName
               + " == null ? null : function(a) { a = a.constructor == $wnd."
               + requestedType.getJSQualifiedExportName()
-              + " ? a.__gwt_instance : @"
+              + " ? a." + ClassExporter.GWT_INSTANCE + " : @"
               + requestedType.getQualifiedExporterImplementationName()
               + "::makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)(a); return a;}("
               + argName + ")";
@@ -209,6 +209,8 @@ public class DispatchTable {
     
     if (!method.isStatic() && method.needsWrapper()) {
       args = "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(instance, " + args + ")";
+    } else if (!hasClosures) {
+      return "null";
     }
     
     return ret + args + "}";

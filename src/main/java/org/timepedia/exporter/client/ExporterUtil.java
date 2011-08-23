@@ -59,9 +59,9 @@ public class ExporterUtil {
 //    });
 //  }
   
-  public static JavaScriptObject getDispatch(Class clazz, String meth,
+  public static JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
-    return impl.getDispatch(clazz, meth, arguments, isStatic, isVarArgs);
+    return impl.runDispatch(instance, clazz, meth, arguments, isStatic, isVarArgs);
   }
 
   public static native byte getStructuralFieldbyte(JavaScriptObject jso,

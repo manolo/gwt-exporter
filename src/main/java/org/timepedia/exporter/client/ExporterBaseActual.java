@@ -329,10 +329,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
   }
   
-  private final static native Object getGwtInstance(JavaScriptObject o) /*-{
-    return o.__gwt_instance || null;
-  }-*/;
-  
   public Exportable[] toArrExport(JavaScriptObject j) {
     JsArray<JavaScriptObject> s = j.cast();
     int l = s.length();
@@ -498,7 +494,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return jso[key];
   }-*/;
 
-  private JavaScriptObject getDispatch(Map<Class, JavaScriptObject> dmap,
+  private JavaScriptObject runDispatch(Object instance, Map<Class, JavaScriptObject> dmap,
       Class clazz, String meth, JsArray<JavaScriptObject> arguments) {
 
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
@@ -518,34 +514,34 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     if (jFunc == null) {
       return null;
     } else {
-      JsArray<JavaScriptObject>ret = JavaScriptObject.createArray().cast();
-      // javaFunction
-      ret.push(jFunc);
-      // function to wrap arguments (create closures)
-      ret.push(aFunc);
-      // arguments used to get the dispatcher
-      ret.push(arguments);
-      // wrapper function for the return type
-      ret.push(wFunc);
-      return ret;
+      arguments = aFunc != null ? wrapArguments(instance, aFunc, arguments) : arguments;
+      return runDispatch(instance, jFunc, wFunc, arguments);
     }
   }
   
+  private static native JsArray<JavaScriptObject> wrapArguments(Object instance, JavaScriptObject wrapper, JsArray<JavaScriptObject> arguments) /*-{
+    return wrapper(instance, arguments);
+  }-*/;
+
+  private static native JsArray<JavaScriptObject> runDispatch(Object instance, JavaScriptObject java, JavaScriptObject wrapper, JsArray<JavaScriptObject> arguments) /*-{
+    var x = java.apply(instance, arguments);
+    return [wrapper ? wrapper(instance, [x]) : x];
+  }-*/;
   
   @Override
-  public JavaScriptObject getDispatch(Class clazz, String meth,
+  public JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
       for (int i = 1, l = getMaxArity(dmap.get(clazz).cast(), meth); i <= l; i++) {
         JsArray<JavaScriptObject> args = computeVarArguments(i, arguments);
-        JavaScriptObject ret = getDispatch(dmap, clazz, meth, args);
+        JavaScriptObject ret = runDispatch(instance, dmap, clazz, meth, args);
         if (ret != null) {
           return ret;
         }
       }
     } else {
-      JavaScriptObject ret = getDispatch(dmap, clazz, meth, arguments);
+      JavaScriptObject ret = runDispatch(instance, dmap, clazz, meth, arguments);
       if (ret != null) {
         return ret;
       }
@@ -588,6 +584,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     map.put(clazz, jso);
   }
   
+  private final static native Object getGwtInstance(JavaScriptObject o) /*-{
+    // g must match ClassExporter.GWT_INSTANCE
+    return o && o.g ? o.g : null;
+  }-*/;
+  
   private static native void mergeJso(JavaScriptObject o1, JavaScriptObject o2) /*-{
     for(p in o2) {o1[p] = o2[p];}
   }-*/;
@@ -604,7 +605,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
         Object jsType = getObject(i + 3);
         String argJsType = typeof(arguments, i);
         if (argJsType.equals("object") || argJsType.equals("array")) {
-          Object gwtObject = getJavaObject(arguments, i);
+          Object gwtObject = getGwtInstance(arguments.get(i));
           if (gwtObject != null) {
             if (!gwtObject.getClass().equals(jsType)) {
               return false;
@@ -618,11 +619,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       }
       return true;
     }
-
-    public native Object getJavaObject(JavaScriptObject args, int i) /*-{
-      return args[i].__gwt_instance || null;
-    }-*/;
-
+    
     public native static String typeof(JavaScriptObject args, int i) /*-{
       return typeof(args[i]);
     }-*/;
