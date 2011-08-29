@@ -123,10 +123,10 @@ public class ExportableTypeOracle {
     return annotation != null;
   }
   
-  public boolean isExportableFactoryMethod(JMethod method) {
+  public boolean isExportableFactoryMethod(JMethod method, JType retClass) {
     return isExportable(method, null) && method.isStatic()
         && isExportable(method.getAnnotation(ExportConstructor.class))
-        && method.getReturnType() == method.getEnclosingType();
+        && retClass.equals(method.getReturnType());
   }
 
   private TypeOracle typeOracle;

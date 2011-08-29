@@ -33,9 +33,8 @@ public class ExporterUtil {
     impl.addTypeMap(type, exportedConstructor);
   }
 
-  public static void declarePackage(String packageName,
-      String enclosingClasses) {
-    impl.declarePackage(packageName, enclosingClasses);
+  public static JavaScriptObject declarePackage(String qualifiedExportName) {
+    return impl.declarePackage(qualifiedExportName);
   }
 
   public static void exportAll() {
@@ -59,7 +58,7 @@ public class ExporterUtil {
 //    });
 //  }
   
-  public static JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
+  public static JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     return impl.runDispatch(instance, clazz, meth, arguments, isStatic, isVarArgs);
   }

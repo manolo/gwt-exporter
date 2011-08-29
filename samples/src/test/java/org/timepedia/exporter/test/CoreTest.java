@@ -14,9 +14,11 @@ import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
 import simpledemo.client.SimpleDemo;
+import simpledemo.client.SimpleDemo.Child;
 import simpledemo.client.SimpleDemo.Clos;
 import simpledemo.client.SimpleDemo.Func;
 import simpledemo.client.SimpleDemo.GQ;
+import simpledemo.client.SimpleDemo.Mother;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -345,12 +347,12 @@ public class CoreTest extends GWTTestCase{
   
   @Export(value = "$$", all = true)
   @ExportPackage("")
-  public static class Child extends Parent implements Exportable {
+  public static class Son extends Parent implements Exportable {
     @Export
     public String f = "F";
     
-    @Export("childName")
-    public String getChildName(Child c) {
+    @Export("sonName")
+    public String getSonName(Son c) {
       return super.getParentName(c);
     }
     
@@ -484,6 +486,34 @@ public class CoreTest extends GWTTestCase{
     }
   }
   
+  // ExportOverlay issue_30
+  public static class Child {
+    private String name;
+    public Child(String cname) { name = cname; }
+    public String getName() { return name; }
+  }
+
+  public static class Mother {
+    Child child;
+    public void setChild(Child c) {child = c;}
+    public Child getChild() {return child;}
+  }
+
+  @ExportPackage("ex")
+  @Export("Child")
+  public static class XChild implements ExportOverlay<Child>{
+    public XChild(String s){}
+    public String getName() {return null;}
+  }
+
+  @ExportPackage("ex")
+  @Export("Mother")
+  public static class XMother implements ExportOverlay<Mother>{
+    public void setChild(Child c) {}
+    public Child getChild() {return null;}
+  }
+  
+  
   static boolean debug = false;
   public static <T> void mAssertEqual(T a, T b) {
     if (!debug) {
@@ -583,8 +613,8 @@ public class CoreTest extends GWTTestCase{
     assertEq("defined", c); 
     
     var ch = new $wnd.$$();
-    assertEq("Child", ch.childName(ch));
-    assertEq("Child", ch.getParentName(ch.parent()));
+    assertEq("Son", ch.sonName(ch));
+    assertEq("Son", ch.getParentName(ch.parent()));
     assertEq("$$$", $wnd.$$$());
     
     // export overlay
@@ -613,6 +643,12 @@ public class CoreTest extends GWTTestCase{
     assertEq("hello", cs1.echo());
     var cs2 = new $wnd.gwt.c('by');
     assertEq("hello", cs2.echo());
+    
+    // more tests for exportoverlay
+    var child = new $wnd.ex.Child("Bill");
+    var mother = new $wnd.ex.Mother();
+    mother.setChild(child);
+    p("Bill", mother.getChild().getName()); 
     
   }-*/;
 

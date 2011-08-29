@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
@@ -521,12 +522,6 @@ public class ClassExporter {
   private void exportConstructor(JExportableClassType requestedType)
       throws UnableToCompleteException {
     
-    // save this namespace to restore later
-    sw.println("if($wnd." + requestedType.getJSQualifiedExportName() + ") {");
-    sw.println(
-        "  var pkg = $wnd." + requestedType.getJSQualifiedExportName() + ";");
-    sw.println("}");
-
     // constructor.getJSQualifiedExportName() returns fully qualified package
     // + exported class name
     sw.print("$wnd." + requestedType.getJSQualifiedExportName()
@@ -881,10 +876,10 @@ public class ClassExporter {
         if (needsExport) sw.print(")");
       } else {
         sw.print("@org.timepedia.exporter.client.ExporterUtil::runDispatch("
-            + "Ljava/lang/Object;Ljava/lang/Class;Ljava/lang/String;"
+            + "Ljava/lang/Object;Ljava/lang/Class;I"
             + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (" + (isStatic ? "null" : "this." + GWT_INSTANCE + "") + ", @"
             + method.getEnclosingExportType().getQualifiedSourceName()
-            + "::class,'" + method.getUnqualifiedExportName() + "', arguments, "
+            + "::class, " + getMethodDispatchIndex(dispatchMap, method.getUnqualifiedExportName()) + " , arguments, "
             + isStatic + ", " + method.isVarArgs() + ")[0]");
         
         overloadExported.add(method.getJSQualifiedExportName());
@@ -897,6 +892,21 @@ public class ClassExporter {
     sw.outdent();
     sw.print("})");
     sw.println(";");
+  }
+  
+  // Return the index of the method in the dispatchMap Json struct
+  // Before we used the method name, but an integer reduces the js size.
+  private int getMethodDispatchIndex(HashMap<String, DispatchTable> dispatchMap, String methodName) {
+    int i = 0;
+    for (Entry<String, DispatchTable> e: dispatchMap.entrySet()) {
+      if (e.getKey().equals(methodName)){
+        break;
+      }
+      if (e.getValue().isOverloaded()) {
+        i++;
+      }
+    }
+    return i;
   }
   
   private String getGwtToJsWrapper(JExportableType retType) {
@@ -956,21 +966,15 @@ public class ClassExporter {
   }
 
   /**
-   * For each subpackage of sub1.sub2.sub3... we create a chain of objects
+   * For each package of sub1.sub2.sub3... we create a chain of objects
    * $wnd.sub1.sub2.sub3
    */
   private void declarePackages(JExportableClassType requestedClassType) {
-    String requestedPackageName = requestedClassType.getJSExportPackage();
-    String enclosingClasses[] = requestedClassType.getEnclosingClasses();
-    String enclosing = "";
-    for (String enclosingClass : enclosingClasses) {
-      enclosing += enclosingClass + ".";
-    }
-    enclosing = enclosing.length() > 0 ? enclosing
-        .substring(0, enclosing.length() - 1) : enclosing;
+    // save this namespace to restore later
+    sw.print("var pkg = ");
     sw.println(
-        "@org.timepedia.exporter.client.ExporterUtil::declarePackage(Ljava/lang/String;Ljava/lang/String;)('"
-            + requestedPackageName + "','" + enclosing + "');");
+        "@org.timepedia.exporter.client.ExporterUtil::declarePackage(Ljava/lang/String;)('"
+        + requestedClassType.getJSQualifiedExportName() + "');");
   }
 
   /**
@@ -1000,8 +1004,7 @@ public class ClassExporter {
           || classType.getType().isAbstract()) {
         continue;
       }
-      
-      String qualName = classType.getQualifiedSourceName();
+      String qualName = classType.getRequestedType().getQualifiedSourceName();
       sw.println("GWT.create(" + qualName  + ".class);");
     }
 

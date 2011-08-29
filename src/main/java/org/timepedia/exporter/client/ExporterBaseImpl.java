@@ -70,10 +70,11 @@ public class ExporterBaseImpl {
     return null;
   }
 
-  public void declarePackage(String packageName, String enclosingClasses) {
+  public JavaScriptObject declarePackage(String qualifiedExportName) {
+    return null;
   }
   
-  public JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
+  public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     return null;
   }

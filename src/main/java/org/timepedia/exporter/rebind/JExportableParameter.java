@@ -93,7 +93,6 @@ public class JExportableParameter {
     } else {
       String paramTypeName = param.getType().getQualifiedSourceName();
       JExportableType type = xto.findExportableType(paramTypeName);
-      System.out.println(paramTypeName);
       if (type != null && type instanceof JExportableClassType
           && xto.isClosure((JExportableClassType) type)) {
         return "'function'";

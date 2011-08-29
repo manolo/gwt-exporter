@@ -60,11 +60,13 @@ public class DispatchTable {
   public static String toJSON(HashMap<String, DispatchTable> dispatchMap) {
     StringBuilder sb = new StringBuilder();
     sb.append("{\n");
+    int i = 0;
     for (Map.Entry<String, DispatchTable> e : dispatchMap.entrySet()) {
-      if (!e.getValue().isOverloaded()) {
-        continue;
+      if (e.getValue().isOverloaded()) {
+        // We use a number instead of the method name, so as the generated
+        // js is small.
+        sb.append("  " + i++ + ":" + e.getValue().toJSON() + ",\n");
       }
-      sb.append("  \"" + e.getKey() + "\":" + e.getValue().toJSON() + ",\n");
     }
     sb.append("}");
     return sb.toString();

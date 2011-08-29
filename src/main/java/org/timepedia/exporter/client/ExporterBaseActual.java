@@ -466,23 +466,18 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }-*/;
 
   @Override
-  public void declarePackage(String packageName,
-      String enclosingClassesString) {
-    String superPackages[] = packageName.split("\\.");
+  public JavaScriptObject declarePackage(String qualifiedExportName) {
+    String superPackages[] = qualifiedExportName.split("\\.");
     JavaScriptObject prefix = getWindow();
-    for (int i = 0; i < superPackages.length; i++) {
+    int i = 0;
+    for (int l = superPackages.length - 1; i < l ; i++) {
       if (!superPackages[i].equals("client")) {
         declarePackage0(prefix, superPackages[i]);
         prefix = getProp(prefix, superPackages[i]);
       }
     }
-    String enclosingClasses[] = enclosingClassesString.split("\\.");
-    for (String enclosingName : enclosingClasses) {
-      if (!enclosingName.trim().equals("")) {
-        declarePackage0(prefix, enclosingName);
-        prefix = getProp(prefix, enclosingName);
-      }
-    }
+    // return the previous object stored in this name-space if any.
+    return getProp(prefix, superPackages[i]);
   }
 
   private static native JavaScriptObject getWindow() /*-{
@@ -495,7 +490,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }-*/;
 
   private JavaScriptObject runDispatch(Object instance, Map<Class, JavaScriptObject> dmap,
-      Class clazz, String meth, JsArray<JavaScriptObject> arguments) {
+      Class clazz, int meth, JsArray<JavaScriptObject> arguments) {
 
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
         arguments.length());
@@ -529,7 +524,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }-*/;
   
   @Override
-  public JavaScriptObject runDispatch(Object instance, Class clazz, String meth,
+  public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
@@ -551,12 +546,12 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   }
 
   private native JsArray<SignatureJSO> getSigs(JavaScriptObject jsoMap,
-      String meth, int arity) /*-{
+      int meth, int arity) /*-{
     return jsoMap[meth][arity];
   }-*/;
   
   private native int getMaxArity(JavaScriptObject jsoMap,
-      String meth) /*-{
+      int meth) /*-{
       var o = jsoMap[meth];
       var r = 0;
       for (k in o) r = Math.max(r, k);

@@ -13,6 +13,7 @@ import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 import com.google.gwt.core.ext.typeinfo.JField;
 import com.google.gwt.core.ext.typeinfo.JMethod;
+import com.google.gwt.core.ext.typeinfo.JType;
 
 /**
  *
@@ -56,11 +57,7 @@ public class JExportableClassType implements JExportable, JExportableType {
 
   public JExportableConstructor[] getExportableConstructors() {
     ArrayList<JExportableConstructor> exportableCons = new ArrayList<JExportableConstructor>();
-
-    // export public no-arg constructor for overlay types
-    JClassType exportType = getTypeToExport(); 
-        
-    for (JConstructor method : exportType.getConstructors()) {
+    for (JConstructor method : type.getConstructors()) {
       if (exportableTypeOracle.isExportable(method, this)) {
         exportableCons.add(new JExportableConstructor(this, method));
       }
@@ -70,8 +67,9 @@ public class JExportableClassType implements JExportable, JExportableType {
   
   public JExportableMethod[] getExportableFactoryMethods() {
    ArrayList<JExportableMethod> exportableMethods = new ArrayList<JExportableMethod>();
+   JType retClass = getTypeToExport();
    for (JMethod method : type.getMethods()) {
-     if (exportableTypeOracle.isExportableFactoryMethod(method)) {
+     if (exportableTypeOracle.isExportableFactoryMethod(method, retClass)) {
        exportableMethods.add(new JExportableMethod(this, method));
      }
    }
@@ -140,12 +138,14 @@ public class JExportableClassType implements JExportable, JExportableType {
   
   public String getJSExportName () {
     Export ann = type.getAnnotation(Export.class);
+    JClassType type = getTypeToExport();
     return ann != null && !ann.value().isEmpty() ? ann.value() : type.getName();
   }
 
   public String getJSExportPackage() {
     String requestedPackageName = getPrefix();
     ExportPackage ann = type.getAnnotation(ExportPackage.class);
+    JClassType type = getTypeToExport();
     if (ann != null) {
       requestedPackageName = ann.value();
     } else if (type.getEnclosingType() != null) {
