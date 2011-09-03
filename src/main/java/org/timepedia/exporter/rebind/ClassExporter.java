@@ -458,15 +458,16 @@ public class ClassExporter {
     HashSet<String> staticExported = new HashSet<String>();
     
     for (JExportableMethod method : requestedType.getExportableMethods()) {
-      if (method.isStatic() ? !staticExported.contains(method.getName())
-           :!exported.contains(method.getName())) {
+      String methodName = method.getUnqualifiedExportName();
+      if (method.isStatic() ? !staticExported.contains(methodName)
+           :!exported.contains(methodName)) {
         exportMethod(method,
             method.isStatic() ? staticDispatchMap : dispatchMap);
         if(method.isStatic()) {
-          exported.add(method.getName());
+          exported.add(methodName);
         }
         else {
-          staticExported.add(method.getName());
+          staticExported.add(methodName);
         }
       }
     }
@@ -853,7 +854,11 @@ public class ClassExporter {
       return;
     }
     
-    if (method.isStatic() && !method.isExportInstanceMethod()) {
+    boolean isStatic = method.isStatic();
+    boolean isExportInstanceMethod = method.isExportInstanceMethod();
+
+    
+    if (isStatic && !isExportInstanceMethod) {
       sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
     } else {
       sw.print("_." + method.getUnqualifiedExportName() + " = ");
@@ -867,19 +872,18 @@ public class ClassExporter {
     sw.println(") { ");
     sw.indent();
     
-    boolean isStatic = method.isStatic();
     try {
       sw.print(isVoid ? "" : "return ");
       if (!dt.isOverloaded()) {
         if (needsExport) sw.print(getGwtToJsWrapper(retType) + "(");
-        sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this." + GWT_INSTANCE + ".@") + method.getJSNIReference() + "(" );
+        sw.print((isStatic || method.needsWrapper() ? "@" : "this." + GWT_INSTANCE + ".@") + method.getJSNIReference() + "(" );
         declareJSMethodPassedValues(method);
         sw.print(")");
         if (needsExport) sw.print(")");
       } else {
         sw.print("@org.timepedia.exporter.client.ExporterUtil::runDispatch("
             + "Ljava/lang/Object;Ljava/lang/Class;I"
-            + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (" + (isStatic ? "null" : "this." + GWT_INSTANCE + "") + ", @"
+            + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (" + (isStatic && !isExportInstanceMethod ? "null" : "this." + GWT_INSTANCE + "") + ", @"
             + method.getEnclosingExportType().getQualifiedSourceName()
             + "::class, " + getMethodDispatchIndex(dispatchMap, method.getUnqualifiedExportName()) + " , arguments, "
             + isStatic + ", " + method.isVarArgs() + ")[0]");

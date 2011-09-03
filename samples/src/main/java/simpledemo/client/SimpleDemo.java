@@ -19,9 +19,8 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
-
+  
   public void onModuleLoad() {
-    GWT.create(XMother.class);
     GWT.create(C.class);
     runJsTests1();
     
@@ -283,6 +282,11 @@ public class SimpleDemo implements EntryPoint {
     public String m3() {
       return "m3";
     }
+    
+    @Export
+    public MBase m1(MBase b) {
+      return b;
+    }
   }
   
   @ExportPackage("gwt")
@@ -369,7 +373,11 @@ public class SimpleDemo implements EntryPoint {
   public static class Child {
     private String name;
     public Child(String cname) { name = cname; }
-    public String getName() { return name; }
+    public String getName1() { return name; }
+    public String getName2(long l) { return name + l; }
+    public String getName3(Child c) { return c==null? "NULL" :c.getName1(); }
+
+
     public String wrapped_method(long l) {return "" + l;}
   }
 
@@ -383,18 +391,24 @@ public class SimpleDemo implements EntryPoint {
   @Export("Child")
   public static class XChild implements ExportOverlay<Child>{
     public XChild(String s){}
-    public String getName() {return null;}
+    @Export("name")
+    public String getName1() {return null;}
+    @Export("name")
+    public String getName2(long l) {return null;}
+    @Export("name")
+    public String getName3(Child c) {return null;}
+
     @ExportConstructor
     public static Child constructor(String name, String surname) {
       return new Child(name + " " + surname);
     }
     @ExportInstanceMethod("foo")
-    public static String instanceMethod1(Child instance, String name, String surname, long l) {
+    public static String instanceMethod(Child instance, String name, String surname, long l) {
       return name + "-" + surname + "-Foo-" + l;
     }
     
-    @ExportInstanceMethod("caa")
-    public static String instanceMethod2(Child instance, String name) {
+    @ExportInstanceMethod("foo")
+    public static String instanceMethod(Child instance, String name) {
       return name + "-Caa";
     }
     public String wrapped_method(long l) {return null;}
@@ -497,10 +511,11 @@ public class SimpleDemo implements EntryPoint {
     var child = new $wnd.ex.Child("Bill");
     var mother = new $wnd.ex.Mother();
     mother.setChild(child);
-    p("Bill", mother.getChild().getName());
-    p("Bill", mother.getChild().getName()); 
-    p("s1-s2-Foo-2", child.foo("s1", "s2", 2));
-    p("s1-Caa", child.caa('s1'));
+    p("Bill", mother.getChild().name());
+    p("Bill2", mother.getChild().name(2));
+    p("Joe", child.name(new $wnd.ex.Child("Joe")));
+    p("s1-s2-Foo-2", child.foo('s1', 's2', 2));
+    p("s1-Caa", child.foo('s1'));
   }-*/;
   
 }

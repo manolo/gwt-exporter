@@ -10,6 +10,7 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
 import com.google.gwt.core.client.JsArrayString;
+import com.google.gwt.user.client.Window;
 
 /**
  * Methods used to maintain a mapping between JS types and Java (GWT) objects.
@@ -506,6 +507,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
         break;
       }
     }
+    
     if (jFunc == null) {
       return null;
     } else {
@@ -514,11 +516,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
   }
   
-  private static native JsArray<JavaScriptObject> wrapArguments(Object instance, JavaScriptObject wrapper, JsArray<JavaScriptObject> arguments) /*-{
+  private static native JsArray<JavaScriptObject> wrapArguments(Object instance, JavaScriptObject wrapper, JavaScriptObject arguments) /*-{
     return wrapper(instance, arguments);
   }-*/;
 
-  private static native JsArray<JavaScriptObject> runDispatch(Object instance, JavaScriptObject java, JavaScriptObject wrapper, JsArray<JavaScriptObject> arguments) /*-{
+  private static native JsArray<JavaScriptObject> runDispatch(Object instance, JavaScriptObject java, JavaScriptObject wrapper, JavaScriptObject arguments) /*-{
     var x = java.apply(instance, arguments);
     return [wrapper ? wrapper(instance, [x]) : x];
   }-*/;
@@ -526,6 +528,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   @Override
   public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
+    
     Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
       for (int i = 1, l = getMaxArity(dmap.get(clazz).cast(), meth); i <= l; i++) {
@@ -537,6 +540,11 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       }
     } else {
       JavaScriptObject ret = runDispatch(instance, dmap, clazz, meth, arguments);
+      if (ret == null) {
+        // ExportInstanceMethod case
+        arguments = unshift(instance, arguments).cast();
+        ret = runDispatch(instance, dmap, clazz, meth, arguments);
+      }
       if (ret != null) {
         return ret;
       }
@@ -565,6 +573,16 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private static native double jsDateObjectToNumber(JavaScriptObject d) /*-{
     return (d && d.getTime) ? d.getTime(): 0;
   }-*/;
+  
+  private static native <T> void putObject(JavaScriptObject o, int index, T val) /*-{
+    o[index] = val;
+  }-*/;
+  private static native Object getObject(JavaScriptObject o, int index) /*-{
+    return o[index];
+  }-*/;
+  private static native double getNumber(JavaScriptObject o, int index) /*-{
+    return o[index];
+  }-*/;
 
   @Override
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
@@ -592,23 +610,30 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
     protected SignatureJSO() {
     }
-
+    
     public boolean matches(JsArray<JavaScriptObject> arguments) {
       // add argument matching logic
       // add structural type checks
       for (int i = 0; i < arguments.length(); i++) {
-        Object jsType = getObject(i + 3);
+        Object jsType = getJsTypeObject(i + 3);
         String argJsType = typeof(arguments, i);
-        if (argJsType.equals("object") || argJsType.equals("array")) {
+        boolean isPrimitive = "number".equals(argJsType);
+        Object o = isPrimitive ? null: getObject(arguments, i);
+        if ((o != null && jsType.equals(o.getClass())) || jsType.equals(argJsType)){
+          continue;
+        } else if (argJsType.equals("object") || argJsType.equals("array")) {
           Object gwtObject = getGwtInstance(arguments.get(i));
           if (gwtObject != null) {
             if (!gwtObject.getClass().equals(jsType)) {
               return false;
             }
+            // We have to replace the JsObject by the gwtObject in the array
+            // in order that gwt is able to run jsni.
+            putObject(arguments, i, gwtObject);
           } else if (!jsType.equals("object") && !jsType.equals("array")) {
             return false;
           }
-        } else if (!jsType.equals(argJsType)) {
+        } else {
           return false;
         }
       }
@@ -619,7 +644,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return typeof(args[i]);
     }-*/;
 
-    public native Object getObject(int i) /*-{
+    public native Object getJsTypeObject(int i) /*-{
       return this[i];
     }-*/;
 

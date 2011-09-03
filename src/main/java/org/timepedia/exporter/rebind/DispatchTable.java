@@ -210,6 +210,7 @@ public class DispatchTable {
     args = hasClosures ? (args + "]") : "args";
     
     if (!method.isStatic() && method.needsWrapper()) {
+      // TODO: remove function(instance ... when unshift
       args = "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(instance, " + args + ")";
     } else if (!hasClosures) {
       return "null";
