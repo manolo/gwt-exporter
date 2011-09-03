@@ -168,7 +168,6 @@ public class DispatchTable {
       = new HashMap<Integer, Set<Signature>>();
   
   private static String generateWrapArgumentsFunction(JExportableMethod method) {
-    String ret = "function(instance, args){return ";
     String args = "[";
     JExportableParameter params[] = method.getExportableParameters();
     boolean hasClosures = false;
@@ -207,15 +206,18 @@ public class DispatchTable {
         }
       }
     }
-    args = hasClosures ? (args + "]") : "args";
-    
-    if (!method.isStatic() && method.needsWrapper()) {
-      // TODO: remove function(instance ... when unshift
-      args = "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(instance, " + args + ")";
-    } else if (!hasClosures) {
-      return "null";
+    args += "]";
+    String unshift = "@org.timepedia.exporter.client.ExporterUtil::unshift(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)";
+    boolean needsUnshift = !method.isStatic() && method.needsWrapper();
+    if (hasClosures) {
+      String ret = "function(instance, args){return ";
+      if (needsUnshift) {
+        return ret + unshift + "(instance, " + args + ")}";
+      } else {
+        return ret + args + "}";
+      }
+    } else {
+      return needsUnshift ? unshift : "";
     }
-    
-    return ret + args + "}";
   }  
 }
