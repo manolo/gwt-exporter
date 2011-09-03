@@ -1,8 +1,6 @@
 package org.timepedia.exporter.rebind;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,9 +122,14 @@ public class ExportableTypeOracle {
   }
   
   public boolean isExportableFactoryMethod(JMethod method, JType retClass) {
-    return isExportable(method, null) && method.isStatic()
-        && isExportable(method.getAnnotation(ExportConstructor.class))
-        && retClass.equals(method.getReturnType());
+    if (isExportable(method, null) && isExportable(method.getAnnotation(ExportConstructor.class))) {
+      if (method.isStatic() && retClass.equals(method.getReturnType())) {
+        return true;
+      }
+      throw new RuntimeException("Method " + method.getEnclosingType() + " " + method 
+          + " ExportConstructor but it is not static or it does not return a " + retClass); 
+    }
+    return false;
   }
 
   private TypeOracle typeOracle;

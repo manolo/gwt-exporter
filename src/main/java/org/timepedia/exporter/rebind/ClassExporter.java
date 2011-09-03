@@ -579,7 +579,7 @@ public class ClassExporter {
       sw.print("this." + GWT_INSTANCE + " = @"+ jsniCall + "(");
 
       // pass arguments[0], ..., arguments[n] to the JSNI call
-      declareJSPassedValues(constructor, "arguments", true);
+      declareJSConstructorPassedValues(constructor);
       sw.println(");");
       sw.println(
           "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)\n (this." + GWT_INSTANCE + ", this);");
@@ -634,23 +634,22 @@ public class ClassExporter {
     }
   }
 
-  /**
-   * Generate comma separated list of argnames, arg0, ..., arg_n where n =
-   * number of parameters of method
-   *
-   * @param useArgumentsArray use arguments[n] instead of argn
-   */
-  private void declareJSPassedValues(JExportableMethod method, String prefix, boolean useArgumentsArray) {
+  private void declareJSMethodPassedValues(JExportableMethod method) {
     JExportableParameter params[] = method.getExportableParameters();
-    if (method.needsWrapper() && !method.isStatic()) {
+    if ((!method.isStatic() && (method.needsWrapper()) || method.isExportInstanceMethod())) {
       sw.print("this." + GWT_INSTANCE + "" + (params.length > 0 ? ", " : ""));
     }
+    for (int j = 0, i = method.isExportInstanceMethod() ? 1 :0; i < params.length; i++, j++) {
+      String pName = ARG_PREFIX + (method.isVarArgs() ? "[" + j + "]" : j);
+      sw.print((j > 0 ? "," : "") + params[i].getExportParameterValue(pName));
+    }
+  }
+  
+  private void declareJSConstructorPassedValues(JExportableMethod method) {
+    JExportableParameter params[] = method.getExportableParameters();
     for (int i = 0; i < params.length; i++) {
-      sw.print(params[i].getExportParameterValue(prefix
-          + (useArgumentsArray ? "[" + i + "]" : i)));
-      if (i < params.length - 1) {
-        sw.print(", ");
-      }
+      String pName = "arguments" +  "[" + i + "]";
+      sw.print((i > 0 ? "," : "") + params[i].getExportParameterValue(pName));
     }
   }
 
@@ -760,7 +759,7 @@ public class ClassExporter {
     }
     function += " " + JExportableMethod.WRAPPER_PREFIX + method.getName() + "(";
     if (method.isStatic()) {
-      body += requestedType.getQualifiedSourceName();
+      body += method.getEnclosingTypeQualifiecSourceName();
     } else {
       function += requestedType.getQualifiedSourceName() + " instance" + (method.getExportableParameters().length > 0 ? ", " : "");
       body += "instance";
@@ -854,16 +853,19 @@ public class ClassExporter {
       return;
     }
     
-    if (method.isStatic()) {
+    if (method.isStatic() && !method.isExportInstanceMethod()) {
       sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
     } else {
       sw.print("_." + method.getUnqualifiedExportName() + " = ");
     }
     sw.print("$entry(function(");
-    declareJSParameters(method, dt.isOverloaded() ? dt.maxArity() : -1);
+    int l = dt.isOverloaded() ? dt.maxArity() : method.getExportableParameters().length;
+    if (method.isExportInstanceMethod()) l--;
+    for (int i = 0; i < l; i++) {
+      sw.print((i>0 ? "," : "") +  ARG_PREFIX + i);
+    }
     sw.println(") { ");
     sw.indent();
-//    debugJSPassedValues(method);
     
     boolean isStatic = method.isStatic();
     try {
@@ -871,7 +873,7 @@ public class ClassExporter {
       if (!dt.isOverloaded()) {
         if (needsExport) sw.print(getGwtToJsWrapper(retType) + "(");
         sw.print((method.isStatic() || method.needsWrapper() ? "@" : "this." + GWT_INSTANCE + ".@") + method.getJSNIReference() + "(" );
-        declareJSPassedValues(method, ARG_PREFIX, method.isVarArgs());
+        declareJSMethodPassedValues(method);
         sw.print(")");
         if (needsExport) sw.print(")");
       } else {

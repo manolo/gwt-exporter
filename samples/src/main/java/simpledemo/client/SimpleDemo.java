@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
+import org.timepedia.exporter.client.ExportConstructor;
+import org.timepedia.exporter.client.ExportInstanceMethod;
 import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
@@ -367,6 +369,7 @@ public class SimpleDemo implements EntryPoint {
     private String name;
     public Child(String cname) { name = cname; }
     public String getName() { return name; }
+    public String wrapped_method(long l) {return "" + l;}
   }
 
   public static class Mother {
@@ -380,6 +383,15 @@ public class SimpleDemo implements EntryPoint {
   public static class XChild implements ExportOverlay<Child>{
     public XChild(String s){}
     public String getName() {return null;}
+    @ExportConstructor
+    public static Child constructor(String name, String surname) {
+      return new Child(name + " " + surname);
+    }
+    @ExportInstanceMethod("foo")
+    public static String instanceMethod(Child instance, String name, String surname, long l) {
+      return name + "-" + surname + "-Foo-" + l;
+    }
+    public String wrapped_method(long l) {return null;}
   }
 
   @ExportPackage("ex")
@@ -479,7 +491,9 @@ public class SimpleDemo implements EntryPoint {
     var child = new $wnd.ex.Child("Bill");
     var mother = new $wnd.ex.Mother();
     mother.setChild(child);
+    p("Bill", mother.getChild().getName());
     p("Bill", mother.getChild().getName()); 
+    p("s1-s2-Foo-2", child.foo("s1", "s2", 2));
   }-*/;
   
 }

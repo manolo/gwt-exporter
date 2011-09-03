@@ -19,4 +19,8 @@ public class JExportOverlayClassType extends JExportableClassType {
   public JClassType getType() {
     return exportType;
   }
+  
+  public JClassType getOverlayType() {
+    return super.getType();
+  }
 }

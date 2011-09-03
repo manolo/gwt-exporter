@@ -1,11 +1,13 @@
 package org.timepedia.exporter.rebind;
 
+import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportConstructor;
+import org.timepedia.exporter.client.ExportInstanceMethod;
+
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JParameter;
-
-import org.timepedia.exporter.client.Export;
 
 /**
  *
@@ -29,8 +31,13 @@ public class JExportableMethod implements JExportable {
     this.exportableEnclosingType = exportableEnclosingType;
     this.method = method;
     
-    Export ann = method.getAnnotation(Export.class);
-    String anValue = ann != null ? ann.value().trim() : "";
+    String anValue = "";
+    if (isExportInstanceMethod()) {
+      anValue = method.getAnnotation(ExportInstanceMethod.class).value();
+    } else {
+      Export ann = method.getAnnotation(Export.class);
+      anValue = ann != null ? ann.value().trim() : "";
+    }
 
     if (!anValue.isEmpty()) {
       exportName = anValue;
@@ -77,14 +84,28 @@ public class JExportableMethod implements JExportable {
   public JExportableClassType getEnclosingExportType() {
     return exportableEnclosingType;
   }
+  
+  public String getEnclosingTypeQualifiecSourceName() {
+    if (exportableEnclosingType instanceof JExportOverlayClassType) {
+      return ((JExportOverlayClassType)exportableEnclosingType).getOverlayType().getQualifiedSourceName();
+    } else {
+      return exportableEnclosingType.getQualifiedSourceName();
+    }
+  }
 
   public String getJSNIReference() {
     String reference = "";
+    // we export the original method or the static wrapper
     if (!needsWrapper()) {
-      // we export the original method
-      reference = exportableEnclosingType.getQualifiedSourceName() + "::" + method.getName() + "(";
+      // Use static ExportConstructor and ExportMethod methods in the overlay class
+      if (isStatic() && exportableEnclosingType instanceof JExportOverlayClassType
+          && (method.getAnnotation(ExportConstructor.class) != null || method.getAnnotation(ExportInstanceMethod.class) != null)) {
+        reference = getEnclosingTypeQualifiecSourceName();
+      } else {
+        reference = exportableEnclosingType.getQualifiedSourceName();
+      }
+      reference +=  "::" + method.getName() + "(";      
     } else {
-      // we export a static wrapper
       reference = exportableEnclosingType.getQualifiedExporterImplementationName() + "::" + WRAPPER_PREFIX + method.getName() + "(";
       // Wrappers are static, so we pass the instance in the first argument.
       if (!isStatic()) {
@@ -142,6 +163,22 @@ public class JExportableMethod implements JExportable {
     } else {
       return ((JMethod) method).isStatic();
     }
+  }
+  
+  public boolean isExportInstanceMethod() {
+    return isStatic()
+        && exportableEnclosingType instanceof JExportOverlayClassType
+        && method.getAnnotation(ExportInstanceMethod.class) != null
+//        && ((JExportOverlayClassType) exportableEnclosingType).getOverlayType() == ((JMethod) method).getReturnType()
+        ;
+  }
+
+  public boolean isExportConstructor() {
+    return isStatic()
+        && exportableEnclosingType instanceof JExportOverlayClassType
+        && method.getAnnotation(ExportConstructor.class) != null
+//        && ((JExportOverlayClassType) exportableEnclosingType).getOverlayType() == method.getParameters()[0].getType()
+        ;
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {

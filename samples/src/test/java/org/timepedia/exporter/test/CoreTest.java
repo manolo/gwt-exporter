@@ -649,7 +649,7 @@ public class CoreTest extends GWTTestCase{
     var mother = new $wnd.ex.Mother();
     mother.setChild(child);
     p("Bill", mother.getChild().getName()); 
-    
+    p("s1-s2-Foo-2", child.foo("s1", "s2", 2));
   }-*/;
 
 }
