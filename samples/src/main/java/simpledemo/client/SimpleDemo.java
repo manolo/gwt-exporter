@@ -21,6 +21,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 public class SimpleDemo implements EntryPoint {
 
   public void onModuleLoad() {
+    GWT.create(XMother.class);
     GWT.create(C.class);
     runJsTests1();
     
@@ -388,8 +389,13 @@ public class SimpleDemo implements EntryPoint {
       return new Child(name + " " + surname);
     }
     @ExportInstanceMethod("foo")
-    public static String instanceMethod(Child instance, String name, String surname, long l) {
+    public static String instanceMethod1(Child instance, String name, String surname, long l) {
       return name + "-" + surname + "-Foo-" + l;
+    }
+    
+    @ExportInstanceMethod("caa")
+    public static String instanceMethod2(Child instance, String name) {
+      return name + "-Caa";
     }
     public String wrapped_method(long l) {return null;}
   }
@@ -494,6 +500,7 @@ public class SimpleDemo implements EntryPoint {
     p("Bill", mother.getChild().getName());
     p("Bill", mother.getChild().getName()); 
     p("s1-s2-Foo-2", child.foo("s1", "s2", 2));
+    p("s1-Caa", child.caa('s1'));
   }-*/;
   
 }
