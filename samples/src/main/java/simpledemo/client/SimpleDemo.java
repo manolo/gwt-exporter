@@ -15,12 +15,24 @@ import org.timepedia.exporter.client.NoExport;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
   
   public void onModuleLoad() {
+ 
+    GWT.setUncaughtExceptionHandler(new GWT.UncaughtExceptionHandler() {
+      public void onUncaughtException(Throwable e) {
+        String r = "";
+        for (StackTraceElement s :e.getStackTrace()) {
+          r += s + "\n";
+        }
+        Window.alert(r);
+      }
+    });
+
     GWT.create(C.class);
     runJsTests1();
     
@@ -32,12 +44,26 @@ public class SimpleDemo implements EntryPoint {
     RootPanel.get().add(new Label(s.toString()));
   }
   
+  private static native <T> String arrToStr(T o) /*-{
+    var ret = '';
+    for (var i=0; i<o.length; i++)
+    ret += (i>0 ? "," : "") + String(o[i]);
+    return ret;
+  }-*/;
+
   public static <T> void mAssertEqual(T a, T b) {
-    if (a.toString().equals(b.toString())) {
-      print("OK -> " + b);
+    String sb = (b != null && b.toString().matches(".*(Array|\\[).*")) ? arrToStr(b) : b == null ? "null" : b.toString();
+    String ss = "";
+    while (!ss.equals(sb)) {
+      ss = sb;
+      sb = sb.replaceAll("(^|,)[^,]+[\\$\\.]([A-Z][\\w]+)\\$*(,|$)", "$1$2$3");
+    }
+    sb = sb.replaceAll("\\.0", "");
+    if (a == null && b == null || a != null && a.toString().equals(sb.toString())) { 
+      print("OK -> " + sb);
     } else {
-      print("ERROR -> " + a.toString() + " <=> " + b.toString() + " ["
-          + a.getClass().getName() + ", " + b.getClass().getName() + "]");
+      print("ERROR -> " + a + " <=> " + sb + " ["
+          + (a != null ? a.getClass().getName() : "") + ", " + (b != null ? b.getClass().getName() : b) + "]");
     }
   }
 
@@ -441,11 +467,11 @@ public class SimpleDemo implements EntryPoint {
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
     
     var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("1,2,3,4.0,5.0,S,com.google.gwt.core.client.JavaScriptObject$,simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    p("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
     p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
     p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    p("simpledemo.client.SimpleDemo$HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
+    p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
+    p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
     p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
     
     p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));

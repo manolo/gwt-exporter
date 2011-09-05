@@ -147,7 +147,7 @@ public class JExportableParameter {
       ret += "toArrChar" ;
     } else {
       ret += "toArrObject";
-      after = ", new " + qsn.replace("]", argName + ".<com.google.gwt.core.client.JsArray>cast().length()]") + after; 
+      after = ", new " + qsn.replace("]", "ExporterUtil.length(" + argName + ")]") + after; 
 //      if (e != null && o.isJavaScriptObject(e)) {
 //        ret += "toArrJsObject";
 //      } else if (t != null) {

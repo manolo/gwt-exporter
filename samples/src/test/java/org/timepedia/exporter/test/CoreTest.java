@@ -14,13 +14,6 @@ import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
 
-import simpledemo.client.SimpleDemo;
-import simpledemo.client.SimpleDemo.Child;
-import simpledemo.client.SimpleDemo.Clos;
-import simpledemo.client.SimpleDemo.Func;
-import simpledemo.client.SimpleDemo.GQ;
-import simpledemo.client.SimpleDemo.Mother;
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;

@@ -144,6 +144,8 @@ public class JExportableMethod implements JExportable {
       wrap = false;
       if (method.isVarArgs()) {
         wrap = true;
+      } else if (isExportInstanceMethod()) {
+        wrap = true;
       } else if (getExportableReturnType() != null &&
           "long".equals(getExportableReturnType().getQualifiedSourceName())) {
         wrap = true;
@@ -155,6 +157,10 @@ public class JExportableMethod implements JExportable {
       }
     }
     return wrap;
+  }
+  
+  public boolean isInStaticMap() {
+    return isStatic() && !isExportInstanceMethod();
   }
 
   public boolean isStatic() {

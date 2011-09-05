@@ -10,7 +10,6 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
 import com.google.gwt.core.client.JsArrayString;
-import com.google.gwt.user.client.Window;
 
 /**
  * Methods used to maintain a mapping between JS types and Java (GWT) objects.
@@ -57,6 +56,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   public JavaScriptObject typeConstructor(Class type) {
     Object o = typeMap.get(type);
+    Class sup = type.getSuperclass();
+    if (o == null && sup != null && sup != Object.class) {
+      return typeConstructor(sup);
+    }
     return (JavaScriptObject) o;
   }
 
@@ -246,7 +249,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return JavaScriptObject.createArray();
     }
     JavaScriptObject cons = typeConstructor(type);
-    assert cons != null : "No constructor for type: " + type.getClass().getName() + " " + type; 
+    assert cons != null : "No constructor for type: " + type.getClass().getName() + " " + type.getClass().getSuperclass(); 
     JavaScriptObject wrapper = wrap0(type, cons);
     setWrapper(type, wrapper);
     return wrapper;
@@ -286,7 +289,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   
   // JsArray.get() returns a JavaScriptObject, so we need this wrapper 
   // class to avoid a casting exception at runtime.
-  public static class JsArrayObject extends JsArray<JavaScriptObject> {
+  public static class JsArrayObject extends JavaScriptObject {
     protected JsArrayObject(){}
     final public native <T> T getObject(int i) /*-{
       return this[i];
@@ -294,23 +297,24 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     final public native <T> void setObject(int i, T o) /*-{
       this[i] = o;
     }-*/;
+    final public native int length() /*-{
+      return this.length;
+    }-*/;
   }
   
   @SuppressWarnings("unchecked")
   @Override
   public <T> T[] toArrObject(JavaScriptObject j, T[] ret) {
-    if (!GWT.isScript()) {
-      JsArrayObject s = j.cast();
-      int l = s.length();
-      for (int i = 0; i < l; i++) {
-        Object o = s.getObject(i);
-        if (o instanceof JavaScriptObject && getGwtInstance((JavaScriptObject)o) != null) {
-          o = getGwtInstance((JavaScriptObject)o);
-        }
-        ret[i] = (T)o;
+    // We can not use here reinterpretArray because we have to replace
+    // the gwtInstance
+    JsArrayObject s = j.cast();
+    int l = s.length();
+    for (int i = 0; i < l; i++) {
+      Object o = s.getObject(i);
+      if (o instanceof JavaScriptObject && getGwtInstance((JavaScriptObject)o) != null) {
+        o = getGwtInstance((JavaScriptObject)o);
       }
-    } else {
-      return (T[])reinterpretArray(j);
+      ret[i] = (T)o;
     }
     return ret;
   }
@@ -507,7 +511,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
         break;
       }
     }
-    
     if (jFunc == null) {
       return null;
     } else {
@@ -522,18 +525,22 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   private static native JsArray<JavaScriptObject> runDispatch(Object instance, JavaScriptObject java, JavaScriptObject wrapper, JavaScriptObject arguments) /*-{
     var x = java.apply(instance, arguments);
-    return [wrapper ? wrapper(instance, [x]) : x];
+    return [wrapper ? wrapper(x) : x];
   }-*/;
   
   @Override
   public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
-    
     Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
-      for (int i = 1, l = getMaxArity(dmap.get(clazz).cast(), meth); i <= l; i++) {
+      for (int l = getMaxArity(dmap.get(clazz).cast(), meth), i = l; i >= 1; i--) {
         JsArray<JavaScriptObject> args = computeVarArguments(i, arguments);
         JavaScriptObject ret = runDispatch(instance, dmap, clazz, meth, args);
+        if (ret == null) {
+          // ExportInstanceMethod case
+          args =  unshift(instance, args).cast();
+          ret = runDispatch(instance, dmap, clazz, meth, args);
+        }
         if (ret != null) {
           return ret;
         }
@@ -551,6 +558,36 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
     throw new RuntimeException(
         "Can't find exported method for given arguments");
+  }
+  
+  public native static Object getTypeAssignableToInstance(JavaScriptObject a) /*-{
+     return a && a[0] && ((typeof a[0]) == 'object' || (typeof a[0]) == 'function') ? a[0] : null;
+  }-*/;
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  public boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
+    Object o = getTypeAssignableToInstance(args);
+    return isAssignableToClass(o, clazz);
+  }
+  
+  @SuppressWarnings("rawtypes")
+  private static boolean isAssignableToClass(Object o, Class clazz) {
+    if (o != null) {
+      Class cur = o.getClass();
+      if (clazz == Object.class || cur == clazz) {
+        return true;
+      }
+      for (Class sup = cur.getSuperclass(); sup != Object.class; sup = sup.getSuperclass()) {
+        if (sup == clazz) {
+          return true;
+        }
+      }
+//      if (clazz.isAssignableFrom(JavaScriptObject.class) && (o instanceof JavaScriptObject)) {
+//        return true;
+//      }
+    }
+    return false;
   }
 
   private native JsArray<SignatureJSO> getSigs(JavaScriptObject jsoMap,
@@ -577,9 +614,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   private static native <T> void putObject(JavaScriptObject o, int index, T val) /*-{
     o[index] = val;
   }-*/;
-  private static native Object getObject(JavaScriptObject o, int index) /*-{
-    return o[index];
-  }-*/;
+
   private static native double getNumber(JavaScriptObject o, int index) /*-{
     return o[index];
   }-*/;
@@ -614,14 +649,20 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     public boolean matches(JsArray<JavaScriptObject> arguments) {
       // add argument matching logic
       // add structural type checks
-      for (int i = 0; i < arguments.length(); i++) {
+      for (int i = 0, l = arguments.length(); i < l; i++) {
         Object jsType = getJsTypeObject(i + 3);
         String argJsType = typeof(arguments, i);
-        boolean isPrimitive = "number".equals(argJsType);
-        Object o = isPrimitive ? null: getObject(arguments, i);
-        if ((o != null && jsType.equals(o.getClass())) || jsType.equals(argJsType)){
+        if (argJsType.equals(jsType)){
           continue;
-        } else if (argJsType.equals("object") || argJsType.equals("array")) {
+        }
+        
+        boolean isPrimitive = "number".equals(argJsType);
+        boolean isClass = !isPrimitive && jsType != null && jsType.getClass().equals(Class.class);
+        if (isClass && isAssignableToClass(arguments.<JsArrayObject>cast().getObject(i), (Class)jsType)){
+          continue;
+        }
+        
+        if (argJsType.equals("object") || argJsType.equals("array")) {
           Object gwtObject = getGwtInstance(arguments.get(i));
           if (gwtObject != null) {
             if (!gwtObject.getClass().equals(jsType)) {
@@ -630,6 +671,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
             // We have to replace the JsObject by the gwtObject in the array
             // in order that gwt is able to run jsni.
             putObject(arguments, i, gwtObject);
+
           } else if (!jsType.equals("object") && !jsType.equals("array")) {
             return false;
           }

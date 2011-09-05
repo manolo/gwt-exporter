@@ -146,5 +146,9 @@ public class ExporterBaseImpl {
     return null;
   }
 
+  public boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
+    return false;
+  }
+
 }
 

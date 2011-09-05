@@ -2,6 +2,8 @@ package org.timepedia.exporter.client;
 
 import java.util.Date;
 
+import org.timepedia.exporter.client.ExporterBaseActual.JsArrayObject;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
@@ -219,8 +221,8 @@ public class ExporterUtil {
     return impl.toArrExport(type);
   }
   
-  public static boolean isTheSameClass(Object o, Class clazz) {
-    return o.getClass() == clazz;
+  public static boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
+    return impl.isAssignableToInstance(clazz, args);
   }
   
   public static JavaScriptObject unshift(Object o, JavaScriptObject arr) {
@@ -233,6 +235,10 @@ public class ExporterUtil {
   
   public static Date jsDateToDate(JavaScriptObject jd) {
     return impl.jsDateToDate(jd);
+  }
+  
+  public static int length(JavaScriptObject o) {
+    return o.<JsArrayObject>cast().length();
   }
   
 }

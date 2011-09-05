@@ -119,7 +119,19 @@ public class ClassExporter {
       exportDependentParams(method);
 
       boolean isVoid = retType != null && retType.getQualifiedSourceName().equals("void");
-      boolean noParams = method.getExportableParameters().length == 0;
+      boolean isBoolean = !isVoid && retType != null && retType.getQualifiedSourceName().equals("boolean");
+      boolean isPrimitive = !isVoid && retType != null && retType instanceof JExportablePrimitiveType;
+      boolean hasParams = method.getExportableParameters().length > 0;
+      
+      // We use the first JavascriptObject in the function for applying the closure
+      String apply = "null";
+      for (int i = 0, l = method.getExportableParameters().length; i < l ; i++) {
+        if (xTypeOracle.isJavaScriptObject(method.getExportableParameters()[i].getParam().getType())) {
+          apply = ARG_PREFIX + i;
+          break;
+        }
+      }
+      
       String rType = retType == null ? "Object" : retType.getQualifiedSourceName();
       sw.print("public " + rType);
 
@@ -127,7 +139,7 @@ public class ClassExporter {
       declareParameters(method, -1, true);
       sw.println(") {");
       sw.indent();
-      sw.print((isVoid ? "" : "return ") + "invoke(jso " + (noParams ? "" : ","));
+      sw.print((isVoid ? "" : "return ") + "invoke(jso " + (hasParams ? "," : ""));
       declareJavaPassedValues(method, false);
       sw.println(");");
       sw.outdent();
@@ -141,17 +153,18 @@ public class ClassExporter {
       declareParameters(method, -1, true);
       sw.println(") /*-{");
       sw.indent();
-      sw.print((!isVoid ? "var result= " : "") + "closure(");
+      sw.print((!isVoid ? "var r = " : "") + "closure.apply(" + apply + " ,[");
       declareJavaPassedValues(method, true);
-      sw.println(");");
+      sw.println("]);");
       boolean isArray = retType != null && retType instanceof JExportableArrayType;
       if (retType != null && retType.needsExport() && !isVoid && !isArray) {
-        sw.println("if(result != null && result != undefined) "
-            + "result=result.instance;");
-        sw.println("else if(result == undefined) result=null;");
-      }
-      if (!isVoid) {
-        sw.println("return result;");
+        sw.println("return r == undefined ? null : r != null ? r.instance : r");
+      } else if (isBoolean) {
+        sw.println("return r ? true : false;");
+      } else if (isPrimitive) {
+        sw.println("return r && (typeof r == 'number') ? r: 0;");
+      } else if (!isVoid) {
+        sw.println("return r;");
       }
       sw.outdent();
       sw.println("}-*/;");
@@ -459,10 +472,9 @@ public class ClassExporter {
     
     for (JExportableMethod method : requestedType.getExportableMethods()) {
       String methodName = method.getUnqualifiedExportName();
-      if (method.isStatic() ? !staticExported.contains(methodName)
+      if (method.isInStaticMap() ? !staticExported.contains(methodName)
            :!exported.contains(methodName)) {
-        exportMethod(method,
-            method.isStatic() ? staticDispatchMap : dispatchMap);
+        exportMethod(method, method.isInStaticMap() ? staticDispatchMap : dispatchMap);
         if(method.isStatic()) {
           exported.add(methodName);
         }
@@ -496,8 +508,8 @@ public class ClassExporter {
     HashMap<String, DispatchTable> dispMap
         = new HashMap<String, DispatchTable>();
     for (JExportableMethod meth : requestedType.getExportableMethods()) {
-      if (staticDispatch && !meth.isStatic() || !staticDispatch && meth
-          .isStatic()) {
+      if (staticDispatch && !meth.isInStaticMap() 
+          || !staticDispatch && meth.isInStaticMap()) {
         continue;
       }
       DispatchTable dt = dispMap.get(meth.getUnqualifiedExportName());
@@ -534,12 +546,9 @@ public class ClassExporter {
     // e.g. code is calling constructor as
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
-    sw.println("if (arguments.length == 1 && "
-        + "((typeof arguments[0]) == 'object' || (typeof arguments[0]) == 'function') && "
-        + "@org.timepedia.exporter.client.ExporterUtil::isTheSameClass(Ljava/lang/Object;Ljava/lang/Class;)\n  (arguments[0], @"  
-        + requestedType.getQualifiedSourceName() + "::class)) {");
+    sw.println("if (@org.timepedia.exporter.client.ExporterUtil::isAssignableToInstance(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)(@" 
+        + requestedType.getQualifiedSourceName() + "::class, arguments)) {");
     sw.indent();
-
     sw.println(" this." + GWT_INSTANCE + " = arguments[0];");
     sw.outdent();
     sw.println("}");
@@ -886,7 +895,7 @@ public class ClassExporter {
             + "Lcom/google/gwt/core/client/JsArray;ZZ)\n (" + (isStatic && !isExportInstanceMethod ? "null" : "this." + GWT_INSTANCE + "") + ", @"
             + method.getEnclosingExportType().getQualifiedSourceName()
             + "::class, " + getMethodDispatchIndex(dispatchMap, method.getUnqualifiedExportName()) + " , arguments, "
-            + isStatic + ", " + method.isVarArgs() + ")[0]");
+            + method.isInStaticMap() + ", " + method.isVarArgs() + ")[0]");
         
         overloadExported.add(method.getJSQualifiedExportName());
       }
