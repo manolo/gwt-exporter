@@ -300,6 +300,18 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     final public native int length() /*-{
       return this.length;
     }-*/;
+    final public Double getNumberObject(int i) {
+      return getPrimitiveNumber(i);
+    };
+    final public Boolean getBooleanObject(int i) {
+      return getPrimitiveBoolean(i);
+    };
+    final public native double getPrimitiveNumber(int i) /*-{
+      return this[i];
+    }-*/;
+    final public native boolean getPrimitiveBoolean(int i) /*-{
+      return this[i];
+    }-*/;
   }
   
   @SuppressWarnings("unchecked")
@@ -573,19 +585,15 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   
   @SuppressWarnings("rawtypes")
   private static boolean isAssignableToClass(Object o, Class clazz) {
+    if (clazz == Object.class) {
+      return true;
+    }
     if (o != null) {
-      Class cur = o.getClass();
-      if (clazz == Object.class || cur == clazz) {
-        return true;
-      }
-      for (Class sup = cur.getSuperclass(); sup != Object.class; sup = sup.getSuperclass()) {
+      for (Class sup = o.getClass(); sup != Object.class; sup = sup.getSuperclass()) {
         if (sup == clazz) {
           return true;
         }
       }
-//      if (clazz.isAssignableFrom(JavaScriptObject.class) && (o instanceof JavaScriptObject)) {
-//        return true;
-//      }
     }
     return false;
   }
@@ -652,16 +660,39 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       for (int i = 0, l = arguments.length(); i < l; i++) {
         Object jsType = getJsTypeObject(i + 3);
         String argJsType = typeof(arguments, i);
+        
         if (argJsType.equals(jsType)){
           continue;
         }
         
-        boolean isPrimitive = "number".equals(argJsType);
+        // Gwt objects
+        boolean isPrimitive = "number".equals(argJsType) || "boolean".equals(argJsType);
         boolean isClass = !isPrimitive && jsType != null && jsType.getClass().equals(Class.class);
-        if (isClass && isAssignableToClass(arguments.<JsArrayObject>cast().getObject(i), (Class)jsType)){
+        if (isClass) {
+          Object o = arguments.<JsArrayObject>cast().getObject(i);
+          if (isAssignableToClass(o, (Class)jsType)){
+            continue;
+          }
+          if (o instanceof JavaScriptObject) {
+            Object gwt = getGwtInstance((JavaScriptObject)o);
+            if (isAssignableToClass(gwt, (Class)jsType)){
+              putObject(arguments, i, gwt);
+              continue;
+            }
+          }
+        }
+        
+        // When the gwt method argument type is object we have to replace primitive types
+        if ("number".equals(argJsType) && Object.class.equals(jsType)) {
+          putObject(arguments, i, arguments.<JsArrayObject>cast().getNumberObject(i));
+          continue;
+        }
+        if ("boolean".equals(argJsType) && Object.class.equals(jsType)) {
+          putObject(arguments, i, arguments.<JsArrayObject>cast().getBooleanObject(i));
           continue;
         }
         
+        // TODO: review
         if (argJsType.equals("object") || argJsType.equals("array")) {
           Object gwtObject = getGwtInstance(arguments.get(i));
           if (gwtObject != null) {
