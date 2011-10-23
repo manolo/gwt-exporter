@@ -39,6 +39,14 @@ public class DispatchTable {
     }
     isOverloaded |= sigMap.size() > 1;
 
+    // When one argument is Object we have to handle the method via dispatcher, 
+    // which is able to cast primitive arguments to Object
+    if (!isOverloaded) {
+      for (JExportableParameter p : exportableParameters) {
+        isOverloaded |= "java.lang.Object".equals(p.getTypeName());
+      }
+    }
+
     Signature sig = new Signature(method, exportableParameters);
     if (sigs.contains(sig)) {
       return false;
