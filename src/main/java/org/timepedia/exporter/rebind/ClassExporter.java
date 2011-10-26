@@ -646,10 +646,11 @@ public class ClassExporter {
 
   private void declareJSMethodPassedValues(JExportableMethod method) {
     JExportableParameter params[] = method.getExportableParameters();
+    int i = method.isExportInstanceMethod() ? 1 :0;
     if ((!method.isStatic() && (method.needsWrapper()) || method.isExportInstanceMethod())) {
-      sw.print("this." + GWT_INSTANCE + "" + (params.length > 0 ? ", " : ""));
+      sw.print("this." + GWT_INSTANCE + "" + (params.length > i ? ", " : ""));
     }
-    for (int j = 0, i = method.isExportInstanceMethod() ? 1 :0; i < params.length; i++, j++) {
+    for (int j = 0; i < params.length; i++, j++) {
       String pName = ARG_PREFIX + (method.isVarArgs() ? "[" + j + "]" : j);
       sw.print((j > 0 ? "," : "") + params[i].getExportParameterValue(pName));
     }
