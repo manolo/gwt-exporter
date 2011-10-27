@@ -542,6 +542,8 @@ public class SimpleDemo implements EntryPoint {
     p("Joe", child.name(new $wnd.ex.Child("Joe")));
     p("s1-s2-Foo-2", child.foo('s1', 's2', 2));
     p("s1-Caa", child.foo('s1'));
+    p("null-Caa", child.foo(null));
+    
   }-*/;
   
 }

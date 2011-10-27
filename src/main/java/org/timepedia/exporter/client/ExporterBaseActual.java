@@ -506,9 +506,39 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return jso[key];
   }-*/;
 
+  /**
+   * Used for debuging 
+   */
+  private static native String dumpArguments(JavaScriptObject o) /*-{
+    function dumpObj(obj, name, indent, depth) {
+      if (depth > 4) return name + " 4 < depth=" + depth;
+      if (typeof obj == "object") {
+        var child = null;
+        var output = indent + name + "\n";
+        indent += "  ";
+        for (var item in obj) {
+           try {
+             child = obj[item];
+           } catch (e) {
+             child = "<Unable to Evaluate>";
+           }
+           if (typeof child == "object") {
+             output += dumpObj(child, item, indent, depth + 1);
+           } else {
+             output += indent + item + ": " + child + "\n";
+           }
+        }
+        return output;
+      } else {
+        return "" + obj;
+      }
+    }    
+    return dumpObj(o, 'arguments' , '', 1);
+  }-*/;
+
   private JavaScriptObject runDispatch(Object instance, Map<Class, JavaScriptObject> dmap,
       Class clazz, int meth, JsArray<JavaScriptObject> arguments) {
-
+    
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
         arguments.length());
     JavaScriptObject jFunc = null;
@@ -527,7 +557,8 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return null;
     } else {
       arguments = aFunc != null ? wrapArguments(instance, aFunc, arguments) : arguments;
-      return runDispatch(instance, jFunc, wFunc, arguments);
+      JavaScriptObject r =  runDispatch(instance, jFunc, wFunc, arguments);
+      return r;
     }
   }
   
@@ -543,6 +574,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   @Override
   public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
+    
     Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
       for (int l = getMaxArity(dmap.get(clazz).cast(), meth), i = l; i >= 1; i--) {
@@ -568,8 +600,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
         return ret;
       }
     }
+    String s = ""; //dumpArguments(arguments);
+
     throw new RuntimeException(
-        "Can't find exported method for given arguments");
+        "Can't find exported method for given arguments: " + meth + ":" + arguments.length() + "\n" + s);
   }
   
   public native static Object getTypeAssignableToInstance(JavaScriptObject a) /*-{
@@ -585,7 +619,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   
   @SuppressWarnings("rawtypes")
   private static boolean isAssignableToClass(Object o, Class clazz) {
-    if (clazz == Object.class) {
+    if (Object.class.equals(clazz)) {
+      return true;
+    }
+    if (Exportable.class.equals(clazz) && o instanceof Exportable) {
       return true;
     }
     if (o != null) {
@@ -658,63 +695,69 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       // add argument matching logic
       // add structural type checks
       for (int i = 0, l = arguments.length(); i < l; i++) {
+
+        // The signature saved in the Dispatch table
         Object jsType = getJsTypeObject(i + 3);
+        // The js type of the argument passed (number, boolean, string, object, array)
         String argJsType = typeof(arguments, i);
         
+        // number, boolean, string and arrays
         if (argJsType.equals(jsType)){
           continue;
         }
-        
-        // Gwt objects
-        boolean isPrimitive = "number".equals(argJsType) || "boolean".equals(argJsType);
+        // accept nulls for strings
+        if ("string".equals(jsType) && "null".equals(argJsType)) {
+          continue;
+        }
+
+        boolean isNumber = "number".equals(argJsType);
+        boolean isBoolean = "boolean".equals(argJsType);
+
+        // when the signature is Object anything is valid, but we
+        // have to replace primitives types by the appropriate object
+        if (Object.class.equals(jsType)) {
+          if (isNumber) {
+            putObject(arguments, i, arguments.<JsArrayObject>cast().getNumberObject(i));
+          }
+          if (isBoolean) {
+            putObject(arguments, i, arguments.<JsArrayObject>cast().getBooleanObject(i));
+          }          
+          continue;
+        }
+
+        boolean isPrimitive = isNumber || isBoolean;
         boolean isClass = !isPrimitive && jsType != null && jsType.getClass().equals(Class.class);
+        
+        // Deal with complex objects
         if (isClass) {
           Object o = arguments.<JsArrayObject>cast().getObject(i);
-          if (isAssignableToClass(o, (Class)jsType)){
+          if (o == null || isAssignableToClass(o, (Class)jsType)){
             continue;
           }
           if (o instanceof JavaScriptObject) {
             Object gwt = getGwtInstance((JavaScriptObject)o);
-            if (isAssignableToClass(gwt, (Class)jsType)){
-              putObject(arguments, i, gwt);
-              continue;
+            if (gwt != null) {
+              if (isAssignableToClass(gwt, (Class)jsType)){
+                putObject(arguments, i, gwt);
+                continue;
+              }
             }
           }
         }
         
-        // When the gwt method argument type is object we have to replace primitive types
-        if ("number".equals(argJsType) && Object.class.equals(jsType)) {
-          putObject(arguments, i, arguments.<JsArrayObject>cast().getNumberObject(i));
-          continue;
-        }
-        if ("boolean".equals(argJsType) && Object.class.equals(jsType)) {
-          putObject(arguments, i, arguments.<JsArrayObject>cast().getBooleanObject(i));
-          continue;
-        }
-        
-        // TODO: review
-        if (argJsType.equals("object") || argJsType.equals("array")) {
-          Object gwtObject = getGwtInstance(arguments.get(i));
-          if (gwtObject != null) {
-            if (!gwtObject.getClass().equals(jsType)) {
-              return false;
-            }
-            // We have to replace the JsObject by the gwtObject in the array
-            // in order that gwt is able to run jsni.
-            putObject(arguments, i, gwtObject);
-
-          } else if (!jsType.equals("object") && !jsType.equals("array")) {
-            return false;
-          }
-        } else {
-          return false;
-        }
+        return false;
       }
       return true;
     }
     
     public native static String typeof(JavaScriptObject args, int i) /*-{
-      return typeof(args[i]);
+      var o = args[i];
+      var t =  o == null ? 'null' : typeof(o);
+      if (t == 'object') {
+        return Object.prototype.toString.call(o) == '[object Array]' 
+          || typeof o.length ? 'array' : t;
+      }
+      return t
     }-*/;
 
     public native Object getJsTypeObject(int i) /*-{
