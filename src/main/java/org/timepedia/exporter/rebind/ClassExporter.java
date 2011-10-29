@@ -535,6 +535,8 @@ public class ClassExporter {
   private void exportConstructor(JExportableClassType requestedType)
       throws UnableToCompleteException {
     
+    JExportableMethod init = requestedType.getJsInitMethod();
+    
     // constructor.getJSQualifiedExportName() returns fully qualified package
     // + exported class name
     sw.print("$wnd." + requestedType.getJSQualifiedExportName()
@@ -542,6 +544,7 @@ public class ClassExporter {
 
     sw.println(") {");
     sw.indent();
+    sw.println("var g, j = this;");
     // check if this is being used to wrap GWT types
     // e.g. code is calling constructor as
     // new $wnd.package.className(opaqueGWTobject)
@@ -549,10 +552,9 @@ public class ClassExporter {
     sw.println("if (@org.timepedia.exporter.client.ExporterUtil::isAssignableToInstance(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)(@" 
         + requestedType.getQualifiedSourceName() + "::class, arguments)) {");
     sw.indent();
-    sw.println(" this." + GWT_INSTANCE + " = arguments[0];");
+    sw.println("g = arguments[0];");
     sw.outdent();
     sw.println("}");
-
 
     // used to hold arity of constructors that have been generated
     HashMap<Integer, JExportableMethod> arity
@@ -586,17 +588,20 @@ public class ClassExporter {
       } else {
         jsniCall =  constructor.getJSNIReference();
       }
-      sw.print("this." + GWT_INSTANCE + " = @"+ jsniCall + "(");
-
+      sw.print("g = @"+ jsniCall + "(");
       // pass arguments[0], ..., arguments[n] to the JSNI call
       declareJSConstructorPassedValues(constructor);
       sw.println(");");
-      sw.println(
-          "@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)\n (this." + GWT_INSTANCE + ", this);");
       sw.outdent();
       sw.println("}");
     }
-
+    if (init != null) {
+      sw.println("j = g.@" + init.getJSNIReference() + "();");
+      sw.println("for (k in this) if (!j[k]) j[k] = this[k];");
+    }
+    sw.println("j." + GWT_INSTANCE + " = g;");
+    sw.println("@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(g, j);");
+    sw.println("return j;");
     sw.outdent();
     sw.println("});");
 
@@ -608,8 +613,8 @@ public class ClassExporter {
     // restore inner class namespace
     sw.println("if(pkg) {");
     sw.println(
-        "  for(p in pkg) { $wnd." + requestedType.getJSQualifiedExportName()
-            + "[p] = pkg[p]; }");
+        "  for (p in pkg) $wnd." + requestedType.getJSQualifiedExportName()
+            + "[p] = pkg[p];");
     sw.println("}");
   }
 
@@ -770,7 +775,7 @@ public class ClassExporter {
     }
     function += " " + JExportableMethod.WRAPPER_PREFIX + method.getName() + "(";
     if (method.isStatic()) {
-      body += method.getEnclosingTypeQualifiecSourceName();
+      body += method.getEnclosingTypeQualifiedSourceName();
     } else {
       function += requestedType.getQualifiedSourceName() + " instance" + (method.getExportableParameters().length > 0 ? ", " : "");
       body += "instance";

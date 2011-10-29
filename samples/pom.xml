@@ -15,7 +15,7 @@
           <version>${gwtmaven}</version>
           <configuration>
             <logLevel>${gwt.loglevel}</logLevel>
-            <style>${gwt.outputstyle}</style>
+            <style>PRETTY</style>
             <runTarget>${gwt.target}</runTarget>
             <hostedWebapp>${project.build.directory}/www</hostedWebapp>
             <draftCompile>${gwt.draft}</draftCompile>
@@ -26,7 +26,7 @@
             <extraJvmArgs>-Xmx256m</extraJvmArgs>
             <inplace>${gwt.inplace}</inplace>
             <modules>
-              <module>exporterdemo.ExporterDemo</module>
+              <!--<module>exporterdemo.ExporterDemo</module>-->
               <module>simpledemo.SimpleDemo</module>
             </modules>
           </configuration>

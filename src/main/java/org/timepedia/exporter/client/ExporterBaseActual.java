@@ -72,7 +72,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
 
     if (wrapper == null) {
-      setWrapper(type);
+      wrapper = setWrapper(type);
     }
     return wrapper;
   }
@@ -223,13 +223,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     if (type == null) {
       return null;
     }
-
-    JavaScriptObject wrapper = getWrapper(type);
-    if (wrapper != null) {
-      return wrapper;
-    }
-
-    return setWrapper(type);
+    return getWrapper(type);
   }
 
   @Override

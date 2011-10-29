@@ -8,6 +8,7 @@ import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.ExportInstanceMethod;
+import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
@@ -18,6 +19,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.Label;
 
@@ -532,6 +534,27 @@ public class CoreTest extends GWTTestCase{
     public Child getChild() {return null;}
   }
   
+  public static class Q {
+    private NodeList<Element> nodeList = JavaScriptObject.createArray().cast();
+    public Q() {
+      nodeList = Document.get().<Element>cast().getElementsByTagName("body");
+    }
+    public int size() {
+      return nodeList.getLength();
+    }
+    public NodeList<Element> get() {
+      return nodeList;
+    }
+  }
+  
+  @ExportPackage("")
+  @Export("JQ")
+  public static class EJQ implements ExportOverlay<Q> {
+    public int size(){return -1;}
+    @ExportJsInitMethod
+    public NodeList<Element> get(){return null;}
+  }
+  
   static boolean debug = false;
   public static <T> void mAssertEqual(T a, T b) {
     if (!debug) {
@@ -666,11 +689,16 @@ public class CoreTest extends GWTTestCase{
     var child = new $wnd.ex.Child("Bill");
     var mother = new $wnd.ex.Mother();
     mother.setChild(child);
-    p("Bill", mother.getChild().name());
-    p("Bill2", mother.getChild().name(2));
-    p("Joe", child.name(new $wnd.ex.Child("Joe")));
-    p("s1-s2-Foo-2", child.foo('s1', 's2', 2));
-    p("s1-Caa", child.foo('s1'));
+    assertEq("Bill", mother.getChild().name());
+    assertEq("Bill2", mother.getChild().name(2));
+    assertEq("Joe", child.name(new $wnd.ex.Child("Joe")));
+    assertEq("s1-s2-Foo-2", child.foo('s1', 's2', 2));
+    assertEq("s1-Caa", child.foo('s1'));
+    
+    // tests for ExportJsInit
+    var jq = new $wnd.JQ();
+    assertEq("1", "" + jq.length);
+    assertEq("1", "" + jq.size());
   }-*/;
 
 }

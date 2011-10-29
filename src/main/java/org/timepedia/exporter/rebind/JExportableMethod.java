@@ -3,6 +3,7 @@ package org.timepedia.exporter.rebind;
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.ExportInstanceMethod;
+import org.timepedia.exporter.client.ExportStaticMethod;
 
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
@@ -34,6 +35,8 @@ public class JExportableMethod implements JExportable {
     String anValue = "";
     if (isExportInstanceMethod()) {
       anValue = method.getAnnotation(ExportInstanceMethod.class).value();
+    } else if (isExportStaticMethod()) {
+      anValue = method.getAnnotation(ExportStaticMethod.class).value();
     } else {
       Export ann = method.getAnnotation(Export.class);
       anValue = ann != null ? ann.value().trim() : "";
@@ -85,7 +88,7 @@ public class JExportableMethod implements JExportable {
     return exportableEnclosingType;
   }
   
-  public String getEnclosingTypeQualifiecSourceName() {
+  public String getEnclosingTypeQualifiedSourceName() {
     if (exportableEnclosingType instanceof JExportOverlayClassType) {
       return ((JExportOverlayClassType)exportableEnclosingType).getOverlayType().getQualifiedSourceName();
     } else {
@@ -100,7 +103,7 @@ public class JExportableMethod implements JExportable {
       // Use static ExportConstructor and ExportMethod methods in the overlay class
       if (isStatic() && exportableEnclosingType instanceof JExportOverlayClassType
           && (method.getAnnotation(ExportConstructor.class) != null || method.getAnnotation(ExportInstanceMethod.class) != null)) {
-        reference = getEnclosingTypeQualifiecSourceName();
+        reference = getEnclosingTypeQualifiedSourceName();
       } else {
         reference = exportableEnclosingType.getQualifiedSourceName();
       }
@@ -176,6 +179,13 @@ public class JExportableMethod implements JExportable {
         && exportableEnclosingType instanceof JExportOverlayClassType
         && method.getAnnotation(ExportInstanceMethod.class) != null
 //        && ((JExportOverlayClassType) exportableEnclosingType).getOverlayType() == ((JMethod) method).getReturnType()
+        ;
+  }
+  
+  public boolean isExportStaticMethod() {
+    return isStatic()
+        && exportableEnclosingType instanceof JExportOverlayClassType
+        && method.getAnnotation(ExportStaticMethod.class) != null
         ;
   }
 

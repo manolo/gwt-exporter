@@ -6,6 +6,7 @@ import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.ExportInstanceMethod;
+import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.Exportable;
@@ -15,6 +16,9 @@ import org.timepedia.exporter.client.NoExport;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -22,7 +26,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 public class SimpleDemo implements EntryPoint {
   
   public void onModuleLoad() {
- 
+
     GWT.setUncaughtExceptionHandler(new GWT.UncaughtExceptionHandler() {
       public void onUncaughtException(Throwable e) {
         String r = "";
@@ -447,6 +451,27 @@ public class SimpleDemo implements EntryPoint {
     public Child getChild() {return null;}
   }
   
+  public static class Q {
+    private NodeList<Element> nodeList = JavaScriptObject.createArray().cast();
+    public Q() {
+      nodeList = Document.get().<Element>cast().getElementsByTagName("body");
+    }
+    public int size() {
+      return nodeList.getLength();
+    }
+    public NodeList<Element> get() {
+      return nodeList;
+    }
+  }
+  
+  @ExportPackage("")
+  @Export("JQ")
+  public static class EJQ implements ExportOverlay<Q> {
+    public int size(){return -1;}
+    @ExportJsInitMethod
+    public NodeList<Element> get(){return null;}
+  }
+  
   public native JavaScriptObject runJsTests1() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
 
@@ -544,6 +569,9 @@ public class SimpleDemo implements EntryPoint {
     p("s1-Caa", child.foo('s1'));
     p("null-Caa", child.foo(null));
     
+    var jq = new $wnd.JQ();
+    p("1", "" + jq.length);
+    p("1", "" + jq.size());
   }-*/;
   
 }
