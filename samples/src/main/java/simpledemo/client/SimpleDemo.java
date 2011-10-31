@@ -36,7 +36,7 @@ public class SimpleDemo implements EntryPoint {
         Window.alert(r);
       }
     });
-
+    
     GWT.create(C.class);
     runJsTests1();
     
@@ -317,6 +317,11 @@ public class SimpleDemo implements EntryPoint {
     public MBase m1(MBase b) {
       return b;
     }
+
+    @Export
+    public final String f() {
+      return "final";
+    }
   }
   
   @ExportPackage("gwt")
@@ -337,7 +342,6 @@ public class SimpleDemo implements EntryPoint {
       return super.m5();
     }
   }
-  
 
   public static class A implements Exportable {
     public B convertToB() {
@@ -559,6 +563,7 @@ public class SimpleDemo implements EntryPoint {
     p("m3", m.m3());
     var m5 = $wnd.gwt.SimpleDemo.MClass.m5 ? "defined" : "undefined";
     p("undefined", m5);
+    p("final", m.f());
     
     // exportAll must export B
     var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";

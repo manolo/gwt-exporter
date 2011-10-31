@@ -278,6 +278,7 @@ public class CoreTest extends GWTTestCase{
     public String m2() {
       return "m2";
     }
+    
   }
   
   ///////////////////// Classes used to test that unused parent classes are not exported
@@ -293,6 +294,10 @@ public class CoreTest extends GWTTestCase{
     }
     public String m4() {
       return "m4";
+    }
+    @Export
+    public final String f() {
+      return "final";
     }
   }
   
@@ -659,10 +664,13 @@ public class CoreTest extends GWTTestCase{
     assertEq("m2", m.m2());
     assertEq("m2", m.m2());
     assertEq("m3", m.m3());
+    assertEq("final", m.f());
     
     // exportAll must export B
     var c = $wnd.gwt.CoreTest.B ? "defined" : "undefined";
     assertEq("defined", c); 
+    
+    
     
     var ch = new $wnd.$$();
     assertEq("Son", ch.sonName(ch));

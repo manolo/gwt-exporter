@@ -102,7 +102,7 @@ public class JExportableClassType implements JExportable, JExportableType {
       // Create a set with all methods in this class
       HashSet<JMethod> classMethods = new HashSet<JMethod>();
       classMethods.addAll(Arrays.asList(type.getMethods()));
-      classMethods.addAll(Arrays.asList(type.getOverridableMethods()));
+      classMethods.addAll(Arrays.asList(type.getInheritableMethods()));
       
       for (JMethod method : classMethods) {
         if (exportableTypeOracle.isConstructor(method, this)) {
