@@ -241,4 +241,8 @@ public class ExporterUtil {
     return o.<JsArrayObject>cast().length();
   }
   
+  public static Object gwtInstance(Object o) {
+    return impl.gwtInstance(o);
+  }
+  
 }

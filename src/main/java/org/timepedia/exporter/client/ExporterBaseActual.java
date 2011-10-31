@@ -281,6 +281,12 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return wrapperArray;
   }
   
+  @Override
+  public Object gwtInstance(Object o) {
+    Object g;
+    return (o != null && o instanceof JavaScriptObject && (g = getGwtInstance((JavaScriptObject)o)) != null) ? g : o;
+  }
+  
   // JsArray.get() returns a JavaScriptObject, so we need this wrapper 
   // class to avoid a casting exception at runtime.
   public static class JsArrayObject extends JavaScriptObject {
@@ -621,7 +627,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       return true;
     }
     if (o != null) {
-      for (Class sup = o.getClass(); sup != Object.class; sup = sup.getSuperclass()) {
+      for (Class sup = o.getClass(); sup != null && sup != Object.class; sup = sup.getSuperclass()) {
         if (sup == clazz) {
           return true;
         }

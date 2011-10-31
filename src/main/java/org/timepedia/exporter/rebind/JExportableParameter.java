@@ -39,28 +39,30 @@ public class JExportableParameter {
     ExportableTypeOracle xTypeOracle = exportableEnclosingType
         .getExportableTypeOracle();
     
-    String ret = argName;
-
     String paramTypeName = param.getType().getQualifiedSourceName();
-
     JExportableType type = xTypeOracle.findExportableType(paramTypeName);
     
     if (type != null && type.needsExport()) {
       JExportableClassType cType = (JExportableClassType) type;
-      if (exportableEnclosingType.getExportableTypeOracle()
-          .isClosure(cType)) {
-        ret = argName + " == null ? null : (" + argName + ".constructor == $wnd."
+      if (xTypeOracle.isClosure((JExportableClassType) type)) {
+        return argName + " == null ? null : (" + argName + ".constructor == $wnd."
             + cType.getJSQualifiedExportName() + " ? " + argName
             + "." + ClassExporter.GWT_INSTANCE + " : " 
             + "@" + cType.getQualifiedExporterImplementationName() + "::"
             + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
             + argName 
             + "))";
-      } else if (!(type instanceof JExportableArrayType)){
-        ret = argName + " == null ? null : " + argName + "." + ClassExporter.GWT_INSTANCE;
       }
     }
-    return ret;
+    
+    if (param.getType().isClass() != null
+        && !xTypeOracle.isJavaScriptObject(param.getType())
+        && !xTypeOracle.isString(param.getType())) {
+      return "@org.timepedia.exporter.client.ExporterUtil::gwtInstance(Ljava/lang/Object;)("
+          + argName + ")";
+    }
+
+    return argName;
   }
 
   @Override

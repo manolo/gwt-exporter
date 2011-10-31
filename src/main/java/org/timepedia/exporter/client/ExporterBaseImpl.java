@@ -150,5 +150,9 @@ public class ExporterBaseImpl {
     return false;
   }
 
+  public Object gwtInstance(Object o) {
+    return null;
+  }
+
 }
 
