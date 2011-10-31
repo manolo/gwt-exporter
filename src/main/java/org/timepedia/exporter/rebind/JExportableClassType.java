@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportAfterCreateMethod;
 import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.ExporterUtil;
@@ -92,6 +93,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   private JExportableMethod[] exportableMethods;
   
   private JExportableMethod jsInitMethod;
+  private JExportableMethod afterCreateMethod;
   
   public JExportableMethod[] getExportableMethods() {
     if (exportableMethods == null) {
@@ -109,13 +111,16 @@ public class JExportableClassType implements JExportable, JExportableType {
         
         if (exportableTypeOracle.isExportable(method, this)) {
           JExportableMethod m = new JExportableMethod(this, method);
-          if (method.getAnnotation(ExportJsInitMethod.class) != null 
+          if (m.isExportJsInitMethod() 
               && exportableTypeOracle.isJavaScriptObject(method.getReturnType())
-              && method.getParameters().length == 0
               ) {
             jsInitMethod = m;
           }
-          ret.add(m);
+          if (m.isExportAfterCreateMethod()) {
+            afterCreateMethod = m;
+          } else {
+            ret.add(m);
+          }
         }
       }
       exportableMethods = ret.toArray(new JExportableMethod[0]);
@@ -125,6 +130,10 @@ public class JExportableClassType implements JExportable, JExportableType {
   
   public JExportableMethod getJsInitMethod() {
     return jsInitMethod;
+  }
+  
+  public JExportableMethod getAfterCreateMethod() {
+    return afterCreateMethod;
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {

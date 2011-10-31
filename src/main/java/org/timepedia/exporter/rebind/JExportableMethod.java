@@ -1,8 +1,11 @@
 package org.timepedia.exporter.rebind;
 
+import org.apache.tools.ant.types.CommandlineJava.SysProperties;
 import org.timepedia.exporter.client.Export;
+import org.timepedia.exporter.client.ExportAfterCreateMethod;
 import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.ExportInstanceMethod;
+import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportStaticMethod;
 
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
@@ -101,7 +104,7 @@ public class JExportableMethod implements JExportable {
     // we export the original method or the static wrapper
     if (!needsWrapper()) {
       // Use static ExportConstructor and ExportMethod methods in the overlay class
-      if (isExportConstructor() || isExportInstanceMethod() || isExportStaticMethod()) {
+      if (isExportConstructor() || isExportInstanceMethod() || isExportStaticMethod() || isExportAfterCreateMethod()) {
         reference = getEnclosingTypeQualifiedSourceName();
       } else {
         reference = exportableEnclosingType.getQualifiedSourceName();
@@ -180,22 +183,31 @@ public class JExportableMethod implements JExportable {
   public boolean isExportInstanceMethod() {
     return isStatic()
         && isExportOverlay()
-        && method.getAnnotation(ExportInstanceMethod.class) != null
-        ;
+        && method.getAnnotation(ExportInstanceMethod.class) != null;
   }
   
   public boolean isExportStaticMethod() {
     return isStatic()
         && isExportOverlay()
-        && method.getAnnotation(ExportStaticMethod.class) != null
-        ;
+        && method.getAnnotation(ExportStaticMethod.class) != null;
   }
 
   public boolean isExportConstructor() {
     return isStatic()
         && isExportOverlay()
-        && method.getAnnotation(ExportConstructor.class) != null
-        ;
+        && method.getAnnotation(ExportConstructor.class) != null;
+  }
+  
+  public boolean isExportJsInitMethod() {
+    return isStatic() == false 
+        && method.getParameters().length == 0
+        && method.getAnnotation(ExportJsInitMethod.class) != null;
+  }
+  
+  public boolean isExportAfterCreateMethod() {
+    return isStatic() 
+        && method.getParameters().length == 0
+        && method.getAnnotation(ExportAfterCreateMethod.class) != null;
   }
 
   public ExportableTypeOracle getExportableTypeOracle() {

@@ -254,10 +254,10 @@ public class ClassExporter {
       // if not defined, we create a Javascript package hierarchy
       // foo.bar.baz to hold the Javascript bridge
       declarePackages(requestedType);
-
+      
       // export Javascript constructors
       exportConstructor(requestedType);
-
+      
       // export all static fields
       exportFields(requestedType);
       
@@ -272,6 +272,10 @@ public class ClassExporter {
           + requestedType.getJSQualifiedExportName()
           + "[p] === undefined) $wnd."
           + requestedType.getJSQualifiedExportName() + "[p] = pkg[p];");
+      
+      if (requestedType.getAfterCreateMethod() != null) {
+        sw.println("@" + requestedType.getAfterCreateMethod().getJSNIReference() + "();");
+      }
       sw.outdent();
       sw.println("}-*/;");
 
@@ -542,11 +546,15 @@ public class ClassExporter {
       throws UnableToCompleteException {
     
     JExportableMethod init = requestedType.getJsInitMethod();
+    String namespace = "$wnd." + requestedType.getJSQualifiedExportName();
     
+    // we assign the prototype of the class to underscore so we can use it
+    // later to define a bunch of methods
+    sw.println("var _;");
+
     // constructor.getJSQualifiedExportName() returns fully qualified package
     // + exported class name
-    sw.print("$wnd." + requestedType.getJSQualifiedExportName()
-        + " = $entry(function(");
+    sw.print(namespace + " = $entry(function(");
 
     sw.println(") {");
     sw.indent();
@@ -599,18 +607,17 @@ public class ClassExporter {
     }
     if (init != null) {
       sw.println("j = g.@" + init.getJSNIReference() + "();");
-      sw.println("for (k in this) if (j[k] === undefined) j[k] = this[k];");
+      // We have to copy the prototype functions into the new returned object
+      sw.println("for (k in _) if (j[k] === undefined) j[k] = _[k];");
     }
     sw.println("j." + GWT_INSTANCE + " = g;");
     sw.println("@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(g, j);");
     sw.println("return j;");
     sw.outdent();
     sw.println("});");
-
-    // we assign the prototype of the class to underscore so we can use it
-    // later to define a bunch of methods
-    sw.println("var _ = $wnd." + requestedType.getJSQualifiedExportName()
-        + ".prototype = new Object();");
+    
+    // We assign the prototype after the constructor has been defined
+    sw.println("_ = " + namespace + ".prototype = new Object();");
   }
 
   /**
