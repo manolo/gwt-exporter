@@ -89,7 +89,7 @@ public class JExportableMethod implements JExportable {
   }
   
   public String getEnclosingTypeQualifiedSourceName() {
-    if (exportableEnclosingType instanceof JExportOverlayClassType) {
+    if (isExportOverlay()) {
       return ((JExportOverlayClassType)exportableEnclosingType).getOverlayType().getQualifiedSourceName();
     } else {
       return exportableEnclosingType.getQualifiedSourceName();
@@ -101,8 +101,7 @@ public class JExportableMethod implements JExportable {
     // we export the original method or the static wrapper
     if (!needsWrapper()) {
       // Use static ExportConstructor and ExportMethod methods in the overlay class
-      if (isStatic() && exportableEnclosingType instanceof JExportOverlayClassType
-          && (method.getAnnotation(ExportConstructor.class) != null || method.getAnnotation(ExportInstanceMethod.class) != null)) {
+      if (isExportConstructor() || isExportInstanceMethod() || isExportStaticMethod()) {
         reference = getEnclosingTypeQualifiedSourceName();
       } else {
         reference = exportableEnclosingType.getQualifiedSourceName();
@@ -174,26 +173,28 @@ public class JExportableMethod implements JExportable {
     }
   }
   
+  public boolean isExportOverlay() {
+    return exportableEnclosingType instanceof JExportOverlayClassType;
+  }
+  
   public boolean isExportInstanceMethod() {
     return isStatic()
-        && exportableEnclosingType instanceof JExportOverlayClassType
+        && isExportOverlay()
         && method.getAnnotation(ExportInstanceMethod.class) != null
-//        && ((JExportOverlayClassType) exportableEnclosingType).getOverlayType() == ((JMethod) method).getReturnType()
         ;
   }
   
   public boolean isExportStaticMethod() {
     return isStatic()
-        && exportableEnclosingType instanceof JExportOverlayClassType
+        && isExportOverlay()
         && method.getAnnotation(ExportStaticMethod.class) != null
         ;
   }
 
   public boolean isExportConstructor() {
     return isStatic()
-        && exportableEnclosingType instanceof JExportOverlayClassType
+        && isExportOverlay()
         && method.getAnnotation(ExportConstructor.class) != null
-//        && ((JExportOverlayClassType) exportableEnclosingType).getOverlayType() == method.getParameters()[0].getType()
         ;
   }
 

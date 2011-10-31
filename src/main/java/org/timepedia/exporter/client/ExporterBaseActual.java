@@ -488,7 +488,8 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       }
     }
     // return the previous object stored in this name-space if any.
-    return getProp(prefix, superPackages[i]);
+    JavaScriptObject o =  getProp(prefix, superPackages[i]);
+    return o;
   }
 
   private static native JavaScriptObject getWindow() /*-{
@@ -497,7 +498,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   private static native JavaScriptObject getProp(JavaScriptObject jso,
       String key) /*-{
-    return jso[key];
+    return jso != null ? jso[key] : null;
   }-*/;
 
   /**

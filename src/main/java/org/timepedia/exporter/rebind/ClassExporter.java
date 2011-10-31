@@ -266,11 +266,14 @@ public class ClassExporter {
 
       // add map from TypeName to JS constructor in ExporterUtil
       registerTypeMap(requestedType);
-
+      
+     // restore inner class namespace
+      sw.println("\nif(pkg) for (p in pkg) if ($wnd."
+          + requestedType.getJSQualifiedExportName()
+          + "[p] === undefined) $wnd."
+          + requestedType.getJSQualifiedExportName() + "[p] = pkg[p];");
       sw.outdent();
-      sw.println("\n}-*/;");
-
-      sw.println();
+      sw.println("}-*/;");
 
       // the Javascript constructors refer to static factory methods
       // on the Exporter implementation, referenced via JSNI
@@ -494,8 +497,11 @@ public class ClassExporter {
     }
   }
 
+
   private void registerDispatchMap(JExportableClassType requestedType,
       HashMap<String, DispatchTable> dispatchMap, boolean isStatic) {
+    
+    
     sw.println("\n@org.timepedia.exporter.client.ExporterUtil::registerDispatchMap("
         + "Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;Z)\n(@"
         + requestedType.getQualifiedSourceName() + "::class,"
@@ -550,11 +556,8 @@ public class ClassExporter {
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
     sw.println("if (@org.timepedia.exporter.client.ExporterUtil::isAssignableToInstance(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)(@" 
-        + requestedType.getQualifiedSourceName() + "::class, arguments)) {");
-    sw.indent();
-    sw.println("g = arguments[0];");
-    sw.outdent();
-    sw.println("}");
+        + requestedType.getQualifiedSourceName() + "::class, arguments))");
+    sw.println("  g = arguments[0];");
 
     // used to hold arity of constructors that have been generated
     HashMap<Integer, JExportableMethod> arity
@@ -576,7 +579,7 @@ public class ClassExporter {
         throw new UnableToCompleteException();
       }
       arity.put(numArguments, constructor);
-      sw.println("else if (arguments.length == " + numArguments + ") {");
+      sw.println("else if (arguments.length == " + numArguments + ")");
       sw.indent();
       
       // else someone is calling the constructor normally
@@ -593,11 +596,10 @@ public class ClassExporter {
       declareJSConstructorPassedValues(constructor);
       sw.println(");");
       sw.outdent();
-      sw.println("}");
     }
     if (init != null) {
       sw.println("j = g.@" + init.getJSNIReference() + "();");
-      sw.println("for (k in this) if (!j[k]) j[k] = this[k];");
+      sw.println("for (k in this) if (j[k] === undefined) j[k] = this[k];");
     }
     sw.println("j." + GWT_INSTANCE + " = g;");
     sw.println("@org.timepedia.exporter.client.ExporterUtil::setWrapper(Ljava/lang/Object;Lcom/google/gwt/core/client/JavaScriptObject;)(g, j);");
@@ -609,13 +611,6 @@ public class ClassExporter {
     // later to define a bunch of methods
     sw.println("var _ = $wnd." + requestedType.getJSQualifiedExportName()
         + ".prototype = new Object();");
-    
-    // restore inner class namespace
-    sw.println("if(pkg) {");
-    sw.println(
-        "  for (p in pkg) $wnd." + requestedType.getJSQualifiedExportName()
-            + "[p] = pkg[p];");
-    sw.println("}");
   }
 
   /**
@@ -719,13 +714,6 @@ public class ClassExporter {
    */
   private void declareParameters(JExportableMethod method, int arity) {
     declareParameters(method, arity, true);
-  }
-
-  /**
-   * declare type-less Javascript method parameters
-   */
-  private void declareJSParameters(JExportableMethod method, int arity) {
-    declareParameters(method, arity, false);
   }
 
   /**

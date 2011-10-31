@@ -8,8 +8,6 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Mark a static method in a class annotated with ExportOverlay to
  * be exported as an static method of the original class.
- * 
- * TODO: not implemented yet
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

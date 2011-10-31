@@ -11,6 +11,7 @@ import org.timepedia.exporter.client.ExportInstanceMethod;
 import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
+import org.timepedia.exporter.client.ExportStaticMethod;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
@@ -515,15 +516,25 @@ public class CoreTest extends GWTTestCase{
     public static Child constructor(String name, String surname) {
       return new Child(name + " " + surname);
     }
+
     @ExportInstanceMethod("foo")
     public static String instanceMethod(Child instance, String name, String surname, long l) {
       return name + "-" + surname + "-Foo-" + l;
     }
-    
     @ExportInstanceMethod("foo")
     public static String instanceMethod(Child instance, String name) {
       return name + "-Caa";
     }
+    
+    @ExportStaticMethod("sfoo")
+    public static String staticMethod(String name)  {
+      return name + "-Cas";
+    }
+    @ExportStaticMethod("sfoo")
+    public static String staticMethod(long l)  {
+      return l + "-Cas";
+    }
+    
     public String wrapped_method(long l) {return null;}
   }
 
@@ -694,6 +705,8 @@ public class CoreTest extends GWTTestCase{
     assertEq("Joe", child.name(new $wnd.ex.Child("Joe")));
     assertEq("s1-s2-Foo-2", child.foo('s1', 's2', 2));
     assertEq("s1-Caa", child.foo('s1'));
+    assertEq("s-Cas", $wnd.ex.Child.sfoo('s'));
+    assertEq("2-Cas", $wnd.ex.Child.sfoo(2));    
     
     // tests for ExportJsInit
     var jq = new $wnd.JQ();
