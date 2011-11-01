@@ -7,7 +7,7 @@ import org.timepedia.exporter.client.Exportable;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.junit.client.GWTTestCase;
 
-public class Issue34Test extends GWTTestCase {
+public class Issue34TestGwt extends GWTTestCase {
 
   @Override
   public String getModuleName() {
