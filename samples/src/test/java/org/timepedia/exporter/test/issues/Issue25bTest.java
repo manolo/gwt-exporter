@@ -1,9 +1,9 @@
-package org.timepedia.exporter.test.issue25;
+package org.timepedia.exporter.test.issues;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.junit.client.GWTTestCase;
 
-public class Issue25Test1 extends GWTTestCase{
+public class Issue25bTest extends GWTTestCase{
 
   @Override
   public String getModuleName() {

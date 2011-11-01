@@ -1,4 +1,4 @@
-package org.timepedia.exporter.test.issue25;
+package org.timepedia.exporter.test.issues;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportPackage;
