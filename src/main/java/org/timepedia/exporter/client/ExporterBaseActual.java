@@ -746,6 +746,10 @@ public class ExporterBaseActual extends ExporterBaseImpl {
           }
         }
         
+        if ("object".equals(jsType) && !isNumber && !isBoolean) {
+          continue;
+        }
+        
         return false;
       }
       return true;
@@ -756,7 +760,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
       var t =  o == null ? 'null' : typeof(o);
       if (t == 'object') {
         return Object.prototype.toString.call(o) == '[object Array]' 
-          || typeof o.length ? 'array' : t;
+          || typeof o.length == 'number' ? 'array' : t;
       }
       return t
     }-*/;
