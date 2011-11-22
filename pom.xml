@@ -3,7 +3,7 @@
     <groupId>org.timepedia.exporter</groupId>
     <artifactId>gwtexporter</artifactId>
     <packaging>jar</packaging>
-    <version>2.4.0-SNAPSHOT</version>
+    <version>2.4.0-M1</version>
     <name>GWT Javascript API Exporter</name>
     <url>http://timepedia.org</url>
 
@@ -124,4 +124,10 @@
         </repository>
     </repositories>
 
+
+  <scm>
+    <connection>scm:svn:http://svn.sonatype.org/spice/tags/gwtexporter-2.4.0-M1</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/spice/tags/gwtexporter-2.4.0-M1</developerConnection>
+    <url>http://svn.sonatype.org/spice/tags/gwtexporter-2.4.0-M1</url>
+  </scm>
 </project>
