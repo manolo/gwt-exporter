@@ -34,7 +34,7 @@ public class ExporterBaseImpl {
     return null;
   }
 
-  public JavaScriptObject wrap(Exportable[] type) {
+  public JavaScriptObject wrap(Object[] type) {
     return null;
   }
 

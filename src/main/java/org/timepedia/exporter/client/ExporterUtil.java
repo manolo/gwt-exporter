@@ -135,7 +135,7 @@ public class ExporterUtil {
     return impl.wrap(type);
   }
 
-  public static JavaScriptObject wrap(Exportable[] type) {
+  public static JavaScriptObject wrap(Object[] type) {
     return impl.wrap(type);
   }
 
