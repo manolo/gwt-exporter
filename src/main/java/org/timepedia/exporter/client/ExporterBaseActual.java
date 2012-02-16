@@ -220,8 +220,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   @Override
   public JavaScriptObject wrap(Object type) {
-    System.out.println("WRAPPING");
-
     if (type == null) {
       return null;
     }
@@ -230,7 +228,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   @Override
   public JavaScriptObject wrap(Object[] type) {
-    System.out.println("WRAPPING");
     if (type == null) {
       return null;
     }
