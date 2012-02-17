@@ -26,6 +26,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
   
+  
   public void onModuleLoad() {
     GWT.setUncaughtExceptionHandler(new GWT.UncaughtExceptionHandler() {
       public void onUncaughtException(Throwable e) {
@@ -501,6 +502,60 @@ public class SimpleDemo implements EntryPoint {
     var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
     p("undefined", c); 
   }-*/;
+  
+  // ExportOverlay issue35
+  public static class Coordinate {
+    int x, y;
+    public Coordinate() {
+    }
+    public Coordinate(int x, int y) {
+      this.x = x;
+      this.y = y;
+    }
+    public String toString() {
+      return x + "x" + y;
+    }
+  }
+  
+  public static class Geometry {
+    public Geometry() {
+    }
+    public Geometry(String geometryType, int srid, int precision) {
+    }
+    Coordinate[] coordinates;
+    public Coordinate[] getCoordinates() {
+      return coordinates;
+    }
+    public void setCoordinates(Coordinate[] coordinates) {
+      this.coordinates = coordinates;
+    }
+  }
+  
+  @Export("Coordinate")
+  @ExportPackage("sp")
+  public static class CoordinateOverlay implements ExportOverlay<Coordinate> {
+    @ExportConstructor
+    public static Coordinate constructor(int x, int y) {
+      return new Coordinate(x, y);
+    }
+    public String toString() {
+      return "";
+    }
+  }
+
+  @Export("Geometry")
+  @ExportPackage("sp")
+  public static class GeometryOverlay implements ExportOverlay<Geometry> {
+    @ExportConstructor
+    public static Geometry constructor(String geometryType, int srid, int precision) {
+      return new Geometry(geometryType, srid, precision);
+    }
+    public Coordinate[] getCoordinates() {
+      return null;
+    }
+    public void setCoordinates(Coordinate[] coordinates) {
+    }
+  }
 
   public native JavaScriptObject runJsTests() /*-{
     p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
@@ -509,6 +564,7 @@ public class SimpleDemo implements EntryPoint {
     p("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
     p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
     p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
+    $wnd.gwt.SimpleDemo.HelloClass.test3();
     p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
     p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
     p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
@@ -589,6 +645,10 @@ public class SimpleDemo implements EntryPoint {
     var jq = new $wnd.JQ();
     p("1", "" + jq.length);
     p("1", "" + jq.size());
+    
+    var geometry = new $wnd.sp.Geometry("Point", 0, 0);
+    geometry.setCoordinates([ new $wnd.sp.Coordinate(10, 10), new $wnd.sp.Coordinate(20, 20) ]);
+    p("10x10,20x20", "" + geometry.getCoordinates());
   }-*/;
   
 }
