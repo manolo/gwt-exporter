@@ -281,6 +281,9 @@ public class JExportableClassType implements JExportable, JExportableType {
       return "[Lcom/google/gwt/core/client/JavaScriptObject;";
     } else if (isTransparentType()){
       return "[" + type.getJNISignature();
+    } else  if (exportableTypeOracle.isExportOverlay(type)) {
+      // Fixes issue #35
+      return "[Ljava/lang/Object;";
     } else {
       return "[Lorg/timepedia/exporter/client/Exportable;";
     }
