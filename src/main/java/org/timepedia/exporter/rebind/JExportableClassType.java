@@ -2,11 +2,12 @@ package org.timepedia.exporter.rebind;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 
 import org.timepedia.exporter.client.Export;
-import org.timepedia.exporter.client.ExportAfterCreateMethod;
-import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.SType;
@@ -103,8 +104,28 @@ public class JExportableClassType implements JExportable, JExportableType {
       HashSet<JMethod> classMethods = new HashSet<JMethod>();
       classMethods.addAll(Arrays.asList(type.getMethods()));
       classMethods.addAll(Arrays.asList(type.getInheritableMethods()));
+      List<JMethod> sortedList = new ArrayList<JMethod>(classMethods);
       
-      for (JMethod method : classMethods) {
+      // We sort methods so as the user can modify the order they are exported via
+      // the export annotation. It is useful when we want export methods whose namespace
+      // depends on previous methods, ie:
+      // @Export("$wnd.$") method1()
+      // @Export("$wnd.$.method") method2()
+      Collections.sort(sortedList, new Comparator<JMethod>() {
+        String exportableMethodname(JMethod m) {
+          String ret = m.getName();
+          Export e = m.getAnnotation(Export.class);
+          if (e != null && e.value() != null && !e.value().isEmpty()) {
+            ret = e.value();
+          }
+          return ret;
+        }
+        public int compare(JMethod o1, JMethod o2) {
+          return exportableMethodname(o1).compareTo(exportableMethodname(o2));
+        }
+      });
+      
+      for (JMethod method : sortedList) {
         if (exportableTypeOracle.isConstructor(method, this)) {
           continue;
         }
