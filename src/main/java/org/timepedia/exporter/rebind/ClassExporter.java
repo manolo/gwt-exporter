@@ -91,7 +91,6 @@ public class ClassExporter {
     sw.indent();
     sw.println("return obj != null && obj instanceof " + genName
         + " && jso.equals(((" + genName + ")obj).jso);");
-    sw.println("public boolean equals(Object obj) {");
     sw.outdent();
     sw.println("}");
     
