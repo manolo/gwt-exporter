@@ -82,11 +82,23 @@ public class ClassExporter {
 
     sw.indent();
 
-    // export constructor
+    // wrapped javascript function
     sw.println("private " + ExportableTypeOracle.JSO_CLASS + " jso;");
     sw.println();
+    
+    // equals method compares the wrapped javascript
+    sw.println("public boolean equals(Object obj) {");
+    sw.indent();
+    sw.println("return obj != null && obj instanceof " + genName
+        + " && jso.equals(((" + genName + ")obj).jso);");
+    sw.println("public boolean equals(Object obj) {");
+    sw.outdent();
+    sw.println("}");
+    
+    // Constructor used to export the class
     sw.println("public " + genName + "() { export(); }");
 
+    // Main constructor
     sw.println(
         "public " + genName + "(" + ExportableTypeOracle.JSO_CLASS + " jso) {");
     sw.indent();
@@ -160,7 +172,7 @@ public class ClassExporter {
       if (retType != null && retType.needsExport() && !isVoid && !isArray) {
         sw.println("return r == undefined ? null : r != null ? r.instance : r");
       } else if (isBoolean) {
-        sw.println("return r ? true : false;");
+        sw.println("return !!r;");
       } else if (isPrimitive) {
         sw.println("return r && (typeof r == 'number') ? r: 0;");
       } else if (!isVoid) {
