@@ -19,9 +19,10 @@ public interface JsClosure extends Exportable {
 
 &#64;Export
 &#64;ExportPackage("jsc")
-public class DatePicker implements Exportable {
-public executeJsClosure(JsClosure closure){
-   closure.execute("Hello", "Friend");
+public class MyClass implements Exportable {
+  public executeJsClosure(JsClosure closure){
+    closure.execute("Hello", "Friend");
+  }
 }
  * </pre>
  */
