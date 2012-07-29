@@ -529,7 +529,8 @@ public class ClassExporter {
     HashMap<String, DispatchTable> dispMap
         = new HashMap<String, DispatchTable>();
     for (JExportableMethod meth : requestedType.getExportableMethods()) {
-      if (staticDispatch && !meth.isInStaticMap() 
+      if (!requestedType.isInstantiable()
+          || staticDispatch && !meth.isInStaticMap() 
           || !staticDispatch && meth.isInStaticMap()) {
         continue;
       }
@@ -937,7 +938,7 @@ public class ClassExporter {
   }
   
   private String getGwtToJsWrapper(JExportableType retType) {
-    String rType = "null";
+    String rType = "Ljava/lang/Object;";
     if (retType != null && retType instanceof JExportableArrayType) {
       JExportableType xcompType = ((JExportableArrayType) retType).getComponentType();
       if (xcompType instanceof JExportablePrimitiveType) {
@@ -946,8 +947,6 @@ public class ClassExporter {
         JExportableClassType ct = (JExportableClassType) xcompType;
         rType = ct.getJsniSigForArrays();
       }
-    } else {
-      rType = "Ljava/lang/Object;";
     }
     return "@org.timepedia.exporter.client.ExporterUtil::wrap(" + rType + ")";
   }
@@ -982,7 +981,12 @@ public class ClassExporter {
           && ((JExportableClassType)xcompType).isTransparentType()) {
         return false;
       } else {
-        return exportDependentClass(xcompType.getQualifiedSourceName());
+        try {
+          return exportDependentClass(xcompType.getQualifiedSourceName());
+        } catch (Exception e) {
+          System.out.println("Unable to exportDependentClass: " + xType);
+          return false;
+        }
       }
     }
 
