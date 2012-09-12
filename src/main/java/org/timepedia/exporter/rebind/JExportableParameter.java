@@ -52,6 +52,8 @@ public class JExportableParameter {
             + "makeClosure(Lcom/google/gwt/core/client/JavaScriptObject;)("
             + argName 
             + "))";
+      } else {
+        return argName + "." + ClassExporter.GWT_INSTANCE;
       }
     }
     
