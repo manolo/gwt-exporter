@@ -60,6 +60,10 @@ public class ExportableTypeOracle {
         (type.isInterface() != null && 
         isExportable(type.getAnnotation(ExportClosure.class)));
   }
+  
+  public boolean isExportable(JExportableClassType type) {
+    return isExportable(type.getRequestedType());
+  }
 
   public static <T> boolean isExportable(Export annotation) {
     return annotation != null;
