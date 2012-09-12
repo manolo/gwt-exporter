@@ -529,9 +529,9 @@ public class ClassExporter {
     HashMap<String, DispatchTable> dispMap
         = new HashMap<String, DispatchTable>();
     for (JExportableMethod meth : requestedType.getExportableMethods()) {
-      if (!requestedType.isInstantiable()
-          || staticDispatch && !meth.isInStaticMap() 
-          || !staticDispatch && meth.isInStaticMap()) {
+      if (/* !requestedType.isInstantiable() || */
+          staticDispatch && !meth.isInStaticMap() || 
+          !staticDispatch && meth.isInStaticMap()) {
         continue;
       }
       DispatchTable dt = dispMap.get(meth.getUnqualifiedExportName());
@@ -871,6 +871,9 @@ public class ClassExporter {
     
     // Overloaded methods only need being exported once
     DispatchTable dt = dispatchMap.get(method.getUnqualifiedExportName());
+    if (dt == null) {
+      throw new RuntimeException("Unable to find method in dispatchMap table " + method.getUnqualifiedExportName());
+    }
     if (dt.isOverloaded()
         && overloadExported.contains(method.getJSQualifiedExportName())) {
       return;

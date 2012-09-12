@@ -1,6 +1,9 @@
 package simpledemo.client;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
@@ -13,6 +16,7 @@ import org.timepedia.exporter.client.ExportStaticMethod;
 import org.timepedia.exporter.client.Exportable;
 import org.timepedia.exporter.client.ExporterUtil;
 import org.timepedia.exporter.client.NoExport;
+import org.timepedia.exporter.client.test.JsTestUtil;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
@@ -20,58 +24,42 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
 public class SimpleDemo implements EntryPoint {
   
+  JsTestUtil jsTest = new JsTestUtil(SimpleDemo.class);
+  
+  private void fail(String failed) {
+    RootPanel.get().add(new Label(failed));
+    throw new RuntimeException(failed);
+  }
   
   public void onModuleLoad() {
     GWT.setUncaughtExceptionHandler(new GWT.UncaughtExceptionHandler() {
+      Logger logger = Logger.getLogger("SimpleDemo");
       public void onUncaughtException(Throwable e) {
-        String r = "";
-        for (StackTraceElement s :e.getStackTrace()) {
-          r += s + "\n";
-        }
-        Window.alert(r);
+        logger.log(Level.SEVERE, "Uncauch Exception", e);
       }
     });
     
+    test();
+    
+    RootPanel.get().add(new Label("OK"));
+  }
+  
+  public void test() {
     GWT.create(C.class);
-    runJsTests1();
+    runJsTests1(jsTest);
+    if (jsTest.isFailed()) fail(jsTest.getFailed());
     
     ExporterUtil.exportAll();
-    runJsTests();
+    runJsTests2(jsTest);
+    if (jsTest.isFailed()) fail(jsTest.getFailed());
   }
   
-  public static <T> void print(T s) {
-    RootPanel.get().add(new Label(s.toString()));
-  }
-  
-  private static native <T> String arrToStr(T o) /*-{
-    var ret = '';
-    for (var i=0; i<o.length; i++)
-    ret += (i>0 ? "," : "") + String(o[i]);
-    return ret;
-  }-*/;
-
-  public static <T> void mAssertEqual(T a, T b) {
-    String sb = (b != null && b.toString().matches(".*(Array|\\[).*")) ? arrToStr(b) : b == null ? "null" : b.toString();
-    String ss = "";
-    while (!ss.equals(sb)) {
-      ss = sb;
-      sb = sb.replaceAll("(^|,)[^,]+[\\$\\.]([A-Z][\\w]+)\\$*(,|$)", "$1$2$3");
-    }
-    sb = sb.replaceAll("\\.0", "");
-    if (a == null && b == null || a != null && a.toString().equals(sb.toString())) { 
-      print("OK -> " + sb);
-    } else {
-      print("ERROR -> " + a + " <=> " + sb + " ["
-          + (a != null ? a.getClass().getName() : "") + ", " + (b != null ? b.getClass().getName() : b) + "]");
-    }
-  }
-
+  ///////////////////// Classes used to test types, arrays, static, public, override
   @ExportPackage("gwt")
   @Export
   public static class HelloAbstract implements Exportable {
@@ -86,7 +74,7 @@ public class SimpleDemo implements EntryPoint {
   }
   
   @ExportPackage("gwt")
-  @Export
+  @Export("HelloClass")
   public static class HelloClass extends HelloAbstract implements Exportable {
     public String hello(){
       return this.getClass().getName();
@@ -232,11 +220,29 @@ public class SimpleDemo implements EntryPoint {
       Date[] ret = new Date[1];
       ret[0] = new Date(0);
       return ret;
+    }    
+    
+
+    public boolean test25(boolean a) {
+      return a;
+    }
+
+    public boolean test26(long l) {
+      return l > 2;
+    }
+
+    public boolean test27(boolean a) {
+      return a;
+    }
+
+    public boolean test27(boolean a, boolean b, long l) {
+      return a && b && l > 2;
     }
   }
   
+  ///////////////////// Classes used to test closures
   @ExportPackage("gwt")
-  @Export
+  @Export("Foo")
   public static class Foo implements Exportable {
     
     String n = "foo";
@@ -265,16 +271,11 @@ public class SimpleDemo implements EntryPoint {
     }
   }
   
+  ///////////////////// Classes used to test that we can mark methods in interfaces
   public static interface MInterface extends Exportable {
-    /**
-     * Exported and documented in interface
-     */
     @Export
     String m1();
     String m1(int a);
-    /**
-     * Exported and documented in interface
-     */
     @Export
     String m1(int a, int b);
   }
@@ -284,18 +285,12 @@ public class SimpleDemo implements EntryPoint {
     public String m0() {
       return "m0";
     }
-    /**
-     * Documented in class and exported in interface
-     */
     public String m1() {
       return "m1";
     }
     public String m1(int a) {
       return "m1-" + a;
     }
-    /* (non-Javadoc)
-     * @see simpledemo.client.SimpleDemo.MInterface#m1(int, int)
-     */
     public String m1(int a, int b) {
       return "m1-" + a + b;
     }
@@ -303,28 +298,9 @@ public class SimpleDemo implements EntryPoint {
     public String m2() {
       return "m2";
     }
-    @Export
-    public String m5() {
-      return "m5";
-    }
-    /**
-     * Documented in super 
-     */
-    public String m3() {
-      return "m3";
-    }
-    
-    @Export
-    public MBase m1(MBase b) {
-      return b;
-    }
-
-    @Export
-    public final String f() {
-      return "final";
-    }
   }
   
+  ///////////////////// Classes used to test that unused parent classes are not exported
   @ExportPackage("gwt")
   public static class MClass extends MBase {
     @Export
@@ -338,12 +314,13 @@ public class SimpleDemo implements EntryPoint {
     public String m4() {
       return "m4";
     }
-    @NoExport
-    public String m5() {
-      return super.m5();
+    @Export
+    public final String f() {
+      return "final";
     }
   }
-
+  
+  @ExportPackage("gwt")
   public static class A implements Exportable {
     public B convertToB() {
       return new B();
@@ -358,6 +335,7 @@ public class SimpleDemo implements EntryPoint {
     }
   }
 
+  @ExportPackage("gwt")
   public static class B extends A {
     public C convertToC() {
       return new C();
@@ -375,6 +353,7 @@ public class SimpleDemo implements EntryPoint {
     }
   }
   
+  ///////////////////// Classes used to test exported methods in parent classes if export.all = true. And name-spaces
   public static class Parent {
     public String m(String a) {
       return a;
@@ -398,20 +377,142 @@ public class SimpleDemo implements EntryPoint {
       return super.getParentName(c);
     }
     
-    @Export("$wnd.$")
+    @Export("$wnd.$$$")
     public static String $() {
-      return "$";
+      return "$$$";
     }
   }
   
-  // ExportOverlay issue30
+  ///////////////////// Classes used to test export overlay
+  public static class Func {
+    public boolean f(Element e) {
+      return true;
+    }
+  }
+  
+  public static class GQ implements Exportable {
+    private String echoMsg = "empty";
+
+    @ExportConstructor
+    public static GQ $(String s) {
+      GQ ret = new GQ();
+      ret.echoMsg = s;
+      return ret;
+    }
+    public String echo() {
+      return echoMsg;
+    };
+    public Element element() {
+      return Document.get().getDocumentElement();
+    };
+    public Element[] elements() {
+      ArrayList<Element> e = new ArrayList<Element>();
+      e.add(element());
+      return e.toArray(new Element[0]);
+    };
+    public String countElements(Element... elms) {
+      return "" + elms.length;
+    }
+    public GQ[] exports() {
+      ArrayList<GQ> j = new ArrayList<GQ>();
+      j.add(this);
+      return j.toArray(new GQ[0]);
+    }
+    public GQ gq() {
+      return this;
+    }
+    
+    public boolean executeFunction(Func... f) {
+      boolean ret = false;
+      for (Func ff : f) {
+        ret = ret || ff.f(element());
+      }
+      return ret;
+    }
+    
+    public boolean executeFunction(String s, Func... f) {
+      boolean ret = executeFunction(f);
+      return ret;
+    }
+    
+    public GQ executeFunction2(Func... f) {
+      echoMsg = "ret-" + executeFunction(f);
+      return this;
+    }
+    
+    public String executeClosure(Clos f) {
+      return f.execute("A", "B");
+    }
+    
+    public String executeClosure(int i, Clos f) {
+      return f.execute("A", "B");
+    }
+  }
+  
+  @ExportPackage("gwt")
+  @Export("j")
+  public static class JQ implements  ExportOverlay<GQ> {
+    public String echo() {return null;}
+
+    public Element element(){return null;}
+    public Element[] elements(){return null;}
+    public String countElements(Element... elms){return null;}
+    
+    public GQ[] exports() {return null;}
+    
+    public GQ gq() {return null;}
+    
+    public boolean executeFunction(Func... f) {return false;}
+    public boolean executeFunction(String s, Func... f) {return false;}
+    public GQ executeFunction2(Func... f) {return null;}
+    
+    public String executeClosure(Clos f) {return null;}
+    public String executeClosure(int a, Clos f) {return null;}
+
+    @Export("$wnd.$")
+    public static GQ $(String s){return null;};
+  }
+  
+  @ExportClosure
+  public interface Clos extends Exportable {
+    public String execute(String par1, String par2);
+  }
+  
+  @ExportClosure()
+  public interface FuncClos extends ExportOverlay<Func>  {
+    public boolean f(Element e);
+  }
+  
+  ///////////////////// Class used to test static constructors
+  @ExportPackage("gwt")
+  @Export("c")
+  public static class TestConstructors implements Exportable {
+    private static TestConstructors instance;
+    private String msg;
+
+    @ExportConstructor
+    public static TestConstructors constructor(String msg) {
+      if (instance == null) {
+        instance = new TestConstructors();
+        instance.msg = msg;
+      }
+      return instance;
+    }
+    // Constructor is private
+    private TestConstructors() {
+    }
+    public String echo() {
+      return msg;
+    }
+  }
+  
+  // ExportOverlay issue_30
   public static class Child {
     private String name;
     public Child(String cname) { name = cname; }
     public String getName1() { return name; }
     public String getName2(long l) { return name + l; }
     public String getName3(Child c) { return c==null? "NULL" :c.getName1(); }
-
 
     public String wrapped_method(long l) {return "" + l;}
   }
@@ -437,7 +538,7 @@ public class SimpleDemo implements EntryPoint {
     public static Child constructor(String name, String surname) {
       return new Child(name + " " + surname);
     }
-    
+
     @ExportInstanceMethod("foo")
     public static String instanceMethod(Child instance, String name, String surname, long l) {
       return name + "-" + surname + "-Foo-" + l;
@@ -487,168 +588,146 @@ public class SimpleDemo implements EntryPoint {
     public NodeList<Element> get(){return null;}
   }
   
-  public native JavaScriptObject runJsTests1() /*-{
-    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
-
-    var c = new $wnd.gwt.SimpleDemo.C();
-    p("C", c); 
-    p("C", c.toString()); 
+  public native JavaScriptObject runJsTests1(JsTestUtil jsTest) /*-{
+    var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
+    var clzName = jsTest.@org.timepedia.exporter.client.test.JsTestUtil::name;
+    
+    var c = eval ("new $wnd.gwt." + clzName + ".C()");
+    assertEq("C", c); 
+    assertEq("C", c.toString()); 
     var a = c.convertToA();
-    p("A", a);
-    a = new $wnd.simpledemo.SimpleDemo.A();
-    p("A", a);
+    assertEq("A", a);
+    a = eval ("new $wnd.gwt." + clzName + ".A()");
+    assertEq("A", a);
     
     // GWT.create(C) should not export B
-    var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
-    p("undefined", c); 
+    var c = eval("$wnd.gwt." + clzName + ".B") ? "defined" : "undefined";
+    assertEq("undefined", c); 
   }-*/;
-  
-  // ExportOverlay issue35
-  public static class Coordinate {
-    int x, y;
-    public Coordinate() {
-    }
-    public Coordinate(int x, int y) {
-      this.x = x;
-      this.y = y;
-    }
-    public String toString() {
-      return x + "x" + y;
-    }
-  }
-  
-  public static class Geometry {
-    public Geometry() {
-    }
-    public Geometry(String geometryType, int srid, int precision) {
-    }
-    Coordinate[] coordinates;
-    public Coordinate[] getCoordinates() {
-      return coordinates;
-    }
-    public void setCoordinates(Coordinate[] coordinates) {
-      this.coordinates = coordinates;
-    }
-  }
-  
-  @Export("Coordinate")
-  @ExportPackage("sp")
-  public static class CoordinateOverlay implements ExportOverlay<Coordinate> {
-    @ExportConstructor
-    public static Coordinate constructor(int x, int y) {
-      return new Coordinate(x, y);
-    }
-    public String toString() {
-      return "";
-    }
-  }
 
-  @Export("Geometry")
-  @ExportPackage("sp")
-  public static class GeometryOverlay implements ExportOverlay<Geometry> {
-    @ExportConstructor
-    public static Geometry constructor(String geometryType, int srid, int precision) {
-      return new Geometry(geometryType, srid, precision);
-    }
-    public Coordinate[] getCoordinates() {
-      return null;
-    }
-    public void setCoordinates(Coordinate[] coordinates) {
-    }
-  }
-
-  public native JavaScriptObject runJsTests() /*-{
-    p = function(a, b) {@simpledemo.client.SimpleDemo::mAssertEqual(Ljava/lang/Object;Ljava/lang/Object;)(a, b);}
+  public native JavaScriptObject runJsTests2(JsTestUtil jsTest) /*-{
+    var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
+    var clzName = jsTest.@org.timepedia.exporter.client.test.JsTestUtil::name;
     
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
-    p("1,1,1,1,1,2,2,2,1", $wnd.gwt.SimpleDemo.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
-    p("1,2", $wnd.gwt.SimpleDemo.HelloClass.test2());
-    $wnd.gwt.SimpleDemo.HelloClass.test3();
-    p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].hello());
-    p("HelloClass", $wnd.gwt.SimpleDemo.HelloClass.test3()[0].helloAbstract());
-    p("undefined", "" + $wnd.gwt.SimpleDemo.HelloClass.test3()[0].noHelloAbstract);
+    var h = new $wnd.gwt.HelloClass();
+    assertEq("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+    assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
+    assertEq("1,2", $wnd.gwt.HelloClass.test2());
+    assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].hello());
+    assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].helloAbstract());
+    assertEq("undefined", "" + $wnd.gwt.HelloClass.test3()[0].noHelloAbstract);
     
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test4(1, "A"));
-    p("2", "" + $wnd.gwt.SimpleDemo.HelloClass.test5());
-    p("3", "" + $wnd.gwt.SimpleDemo.HelloClass.test6());
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test7());
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test8());
-    p("A", "" + $wnd.gwt.SimpleDemo.HelloClass.test9());
-    p("div", "" + $wnd.gwt.SimpleDemo.HelloClass.test10().tagName.toLowerCase());
-    p("6", "" + $wnd.gwt.SimpleDemo.HelloClass.test11());
-    p("1", "" + $wnd.gwt.SimpleDemo.HelloClass.test12(1));
-    p("5", "" + $wnd.gwt.SimpleDemo.HelloClass.test13(2, 3));
-    p("4", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4));
-    p("14", "" + $wnd.gwt.SimpleDemo.HelloClass.test16(4, 10));
-    p("a_2", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", ["b", "c"]));
-    p("a_b_1", "" + $wnd.gwt.SimpleDemo.HelloClass.test18("a", "b", ["c"]));
-    p("a_1_0", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1));
-    p("a_1_3", "" + $wnd.gwt.SimpleDemo.HelloClass.test20("a", 1, "a", "e", "i"));
-    p("1970", "" + ($wnd.gwt.SimpleDemo.HelloClass.test22(new Date(0)).getYear() + 1900));
+    assertEq("1", $wnd.gwt.HelloClass.test4(1, "A"));
+    assertEq("2", $wnd.gwt.HelloClass.test5());
+    assertEq("3", $wnd.gwt.HelloClass.test6());
+    assertEq("4", $wnd.gwt.HelloClass.test7());
+    assertEq("5", $wnd.gwt.HelloClass.test8());
+    assertEq("A", $wnd.gwt.HelloClass.test9());
+    assertEq("div", $wnd.gwt.HelloClass.test10().tagName.toLowerCase());
+    assertEq("6", $wnd.gwt.HelloClass.test11());
+    assertEq("1", $wnd.gwt.HelloClass.test12(1));
+    assertEq("5", $wnd.gwt.HelloClass.test13(2, 3));
+    assertEq("4", $wnd.gwt.HelloClass.test16(4));
+    assertEq("14", $wnd.gwt.HelloClass.test16(4, 10));
+    assertEq("a_2", $wnd.gwt.HelloClass.test18("a", ["b", "c"]));
+    assertEq("a_b_1", $wnd.gwt.HelloClass.test18("a", "b", ["c"]));
+    assertEq("a_1_0", $wnd.gwt.HelloClass.test20("a", 1));
+    assertEq("a_1_3", $wnd.gwt.HelloClass.test20("a", 1, "a", "e", "i"));   
+    assertEq("1970", "" + ($wnd.gwt.HelloClass.test22(new Date(0)).getYear() + 1900));
     
-    var h = new $wnd.gwt.SimpleDemo.HelloClass();
-    p("102", "" + h.test14(1, 1, [100]));
-    p("100,200", "" + h.test15([100, 200]));
-    p("5", "" + h.test17(5));
-    p("15", "" + h.test17(5,10));
-    p("a_2", "" + h.test19("a", ["b", "c"]));
-    p("a_b_1", "" + h.test19("a", "b", ["c"]));
-    p("a_1_0", "" + h.test21("a", 1));
-    p("a_1_3", "" + h.test21("a", 1, "a", "e", "i"));
-    p("70-111-", "" + h.test23(new Date(0), new Date(1309777010000)));
-    p("70", "" + h.test24()[0].getYear());
+    var h = new $wnd.gwt.HelloClass();
+    assertEq("102", h.test14(1, 1, [100]));
+    assertEq("100,200", h.test15([100, 200]));
+    assertEq("5", h.test17(5));
+    assertEq("15", h.test17(5,10));
+    assertEq("a_2", h.test19("a", ["b", "c"]));
+    assertEq("a_b_1", h.test19("a", "b", ["c"]));
+    assertEq("a_1_0", h.test21("a", 1));
+    assertEq("a_1_3", h.test21("a", 1, "a", "e", "i")); 
+    assertEq("70-111-", h.test23(new Date(0), new Date(1309777010000)));
+    assertEq("70", "" + h.test24()[0].getYear());   
+    assertEq("true", h.test25(true)); 
+    assertEq("false", h.test25(false)); 
+    assertEq("true", h.test26(3)); 
+    assertEq("true", h.test27(true, true, 3));    
     
-    var v1 = new $wnd.gwt.SimpleDemo.Foo();
-    p("foo", v1);
-    var v2 = new $wnd.gwt.SimpleDemo.Foo("foo2");
-    p("foo2", v2);
-    var v3 = new $wnd.gwt.SimpleDemo.Foo("foo3", "bbb");
-    p("foo3bbb", v3);
-    p("foo>ccc", v1.toString("ccc"));
-    p("Hello,Friend", v1.executeJsClosure(function(arg1, arg2) {
+    var v1 = new $wnd.gwt.Foo();
+    assertEq("foo", v1);
+    var v2 = new $wnd.gwt.Foo("foo2");
+    assertEq("foo2", v2);
+    var v3 = new $wnd.gwt.Foo("foo3", "bbb");
+    assertEq("foo3bbb", v3);
+    assertEq("foo3bbb>ccc", v3.toString("ccc"));
+    assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
         return arg1 + "," + arg2;
-    }));    
+    }));
     
-    var m = new $wnd.gwt.SimpleDemo.MClass();
-    p("om0", m.m0());
-    p("m1", m.m1());
-    p("m1-23", m.m1(2, 3));
-    p("m2", m.m2());
-    p("m2", m.m2());
-    p("m3", m.m3());
-    var m5 = $wnd.gwt.SimpleDemo.MClass.m5 ? "defined" : "undefined";
-    p("undefined", m5);
-    p("final", m.f());
+    var m = eval("new $wnd.gwt." + clzName + ".MClass()");
+    assertEq("om0", m.m0());
+    assertEq("m1", m.m1());
+    assertEq("m1-23", m.m1(2, 3));
+    assertEq("m2", m.m2());
+    assertEq("m2", m.m2());
+    assertEq("m3", m.m3());
+    var m5 = eval("$wnd.gwt." + clzName + ".MClass.m5") ? "defined" : "undefined";
+    assertEq("undefined", m5);    
+    assertEq("final", m.f());
     
     // exportAll must export B
-    var c = $wnd.simpledemo.SimpleDemo.B ? "defined" : "undefined";
-    p("defined", c); 
+    var c = eval("$wnd.gwt." + clzName + ".B") ? "defined" : "undefined";
+    assertEq("defined", c); 
     
     var ch = new $wnd.$$();
-    p("Son", ch.sonName(ch));
-    p("Son", ch.getParentName(ch.parent()));
-    p("$", $wnd.$());
+    assertEq("Son", ch.sonName(ch));
+    assertEq("Son", ch.getParentName(ch.parent()));
+    assertEq("$$$", $wnd.$$$());
     
+    // export overlay
+    var gq = new  $wnd.$('hello'); 
+    assertEq("hello", gq.echo());
+    assertEq("hello", gq.gq().echo());
+     
+    var ex = gq.exports();
+    assertEq("hello", ex[0].echo());
+    
+    assertEq("0", gq.countElements());
+    assertEq("1", gq.countElements(document));
+    assertEq("2", gq.countElements([document, window]));
+    
+    assertEq("object", (typeof gq.element()));
+    assertEq("object", (typeof gq.elements()[0]));
+    
+    assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
+    assertEq('false', gq.executeFunction(function(e){return e == null;}));
+    assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
+    assertEq('ret-true', gq.executeFunction2(function(e){return true;}).gq().echo());
+    assertEq('ret-false', gq.executeFunction2(function(e){return false;}).echo());
+    
+    // export static constructors
+    var cs1 = new $wnd.gwt.c('hello');
+    assertEq("hello", cs1.echo());
+    var cs2 = new $wnd.gwt.c('by');
+    assertEq("hello", cs2.echo());
+    
+    // more tests for exportoverlay
     var child = new $wnd.ex.Child("Bill");
     var mother = new $wnd.ex.Mother();
     mother.setChild(child);
-    p("Bill", mother.getChild().name());
-    p("Bill2", mother.getChild().name(2));
-    p("Joe", child.name(new $wnd.ex.Child("Joe")));
-    p("s1-s2-Foo-2", child.foo('s1', 's2', 2));
-    p("s1-Caa", child.foo('s1'));
-    p("null-Caa", child.foo(null));
-    p("s-Cas", $wnd.ex.Child.sfoo('s'));
-    p("2-Cas", $wnd.ex.Child.sfoo(2));
+    assertEq("Bill", mother.getChild().name());
+    assertEq("Bill2", mother.getChild().name(2));
+    assertEq("Joe", child.name(new $wnd.ex.Child("Joe")));
+    assertEq("s1-s2-Foo-2", child.foo('s1', 's2', 2));
+    assertEq("s1-Caa", child.foo('s1'));
+    assertEq("null-Caa", child.foo(null));
+    assertEq("s-Cas", $wnd.ex.Child.sfoo('s'));
+    assertEq("2-Cas", $wnd.ex.Child.sfoo(2));    
     
+    // tests for ExportJsInit
     var jq = new $wnd.JQ();
-    p("1", "" + jq.length);
-    p("1", "" + jq.size());
+    assertEq("1", "" + jq.length);
+    assertEq("1", "" + jq.size());
     
-    var geometry = new $wnd.sp.Geometry("Point", 0, 0);
-    geometry.setCoordinates([ new $wnd.sp.Coordinate(10, 10), new $wnd.sp.Coordinate(20, 20) ]);
-    p("10x10,20x20", "" + geometry.getCoordinates());
   }-*/;
   
+
 }
