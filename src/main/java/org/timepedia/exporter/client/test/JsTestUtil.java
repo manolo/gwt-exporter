@@ -48,7 +48,7 @@ public class JsTestUtil {
    * In case of numbers, it removes .0 part. 
    * In case of classNames it compares just the unqualified name of the class.
    */
-  public <T> void assertEquals(T a, T b) {
+  public void assertEquals(Object a, Object b) {
     String sb = (b != null && b.toString().matches(".*(Array|\\[).*"))
         ? arrToStr(b) : b == null ? "null" : b.toString();
     String ss = "";
@@ -67,4 +67,14 @@ public class JsTestUtil {
       failed += (failed.isEmpty() ? "" : "\n") + msg;
     }
   }
+  
+  public void assertEqualsNumber(double a, double b) {
+    if (a == b) {
+      print("OK -> " + a);
+    } else {
+      String msg = "ERROR -> " + a + " <=> " + b;
+      failed += (failed.isEmpty() ? "" : "\n") + msg;
+    }
+  }
+  
 }

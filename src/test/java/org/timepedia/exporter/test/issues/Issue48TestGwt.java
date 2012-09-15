@@ -32,28 +32,30 @@ public class Issue48TestGwt extends GWTTestCase {
   }
 
   public native JavaScriptObject runJsTests(JsTestUtil jsTest) /*-{
-    // Utility function to assert equals arrays and objects
-    var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
+    // Utility function to assert equals numbers
+    var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEqualsNumber(*)(a, b);}
 
     // We increase this ver each time the handler is called
     var i = 0;
     var login_handler = function() {i++};
 
+    // Register the handler
     var reg_handler = $wnd.My.Handlers.addLoginEventHandler(login_handler);
-    assertEq("0", "" + i);
+    assertEq(0, i);
     
     // each call to fireLogin should increment the counter
     $wnd.My.Handlers.fireLoginEvent();
-    assertEq("1", "" + i);
+    assertEq(1, i);
     
     $wnd.My.Handlers.fireLoginEvent();
-    assertEq("2", "" + i);
+    assertEq(2, i);
     
     // We remove the handler from the eventBus, so the counter should not be incremented
     reg_handler.removeHandler();
     
+    // The counter should remain the same
     $wnd.My.Handlers.fireLoginEvent();
-    assertEq("2", "" + i);
+    assertEq(2, i);
   }-*/;
 
   @Export
