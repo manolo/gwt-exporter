@@ -82,6 +82,7 @@ public class JsDoclet extends HtmlDoclet {
 
     writer.html();
     writer.head();
+    writer.println("<meta http-equiv='content-type' content='text/html; charset=UTF-8'/>");
     writer.println(getCSS());
     writer.headEnd();
     writer.body("white", true);
