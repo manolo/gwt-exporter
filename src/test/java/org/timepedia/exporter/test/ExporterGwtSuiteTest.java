@@ -9,6 +9,7 @@ import org.timepedia.exporter.test.issues.Issue34TestGwt;
 import org.timepedia.exporter.test.issues.Issue35TestGwt;
 import org.timepedia.exporter.test.issues.Issue44TestGwt;
 import org.timepedia.exporter.test.issues.Issue48TestGwt;
+import org.timepedia.exporter.test.issues.Issue49TestGwt;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
  public class ExporterGwtSuiteTest extends GWTTestSuite
@@ -24,6 +25,7 @@ import com.google.gwt.junit.tools.GWTTestSuite;
           suite.addTestSuite(Issue35TestGwt.class);
           suite.addTestSuite(Issue44TestGwt.class);
           suite.addTestSuite(Issue48TestGwt.class);
+          suite.addTestSuite(Issue49TestGwt.class);
           return suite;
       }
 }
