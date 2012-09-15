@@ -570,13 +570,13 @@ public class ClassExporter {
 
     sw.println(") {");
     sw.indent();
-    sw.println("var g, j = this;");
+    sw.println("var g, j = this, " + ARG_PREFIX + " = arguments;");
     // check if this is being used to wrap GWT types
     // e.g. code is calling constructor as
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
-    sw.println("if (arguments.length == 1 && __.@org.timepedia.exporter.client.Exporter::isAssignable(*)(arguments[0]))");
-    sw.println("  g = arguments[0];");
+    sw.println("if (" + ARG_PREFIX + ".length == 1 && __.@org.timepedia.exporter.client.Exporter::isAssignable(*)(" + ARG_PREFIX + "[0]))");
+    sw.println("  g = " + ARG_PREFIX + "[0];");
 
     // used to hold arity of constructors that have been generated
     HashMap<Integer, JExportableMethod> arity
@@ -598,7 +598,7 @@ public class ClassExporter {
         throw new UnableToCompleteException();
       }
       arity.put(numArguments, constructor);
-      sw.println("else if (arguments.length == " + numArguments + ")");
+      sw.println("else if (" + ARG_PREFIX + ".length == " + numArguments + ")");
       sw.indent();
       
       // else someone is calling the constructor normally
@@ -677,7 +677,7 @@ public class ClassExporter {
   private void declareJSConstructorPassedValues(JExportableMethod method) {
     JExportableParameter params[] = method.getExportableParameters();
     for (int i = 0; i < params.length; i++) {
-      String pName = "arguments" +  "[" + i + "]";
+      String pName = ARG_PREFIX +  "[" + i + "]";
       sw.print((i > 0 ? "," : "") + params[i].getExportParameterValue(pName));
     }
   }
