@@ -17,22 +17,12 @@ import com.google.gwt.core.client.JsArrayString;
  */
 public class ExporterUtil {
 
-  private interface ExportAll extends Exportable {
+  public interface ExportAll extends Exportable {
 
   }
 
   private static ExporterBaseImpl impl = GWT.create(ExporterBaseImpl.class);
   static {
-  }
-
-  public static void addTypeMap(Exportable type,
-      JavaScriptObject exportedConstructor) {
-    impl.addTypeMap(type.getClass(), exportedConstructor);
-  }
-
-  public static void addTypeMap(Class type,
-      JavaScriptObject exportedConstructor) {
-    impl.addTypeMap(type, exportedConstructor);
   }
 
   public static JavaScriptObject declarePackage(String qualifiedExportName) {
@@ -225,10 +215,6 @@ public class ExporterUtil {
     return impl.toArrExport(type);
   }
   
-  public static boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
-    return impl.isAssignableToInstance(clazz, args);
-  }
-  
   public static JavaScriptObject unshift(Object o, JavaScriptObject arr) {
     return impl.unshift(o, arr);
   }
@@ -247,6 +233,10 @@ public class ExporterUtil {
   
   public static Object gwtInstance(Object o) {
     return impl.gwtInstance(o);
+  }
+  
+  public static <T extends Exporter> void addExporter(Class<?>c, T o) {
+    impl.addExporter(c, o);
   }
   
 }

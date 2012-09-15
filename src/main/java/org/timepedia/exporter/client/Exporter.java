@@ -1,5 +1,7 @@
 package org.timepedia.exporter.client;
 
+import com.google.gwt.core.client.JavaScriptObject;
+
 /**
  * Exportable classes passed to GWT.create() will return an implementation of
  * Exporter. Invoke the export() method to export the JavaScript bridge classes
@@ -20,4 +22,9 @@ public interface Exporter {
    * object after return from a Java method.
    */
 //  void sync();
+  
+  boolean isAssignable(Object o);
+  
+  JavaScriptObject getJsConstructor();
+  
 }

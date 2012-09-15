@@ -23,13 +23,9 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return constructor && ((typeof constructor == 'function')) ? new (constructor)(type) : type;
   }-*/;
 
-  private HashMap typeMap = new HashMap();
-
-  private HashMap<Class, JavaScriptObject> dispatchMap
-      = new HashMap<Class, JavaScriptObject>();
-
-  private HashMap<Class, JavaScriptObject> staticDispatchMap
-      = new HashMap<Class, JavaScriptObject>();
+  private HashMap<Class<?>, Exporter> exporterMap = new HashMap<Class<?>, Exporter>();
+  private HashMap<Class<?>, JavaScriptObject> dispatchMap = new HashMap<Class<?>, JavaScriptObject>();
+  private HashMap<Class<?>, JavaScriptObject> staticDispatchMap = new HashMap<Class<?>, JavaScriptObject>();
 
   //TODO: track garbage collected wrappers and remove mapping
 
@@ -41,28 +37,32 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     }
   }
 
-  public void addTypeMap(Exportable type,
-      JavaScriptObject exportedConstructor) {
-    addTypeMap(type.getClass(), exportedConstructor);
-  }
-
-  public void addTypeMap(Class type, JavaScriptObject exportedConstructor) {
-    typeMap.put(type, exportedConstructor);
+  public <T extends Exporter> void addExporter(Class<?>c, T o) {
+    exporterMap.put(c, o);
   }
 
   public JavaScriptObject typeConstructor(Object type) {
-    return typeConstructor(type.getClass());
+    JavaScriptObject jso = typeConstructor(type.getClass());
+    if (jso == null) {
+      for (Exporter e : exporterMap.values()) {
+        if (e.isAssignable(type)) {
+          jso = e.getJsConstructor();
+          break;
+        }
+      }
+    }
+    return jso;
   }
-
-  public JavaScriptObject typeConstructor(Class type) {
-    Object o = typeMap.get(type);
-    Class sup = type.getSuperclass();
-    if (o == null && sup != null && sup != Object.class) {
+  
+  public JavaScriptObject typeConstructor(Class<?> clz) {
+    Exporter e = exporterMap.get(clz);
+    Class<?> sup = clz.getSuperclass();
+    if (e == null && sup != null && sup != Object.class) {
       return typeConstructor(sup);
     }
-    return (JavaScriptObject) o;
+    return e != null ? e.getJsConstructor() : null;
   }
-
+  
   private JavaScriptObject getWrapper(Object type) {
     JavaScriptObject wrapper = null;
     if (!GWT.isScript()) {
@@ -537,8 +537,8 @@ public class ExporterBaseActual extends ExporterBaseImpl {
     return dumpObj(o, 'arguments' , '', 1);
   }-*/;
 
-  private JavaScriptObject runDispatch(Object instance, Map<Class, JavaScriptObject> dmap,
-      Class clazz, int meth, JsArray<JavaScriptObject> arguments) {
+  private JavaScriptObject runDispatch(Object instance, Map<Class<?>, JavaScriptObject> dmap,
+      Class<?> clazz, int meth, JsArray<JavaScriptObject> arguments) {
     
     JsArray<SignatureJSO> sigs = getSigs(dmap.get(clazz).cast(), meth,
         arguments.length());
@@ -576,7 +576,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   public JavaScriptObject runDispatch(Object instance, Class clazz, int meth,
       JsArray<JavaScriptObject> arguments, boolean isStatic, boolean isVarArgs) {
     
-    Map<Class, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
+    Map<Class<?>, JavaScriptObject> dmap = isStatic ? staticDispatchMap : dispatchMap;
     if (isVarArgs) {
       for (int l = getMaxArity(dmap.get(clazz).cast(), meth), i = l; i >= 1; i--) {
         JsArray<JavaScriptObject> args = computeVarArguments(i, arguments);
@@ -605,17 +605,6 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
     throw new RuntimeException(
         "Can't find exported method for given arguments: " + meth + ":" + arguments.length() + "\n" + s);
-  }
-  
-  public native static Object getTypeAssignableToInstance(JavaScriptObject a) /*-{
-     return a && a[0] && ((typeof a[0]) == 'object' || (typeof a[0]) == 'function') ? a[0] : null;
-  }-*/;
-
-  @Override
-  @SuppressWarnings("rawtypes")
-  public boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
-    Object o = getTypeAssignableToInstance(args);
-    return isAssignableToClass(o, clazz);
   }
   
   @SuppressWarnings("rawtypes")
@@ -668,7 +657,7 @@ public class ExporterBaseActual extends ExporterBaseImpl {
   @Override
   public void registerDispatchMap(Class clazz, JavaScriptObject dispMap,
       boolean isStatic) {
-    HashMap<Class, JavaScriptObject> map = isStatic ? staticDispatchMap : dispatchMap;
+    HashMap<Class<?>, JavaScriptObject> map = isStatic ? staticDispatchMap : dispatchMap;
     JavaScriptObject jso = map.get(clazz);
     if (jso == null) {
       jso = dispMap;

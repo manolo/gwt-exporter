@@ -12,13 +12,6 @@ import com.google.gwt.core.client.JsArrayString;
  */
 public class ExporterBaseImpl {
 
-  public void addTypeMap(Exportable type,
-      JavaScriptObject exportedConstructor) {
-  }
-
-  public void addTypeMap(Class type, JavaScriptObject exportedConstructor) {
-  }
-
   public void setWrapper(Object instance, JavaScriptObject wrapper) {
   }
 
@@ -146,12 +139,11 @@ public class ExporterBaseImpl {
     return null;
   }
 
-  public boolean isAssignableToInstance(Class clazz, JavaScriptObject args) {
-    return false;
-  }
-
   public Object gwtInstance(Object o) {
     return null;
+  }
+  
+  public <T extends Exporter> void addExporter(Class<?>c, T o) {
   }
 
 }

@@ -592,6 +592,7 @@ public class CoreTestGwt extends GWTTestCase {
   }-*/;
 
   public native JavaScriptObject runJsTests2(JsTestUtil jsTest) /*-{
+   try { 
     var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
     var clzName = jsTest.@org.timepedia.exporter.client.test.JsTestUtil::name;
     
@@ -712,6 +713,9 @@ public class CoreTestGwt extends GWTTestCase {
     var jq = new $wnd.JQ();
     assertEq("1", "" + jq.length);
     assertEq("1", "" + jq.size());
+   } catch(e) {
+     alert(e);
+   }
     
   }-*/;
 

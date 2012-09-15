@@ -101,6 +101,7 @@ public class ClassExporter {
     sw.println(
         "public " + genName + "(" + ExportableTypeOracle.JSO_CLASS + " jso) {");
     sw.indent();
+    sw.println("export();");
     sw.println("this.jso = jso;");
     if (requestedType.isStructuralType()) {
       sw.println("___importStructuralType();");
@@ -190,7 +191,7 @@ public class ClassExporter {
    */
   public String exportClass(String requestedClass, boolean export)
       throws UnableToCompleteException {
-
+    
     // JExportableClassType is a wrapper around JClassType
     // which provides only the information and logic neccessary for
     // the generator
@@ -275,10 +276,7 @@ public class ClassExporter {
       // export all exportable methods
       exportMethods(requestedType);
 
-      // add map from TypeName to JS constructor in ExporterUtil
-      registerTypeMap(requestedType);
-      
-     // restore inner class namespace
+      // restore inner class namespace
       sw.println("\nif(pkg) for (p in pkg) if ($wnd."
           + requestedType.getJSQualifiedExportName()
           + "[p] === undefined) $wnd."
@@ -309,12 +307,24 @@ public class ClassExporter {
       // ending with a call to export0()
 
       genExportMethod(requestedType, exported);
-      sw.outdent();
     } else {
       sw.indent();
       sw.println("public void export() {}");
-      sw.outdent();
     }
+    
+    sw.println("public boolean isAssignable(Object o) {");
+    sw.indent();
+    sw.println("return o != null && o instanceof " + requestedType.getQualifiedSourceName() + ";");
+    sw.outdent();
+    sw.println("}");
+    
+    sw.println("public native JavaScriptObject getJsConstructor() /*-{");
+    sw.indent();
+    sw.println("return $wnd." + requestedType.getJSQualifiedExportName() + ";");
+    sw.outdent();
+    sw.println("}-*/;");
+    
+    sw.outdent();
 
     sw.commit(logger);
 
@@ -436,16 +446,6 @@ public class ClassExporter {
     sw.println("}");
   }
 
-  private void registerTypeMap(JExportableClassType requestedType) {
-    sw.println(
-        "\n@org.timepedia.exporter.client.ExporterUtil::addTypeMap(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)\n ("
-            +
-//                        "Ljavg/lang/String;" +   
-//                        "Lcom/google/gwt/core/client/JavaScriptObject;)(" +
-            "@" + requestedType.getQualifiedSourceName() + "::class, $wnd."
-            + requestedType.getJSQualifiedExportName() + ");");
-  }
-
   /**
    * Exports a static factory method corresponding to each exportable
    * constructor of the class
@@ -562,7 +562,7 @@ public class ClassExporter {
     
     // we assign the prototype of the class to underscore so we can use it
     // later to define a bunch of methods
-    sw.println("var _;");
+    sw.println("var _, __ = this;");
 
     // constructor.getJSQualifiedExportName() returns fully qualified package
     // + exported class name
@@ -575,8 +575,7 @@ public class ClassExporter {
     // e.g. code is calling constructor as
     // new $wnd.package.className(opaqueGWTobject)
     // if so, we store the opaque reference in this.instance
-    sw.println("if (@org.timepedia.exporter.client.ExporterUtil::isAssignableToInstance(Ljava/lang/Class;Lcom/google/gwt/core/client/JavaScriptObject;)(@" 
-        + requestedType.getQualifiedSourceName() + "::class, arguments))");
+    sw.println("if (arguments.length == 1 && __.@org.timepedia.exporter.client.Exporter::isAssignable(*)(arguments[0]))");
     sw.println("  g = arguments[0];");
 
     // used to hold arity of constructors that have been generated
@@ -1022,6 +1021,7 @@ public class ClassExporter {
    */
   private void genExportMethod(JExportableClassType requestedType,
       ArrayList<JExportableClassType> exported) {
+    
     sw.println("private static boolean exported;");
 
     sw.println("public void export() { ");
@@ -1029,6 +1029,9 @@ public class ClassExporter {
     sw.println("if(!exported) {");
     sw.indent();
     sw.println("exported=true;");
+
+    // add map from TypeName to JS constructor in ExporterUtil
+    sw.println("ExporterUtil.addExporter(" + requestedType.getQualifiedSourceName() + ".class, this);");
 
     // first, export our dependencies
     for (JExportableClassType classType : exported) {
