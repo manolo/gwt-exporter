@@ -4,7 +4,6 @@ import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportConstructor;
 import org.timepedia.exporter.client.ExportOverlay;
 import org.timepedia.exporter.client.ExportPackage;
-import org.timepedia.exporter.client.Exportable;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.junit.client.GWTTestCase;
