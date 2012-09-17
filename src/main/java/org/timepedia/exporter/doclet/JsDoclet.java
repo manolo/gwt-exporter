@@ -3,7 +3,9 @@ package org.timepedia.exporter.doclet;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import com.sun.javadoc.AnnotationDesc;
@@ -76,6 +78,9 @@ public class JsDoclet extends HtmlDoclet {
     configuration.tagletManager.printReport();
     return true;
   }
+  
+  // FIXME: exportOverlay is not implemented yet
+  Map<String,String> classTypeMap = new HashMap<String, String>();
 
   @Override
   protected void generateOtherFiles(RootDoc rootDoc, ClassTree classTree)
@@ -96,10 +101,16 @@ public class JsDoclet extends HtmlDoclet {
     // Document static methods
     List<MethodDoc> smethods = new ArrayList<MethodDoc>();
     for (ClassDoc clz : classes) {
-      if (isExportable(clz) && hasStaticMethods(clz)) {
-        for (MethodDoc md : clz.methods()) {
-          if (md.isStatic() && isExportable(md)) {
-            smethods.add(md);
+      if (isExportable(clz)) {
+        
+        // FIXME: implement exportoverlay somehow.
+        classTypeMap.put(clz.simpleTypeName(), getExportedName(clz, false, true));
+        
+        if (hasStaticMethods(clz)) {
+          for (MethodDoc md : clz.methods()) {
+            if (md.isStatic() && isExportable(md)) {
+              smethods.add(md);
+            }
           }
         }
       }
@@ -133,7 +144,7 @@ public class JsDoclet extends HtmlDoclet {
       
       // Write each class
       for (ClassDoc clz : eclasses) {
-        String className = getExportedPackage(clz) + getExportedName(clz, false);
+        String className = getExportedName(clz, false, true);
         writer.h2("<div id=" + className + ">"+ className + "</div>");
         String comments = clz.commentText().trim();
         if (!comments.isEmpty()) {
@@ -439,6 +450,28 @@ public class JsDoclet extends HtmlDoclet {
     }
     return false;
   }
+  
+  private String getExportedPackage(ClassDoc clz) {
+    if (clz == null) {
+      return "";
+    }
+
+    PackageDoc cpkg = clz.containingPackage();
+    String pkg = cpkg == null ? "" : (cpkg.name().trim());
+
+    for (AnnotationDesc a : clz.annotations()) {
+      if (a.annotationType().name().equals("ExportPackage")) {
+        for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
+          pkg = p.value().toString().replaceAll("\"", "");
+          if (!pkg.isEmpty()) {
+            pkg += ".";
+          }
+          break;
+        }
+      }
+    }
+    return pkg;
+  }
 
   private String getExportedName(ClassDoc clz, boolean withLink, boolean withPkg) {
     if (clz == null) {
@@ -450,11 +483,20 @@ public class JsDoclet extends HtmlDoclet {
     String name = clz.name();
     
     boolean isClosure = false;
+    boolean isEnclosed = clz.containingClass() != null;
+    boolean isExportEnclosed = isEnclosed && isExportable(clz.containingClass());
+    boolean removeEnclosedPart = false;
+    
+    if (isExportEnclosed) {
+      pkg = getExportedName(clz.containingClass(), false, true);
+      removeEnclosedPart = true;
+    }
 
     for (AnnotationDesc a : clz.annotations()) {
       if (a.annotationType().name().equals("ExportPackage")) {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
           pkg = p.value().toString().trim();
+          removeEnclosedPart = true;
           break;
         }
       }
@@ -462,7 +504,10 @@ public class JsDoclet extends HtmlDoclet {
         for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
           if ("value".equals(p.element().name())) {
             name = p.value().toString().trim().replaceAll("\"", "");
-            break;
+            if (!name.isEmpty()) {
+              removeEnclosedPart = false;
+              break;
+            }
           }
         }
       }
@@ -473,6 +518,9 @@ public class JsDoclet extends HtmlDoclet {
         name += ")";
         pkg = "";
       }
+    }
+    if (removeEnclosedPart) {
+      name = name.replaceFirst("^.+\\.", "");
     }
     
     pkg = pkg.replaceAll("\"", "").replaceFirst("\\.+$", "");
@@ -509,27 +557,7 @@ public class JsDoclet extends HtmlDoclet {
     return result;
   }
 
-  private String getExportedPackage(ClassDoc clz) {
-    if (clz == null) {
-      return "";
-    }
 
-    PackageDoc cpkg = clz.containingPackage();
-    String pkg = cpkg == null ? "" : (cpkg.name().trim());
-
-    for (AnnotationDesc a : clz.annotations()) {
-      if (a.annotationType().name().equals("ExportPackage")) {
-        for (AnnotationDesc.ElementValuePair p : a.elementValues()) {
-          pkg = p.value().toString().replaceAll("\"", "");
-          if (!pkg.isEmpty()) {
-            pkg += ".";
-          }
-          break;
-        }
-      }
-    }
-    return pkg;
-  }
 
   private static boolean isExportable(ClassDoc clz) {
     if (clz == null) {
@@ -542,6 +570,15 @@ public class JsDoclet extends HtmlDoclet {
       for (ClassDoc j : i.interfaces()) {
         if (j.name().contains("Exportable")) {
           return true;
+        }
+      }
+    }
+    for (MethodDoc m : clz.methods()) {
+      if (!m.isStatic()) {
+        for (AnnotationDesc a : m.annotations()) {
+          if (a.annotationType().name().equals("Export")) {
+            return true;
+          }
         }
       }
     }
