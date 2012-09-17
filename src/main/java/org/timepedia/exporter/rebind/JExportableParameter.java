@@ -9,22 +9,23 @@ import com.google.gwt.core.ext.typeinfo.JPrimitiveType;
 public class JExportableParameter {
 
   private JParameter param;
+  private JExportableMethod method;
+  private ExportableTypeOracle xTypeOracle;
 
   public JParameter getParam() {
     return param;
   }
 
-  private JExportableClassType exportableEnclosingType;
 
   public JExportableClassType getExportableEnclosingType() {
-    return exportableEnclosingType;
+    return method.getEnclosingExportType();
   }
 
   public JExportableParameter(JExportableMethod exportableMethod,
       JParameter param) {
-
     this.param = param;
-    this.exportableEnclosingType = exportableMethod.getEnclosingExportType();
+    this.method = exportableMethod;
+    xTypeOracle = getExportableEnclosingType().getExportableTypeOracle();
   }
 
   public String getTypeName() {
@@ -36,8 +37,6 @@ public class JExportableParameter {
   }
 
   public String getExportParameterValue(String argName) {
-    ExportableTypeOracle xTypeOracle = exportableEnclosingType
-        .getExportableTypeOracle();
     
     String paramTypeName = param.getType().getQualifiedSourceName();
     JExportableType type = xTypeOracle.findExportableType(paramTypeName);
@@ -81,7 +80,6 @@ public class JExportableParameter {
   }
 
   public String getJsTypeOf() {
-    ExportableTypeOracle xto = exportableEnclosingType.getExportableTypeOracle();
 
     if (param == null) {
       return "null";
@@ -90,15 +88,15 @@ public class JExportableParameter {
     } else if (param.getType().isPrimitive() != null) {
       JPrimitiveType prim = param.getType().isPrimitive();
       return prim == JPrimitiveType.BOOLEAN ? "boolean" : "number";
-    } else if (xto.isString(param.getType())) {
+    } else if (xTypeOracle.isString(param.getType())) {
       return "string";
-    } else if (xto.isJavaScriptObject(param.getType())) {
+    } else if (xTypeOracle.isJavaScriptObject(param.getType())) {
       return "object";
     } else {
       String paramTypeName = param.getType().getQualifiedSourceName();
-      JExportableType type = xto.findExportableType(paramTypeName);
+      JExportableType type = xTypeOracle.findExportableType(paramTypeName);
       if (type != null && type instanceof JExportableClassType
-          && xto.isClosure((JExportableClassType) type)) {
+          && xTypeOracle.isClosure((JExportableClassType) type)) {
         return "'function'";
       }
       return "@" + param.getType().getQualifiedSourceName() + "::class";
@@ -107,7 +105,7 @@ public class JExportableParameter {
   
   public boolean isExportable() {
     String js = getJsTypeOf();
-    return !js.contains("@") || getExportableType() != null;
+    return !js.contains("@") || getExportableType(false) != null;
   }
 
   @Override
@@ -119,20 +117,13 @@ public class JExportableParameter {
     return param.getType().getSimpleSourceName();
   }
 
-  public JExportableType getExportableType() {
-    return exportableEnclosingType.getExportableTypeOracle()
-        .findExportableClassType(getTypeName());
+  public JExportableType getExportableType(boolean b) {
+    return method.getExportable(param.getType(), b);
   }
   
   public String getToArrayFunc(String qsn, String argName) {
     String ret = "ExporterUtil.";
     String after = ")";
-    ExportableTypeOracle o = exportableEnclosingType.getExportableTypeOracle();
-    JExportableType t = o.findExportableType(qsn.replace("[]", ""));
-    JExportableClassType e = null;
-    if (t != null && (t instanceof JExportableClassType)) {
-      e = (JExportableClassType) t; 
-    }
     if (qsn.equals("java.lang.String[]")) {
       ret += "toArrString" ;
     } else if (qsn.equals("java.util.Date[]")) {
@@ -152,13 +143,6 @@ public class JExportableParameter {
     } else {
       ret += "toArrObject";
       after = ", new " + qsn.replace("]", "ExporterUtil.length(" + argName + ")]") + after; 
-//      if (e != null && o.isJavaScriptObject(e)) {
-//        ret += "toArrJsObject";
-//      } else if (t != null) {
-//        ret += "toArrExport" ;
-//      } else {
-//        ret += "toArrObject" ;
-//      }
     }
     return ret + "(" + argName + after;
   }

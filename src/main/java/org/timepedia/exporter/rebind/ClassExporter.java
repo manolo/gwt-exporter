@@ -35,7 +35,7 @@ public class ClassExporter {
   private HashSet<String> overloadExported = new HashSet<String>();
 
   private HashSet<String> visited;
-
+  
   // These constants had the values: arg_ and __gwt_instance, but
   // having just a letter decreases the final size of javascript code in large classes.
   public static final String ARG_PREFIX = "a";
@@ -54,6 +54,12 @@ public class ClassExporter {
     xTypeOracle = new ExportableTypeOracle(ctx.getTypeOracle(), logger);
     this.visited = visited;
     exported = new ArrayList<JExportableClassType>();
+  }
+  
+  private static boolean debug = "true".equalsIgnoreCase(System.getProperty("gwt.exporter.debug"));
+  
+  private void log(String txt) {
+    logger.log(debug ? TreeLogger.INFO : TreeLogger.TRACE, txt);
   }
 
   /**
@@ -120,8 +126,7 @@ public class ClassExporter {
     sw.println();
 
     for (JExportableMethod method: requestedType.getExportableMethods()) {
-      JExportableType retType = method.getExportableReturnType();
-
+      JExportableType retType = method.getExportableReturnType(true);
       if (retType != null && retType.needsExport() && !exported
           .contains(retType.getQualifiedSourceName())) {
         if (exportDependentClass(retType.getQualifiedSourceName())) {
@@ -203,6 +208,19 @@ public class ClassExporter {
           "Type '" + requestedClass + "' does not implement Exportable", null);
       throw new UnableToCompleteException();
     }
+    
+    log(requestedClass);
+    log("  " + requestedType.getJSQualifiedExportName());
+    
+    if (debug) {
+      System.out.println(">> Exporting : " + requestedClass);
+      System.out.println("    getJSExportPackage: " + requestedType.getJSExportPackage());
+      System.out.println("    getJSExportName: " + requestedType.getJSExportName());
+      System.out.println("    getJSQualifiedExportName: " + requestedType.getJSQualifiedExportName());
+      System.out.println("    getQualifiedExporterImplementationName: " + requestedType.getQualifiedExporterImplementationName());
+      System.out.println("    getQualifiedSourceName: " + requestedType.getQualifiedSourceName());
+    }
+
 
     // add this so we don't try to recursively reexport ourselves later
     exported.add(requestedType);
@@ -219,7 +237,7 @@ public class ClassExporter {
     
     boolean isClosure = xTypeOracle.isClosure(requestedType);
     String superClass = xTypeOracle.isStructuralType(requestedType.getType())
-        ? requestedClass : null;
+        ? requestedClass : xTypeOracle.isExportAll(requestedClass) ? "ExporterUtil.ExportAll" : null;
 
     // try to construct a sourcewriter for the qualified name
     if (isClosure) {
@@ -435,14 +453,35 @@ public class ClassExporter {
   }
 
   private void exportAll(String genName) {
-    sw.println("public " + genName + "() { export(); } ");
-    sw.println("public void export() { ");
+    List<JClassType> types = xTypeOracle.findAllExportableTypes();
+    List<JClassType> instantiableTypes = new ArrayList<JClassType>();
+    List<JClassType> otherTypes = new ArrayList<JClassType>();
 
-    for (JClassType type : xTypeOracle.findAllExportableTypes()) {
-      sw.indent();
-      sw.println("GWT.create(" + type.getQualifiedSourceName() + ".class);");
-      sw.outdent();
+    for (JClassType type : types) {
+      if ( type.isDefaultInstantiable() && type.isPublic()) {
+        instantiableTypes.add(type);
+      } else {
+        otherTypes.add(type);
+      }
     }
+    sw.println("public void export(boolean all) { ");
+    sw.indent();
+    sw.println("if (all) {");
+    sw.indent();
+    for (JClassType type : otherTypes) {
+      sw.println("GWT.create(" + type.getQualifiedSourceName() + ".class);");
+    }
+    sw.outdent();
+    sw.println("}");
+    for (JClassType type : instantiableTypes) {
+      sw.println("GWT.create(" + type.getQualifiedSourceName() + ".class);");
+    }
+    sw.outdent();
+    sw.println("}");
+    sw.println("public void exportAll() { ");
+    sw.indent();
+    sw.println("export();");
+    sw.outdent();
     sw.println("}");
   }
 
@@ -564,11 +603,7 @@ public class ClassExporter {
     // later to define a bunch of methods
     sw.println("var _, __ = this;");
 
-    // constructor.getJSQualifiedExportName() returns fully qualified package
-    // + exported class name
-    sw.print(namespace + " = $entry(function(");
-
-    sw.println(") {");
+    sw.print(namespace + " = $entry(function(){");
     sw.indent();
     sw.println("var g, j = this, " + ARG_PREFIX + " = arguments;");
     // check if this is being used to wrap GWT types
@@ -600,6 +635,8 @@ public class ClassExporter {
       arity.put(numArguments, constructor);
       sw.println("else if (" + ARG_PREFIX + ".length == " + numArguments + ")");
       sw.indent();
+      
+      log("    " + namespace + constructor.toString().replaceFirst("^.+\\(", "("));
       
       // else someone is calling the constructor normally
       // we generate a JSNI call to the matching static factory method
@@ -691,7 +728,7 @@ public class ClassExporter {
   private void declareJavaPassedValues(JExportableMethod method, boolean wrap) {
     JExportableParameter params[] = method.getExportableParameters();
     for (int i = 0; i < params.length; i++) {
-      JExportableType eType = params[i].getExportableType();
+      JExportableType eType = params[i].getExportableType(false);
       boolean needExport = eType != null && eType.needsExport();
       
       if (wrap && needExport) {
@@ -765,7 +802,7 @@ public class ClassExporter {
    * @param requestedType
    */
   private void createStaticWrapperMethod(JExportableMethod method, JExportableClassType requestedType) {
-    String r = method.getExportableReturnType() != null ? method.getExportableReturnType().getQualifiedSourceName() : "Object";
+    String r = method.getExportableReturnType(false) != null ? method.getExportableReturnType(false).getQualifiedSourceName() : "Object";
     String body = r.equals("void") ? "" : "return ";
     String function = "public static ";
     String end = "";
@@ -831,7 +868,7 @@ public class ClassExporter {
       HashMap<String, DispatchTable> dispatchMap)
       throws UnableToCompleteException {
     
-    JExportableType retType = method.getExportableReturnType();
+    JExportableType retType = method.getExportableReturnType(false);
     
 //    int arity = method.getExportableParameters().length;
 //    String name = method.getUnqualifiedExportName();
@@ -859,13 +896,6 @@ public class ClassExporter {
     boolean isVoid = retType != null && retType.getQualifiedSourceName().equals("void");
     boolean needsExport = retType != null && retType.needsExport();
     
-    if (needsExport && !exported.contains(retType)) {
-      if (exportDependentClass(retType.getQualifiedSourceName())) {
-        ;
-      }
-      exported.add((JExportableClassType) retType);
-    }
-
     exportDependentParams(method);
     
     // Overloaded methods only need being exported once
@@ -880,20 +910,27 @@ public class ClassExporter {
     
     boolean isStatic = method.isStatic();
     boolean isExportInstanceMethod = method.isExportInstanceMethod();
-
     
+    String mbase, mname; 
     if (isStatic && !isExportInstanceMethod) {
-      sw.print("$wnd." + method.getJSQualifiedExportName() + " = ");
+      mbase = "$wnd";
+      mname = method.getJSQualifiedExportName();
     } else {
-      sw.print("_." + method.getUnqualifiedExportName() + " = ");
+      mbase = "_";
+      mname = method.getUnqualifiedExportName();
     }
-    sw.print("$entry(function(");
+    sw.print(mbase + "." + mname + " = $entry(function(");
+    
+    String margs = method.toString().replaceFirst("^.+\\(", "(") ;
+    String mret = retType == null ? "void" : retType.getQualifiedSourceName().replaceAll("^.+\\.", "");
+    log("      " + mname + margs + " - " + mret);
+
     int l = dt.isOverloaded() ? dt.maxArity() : method.getExportableParameters().length;
     if (method.isExportInstanceMethod()) l--;
     for (int i = 0; i < l; i++) {
       sw.print((i>0 ? "," : "") +  ARG_PREFIX + i);
     }
-    sw.println(") { ");
+    sw.println(") {");
     sw.indent();
     
     try {
@@ -920,8 +957,7 @@ public class ClassExporter {
     }
     sw.println(";");
     sw.outdent();
-    sw.print("})");
-    sw.println(";");
+    sw.println("});");
   }
   
   // Return the index of the method in the dispatchMap Json struct
@@ -953,16 +989,19 @@ public class ClassExporter {
     return "@org.timepedia.exporter.client.ExporterUtil::wrap(" + rType + ")";
   }
 
-  private void exportDependentParams(JExportableMethod method)
-      throws UnableToCompleteException {
+  private void exportDependentParams(JExportableMethod method) throws UnableToCompleteException {
     // for convenience to the developer, let's export any exportable
-    // parameters
+    // parameters and return types
+    exportType(method.getExportableReturnType(true));
     for (JExportableParameter param : method.getExportableParameters()) {
-      JExportableType eType = param.getExportableType();
-      if (eType != null && eType.needsExport() && !exported.contains(eType)) {
-        if (exportDependentClass(eType.getQualifiedSourceName())) {
-          exported.add((JExportableClassType) eType);
-        }
+      exportType(param.getExportableType(true));
+    }
+  }
+  
+  private void exportType(JExportableType eType) throws UnableToCompleteException {
+    if (eType != null && eType.needsExport() && !exported.contains(eType)) {
+      if (exportDependentClass(eType.getQualifiedSourceName())) {
+        exported.add((JExportableClassType) eType);
       }
     }
   }
@@ -1035,10 +1074,8 @@ public class ClassExporter {
 
     // first, export our dependencies
     for (JExportableClassType classType : exported) {
-      if (requestedType.getQualifiedSourceName().equals(
-          classType.getQualifiedSourceName())
-          || classType instanceof JExportableArrayType
-          || classType.getType().isAbstract()) {
+      if (classType.equals(requestedType)) {
+          // || classType instanceof JExportableArrayType
         continue;
       }
       String qualName = classType.getRequestedType().getQualifiedSourceName();

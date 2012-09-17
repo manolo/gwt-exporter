@@ -54,7 +54,7 @@ public class SimpleDemo implements EntryPoint {
     runJsTests1(jsTest);
     if (jsTest.isFailed()) fail(jsTest.getFailed());
     
-    ExporterUtil.exportAll();
+    ExporterUtil.export(false);
     runJsTests2(jsTest);
     if (jsTest.isFailed()) fail(jsTest.getFailed());
   }
@@ -590,144 +590,147 @@ public class SimpleDemo implements EntryPoint {
   
   public native JavaScriptObject runJsTests1(JsTestUtil jsTest) /*-{
     var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
-    var clzName = jsTest.@org.timepedia.exporter.client.test.JsTestUtil::name;
-    
-    var c = eval ("new $wnd.gwt." + clzName + ".C()");
-    assertEq("C", c); 
-    assertEq("C", c.toString()); 
-    var a = c.convertToA();
-    assertEq("A", a);
-    a = eval ("new $wnd.gwt." + clzName + ".A()");
-    assertEq("A", a);
-    
-    // GWT.create(C) should not export B
-    var c = eval("$wnd.gwt." + clzName + ".B") ? "defined" : "undefined";
-    assertEq("undefined", c); 
+    try {
+      var c = new $wnd.gwt.C();
+      assertEq("C", c); 
+      assertEq("C", c.toString()); 
+      var a = c.convertToA();
+      assertEq("A", a);
+      a = new $wnd.gwt.A();
+      assertEq("A", a);
+      
+      // GWT.create(C) should not export B
+      var c = $wnd.gwt.B ? "defined" : "undefined";
+      assertEq("undefined", c);
+    } catch(e) {
+      assertEq(null, "JS Exception: " + e);
+    }; 
   }-*/;
 
   public native JavaScriptObject runJsTests2(JsTestUtil jsTest) /*-{
     var assertEq = function(a, b) {jsTest.@org.timepedia.exporter.client.test.JsTestUtil::assertEquals(*)(a, b);}
-    var clzName = jsTest.@org.timepedia.exporter.client.test.JsTestUtil::name;
     
-    var h = new $wnd.gwt.HelloClass();
-    assertEq("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
-    assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
-    assertEq("1,2", $wnd.gwt.HelloClass.test2());
-    assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].hello());
-    assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].helloAbstract());
-    assertEq("undefined", "" + $wnd.gwt.HelloClass.test3()[0].noHelloAbstract);
-    
-    assertEq("1", $wnd.gwt.HelloClass.test4(1, "A"));
-    assertEq("2", $wnd.gwt.HelloClass.test5());
-    assertEq("3", $wnd.gwt.HelloClass.test6());
-    assertEq("4", $wnd.gwt.HelloClass.test7());
-    assertEq("5", $wnd.gwt.HelloClass.test8());
-    assertEq("A", $wnd.gwt.HelloClass.test9());
-    assertEq("div", $wnd.gwt.HelloClass.test10().tagName.toLowerCase());
-    assertEq("6", $wnd.gwt.HelloClass.test11());
-    assertEq("1", $wnd.gwt.HelloClass.test12(1));
-    assertEq("5", $wnd.gwt.HelloClass.test13(2, 3));
-    assertEq("4", $wnd.gwt.HelloClass.test16(4));
-    assertEq("14", $wnd.gwt.HelloClass.test16(4, 10));
-    assertEq("a_2", $wnd.gwt.HelloClass.test18("a", ["b", "c"]));
-    assertEq("a_b_1", $wnd.gwt.HelloClass.test18("a", "b", ["c"]));
-    assertEq("a_1_0", $wnd.gwt.HelloClass.test20("a", 1));
-    assertEq("a_1_3", $wnd.gwt.HelloClass.test20("a", 1, "a", "e", "i"));   
-    assertEq("1970", "" + ($wnd.gwt.HelloClass.test22(new Date(0)).getYear() + 1900));
-    
-    var h = new $wnd.gwt.HelloClass();
-    assertEq("102", h.test14(1, 1, [100]));
-    assertEq("100,200", h.test15([100, 200]));
-    assertEq("5", h.test17(5));
-    assertEq("15", h.test17(5,10));
-    assertEq("a_2", h.test19("a", ["b", "c"]));
-    assertEq("a_b_1", h.test19("a", "b", ["c"]));
-    assertEq("a_1_0", h.test21("a", 1));
-    assertEq("a_1_3", h.test21("a", 1, "a", "e", "i")); 
-    assertEq("70-111-", h.test23(new Date(0), new Date(1309777010000)));
-    assertEq("70", "" + h.test24()[0].getYear());   
-    assertEq("true", h.test25(true)); 
-    assertEq("false", h.test25(false)); 
-    assertEq("true", h.test26(3)); 
-    assertEq("true", h.test27(true, true, 3));    
-    
-    var v1 = new $wnd.gwt.Foo();
-    assertEq("foo", v1);
-    var v2 = new $wnd.gwt.Foo("foo2");
-    assertEq("foo2", v2);
-    var v3 = new $wnd.gwt.Foo("foo3", "bbb");
-    assertEq("foo3bbb", v3);
-    assertEq("foo3bbb>ccc", v3.toString("ccc"));
-    assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
-        return arg1 + "," + arg2;
-    }));
-    
-    var m = eval("new $wnd.gwt." + clzName + ".MClass()");
-    assertEq("om0", m.m0());
-    assertEq("m1", m.m1());
-    assertEq("m1-23", m.m1(2, 3));
-    assertEq("m2", m.m2());
-    assertEq("m2", m.m2());
-    assertEq("m3", m.m3());
-    var m5 = eval("$wnd.gwt." + clzName + ".MClass.m5") ? "defined" : "undefined";
-    assertEq("undefined", m5);    
-    assertEq("final", m.f());
-    
-    // exportAll must export B
-    var c = eval("$wnd.gwt." + clzName + ".B") ? "defined" : "undefined";
-    assertEq("defined", c); 
-    
-    var ch = new $wnd.$$();
-    assertEq("Son", ch.sonName(ch));
-    assertEq("Son", ch.getParentName(ch.parent()));
-    assertEq("$$$", $wnd.$$$());
-    
-    // export overlay
-    var gq = new  $wnd.$('hello'); 
-    assertEq("hello", gq.echo());
-    assertEq("hello", gq.gq().echo());
-     
-    var ex = gq.exports();
-    assertEq("hello", ex[0].echo());
-    
-    assertEq("0", gq.countElements());
-    assertEq("1", gq.countElements(document));
-    assertEq("2", gq.countElements([document, window]));
-    
-    assertEq("object", (typeof gq.element()));
-    assertEq("object", (typeof gq.elements()[0]));
-    
-    assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
-    assertEq('false', gq.executeFunction(function(e){return e == null;}));
-    assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
-    assertEq('ret-true', gq.executeFunction2(function(e){return true;}).gq().echo());
-    assertEq('ret-false', gq.executeFunction2(function(e){return false;}).echo());
-    
-    // export static constructors
-    var cs1 = new $wnd.gwt.c('hello');
-    assertEq("hello", cs1.echo());
-    var cs2 = new $wnd.gwt.c('by');
-    assertEq("hello", cs2.echo());
-    
-    // more tests for exportoverlay
-    var child = new $wnd.ex.Child("Bill");
-    var mother = new $wnd.ex.Mother();
-    mother.setChild(child);
-    assertEq("Bill", mother.getChild().name());
-    assertEq("Bill2", mother.getChild().name(2));
-    assertEq("Joe", child.name(new $wnd.ex.Child("Joe")));
-    assertEq("s1-s2-Foo-2", child.foo('s1', 's2', 2));
-    assertEq("s1-Caa", child.foo('s1'));
-    assertEq("null-Caa", child.foo(null));
-    assertEq("s-Cas", $wnd.ex.Child.sfoo('s'));
-    assertEq("2-Cas", $wnd.ex.Child.sfoo(2));    
-    
-    // tests for ExportJsInit
-    var jq = new $wnd.JQ();
-    assertEq("1", "" + jq.length);
-    assertEq("1", "" + jq.size());
-    
+    try {
+      var h = new $wnd.gwt.HelloClass();
+      assertEq("1,2,3,4,5,S,JavaScriptObject,HelloClass", $wnd.gwt.HelloClass.test0(1, 2, 3, 4, 5, "S", window.document, h));
+      assertEq("1,1,1,1,1,2,2,2,1", $wnd.gwt.HelloClass.test1([0], [0], [0], [0], [0], [1,2], ["a","b"], [window,document], [h]));
+      assertEq("1,2", $wnd.gwt.HelloClass.test2());
+      assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].hello());
+      assertEq("HelloClass", $wnd.gwt.HelloClass.test3()[0].helloAbstract());
+      assertEq("undefined", "" + $wnd.gwt.HelloClass.test3()[0].noHelloAbstract);
+      
+      assertEq("1", $wnd.gwt.HelloClass.test4(1, "A"));
+      assertEq("2", $wnd.gwt.HelloClass.test5());
+      assertEq("3", $wnd.gwt.HelloClass.test6());
+      assertEq("4", $wnd.gwt.HelloClass.test7());
+      assertEq("5", $wnd.gwt.HelloClass.test8());
+      assertEq("A", $wnd.gwt.HelloClass.test9());
+      assertEq("div", $wnd.gwt.HelloClass.test10().tagName.toLowerCase());
+      assertEq("6", $wnd.gwt.HelloClass.test11());
+      assertEq("1", $wnd.gwt.HelloClass.test12(1));
+      assertEq("5", $wnd.gwt.HelloClass.test13(2, 3));
+      assertEq("4", $wnd.gwt.HelloClass.test16(4));
+      assertEq("14", $wnd.gwt.HelloClass.test16(4, 10));
+      assertEq("a_2", $wnd.gwt.HelloClass.test18("a", ["b", "c"]));
+      assertEq("a_b_1", $wnd.gwt.HelloClass.test18("a", "b", ["c"]));
+      assertEq("a_1_0", $wnd.gwt.HelloClass.test20("a", 1));
+      assertEq("a_1_3", $wnd.gwt.HelloClass.test20("a", 1, "a", "e", "i"));   
+      assertEq("1970", "" + ($wnd.gwt.HelloClass.test22(new Date(0)).getYear() + 1900));
+      
+      var h = new $wnd.gwt.HelloClass();
+      assertEq("102", h.test14(1, 1, [100]));
+      assertEq("100,200", h.test15([100, 200]));
+      assertEq("5", h.test17(5));
+      assertEq("15", h.test17(5,10));
+      assertEq("a_2", h.test19("a", ["b", "c"]));
+      assertEq("a_b_1", h.test19("a", "b", ["c"]));
+      assertEq("a_1_0", h.test21("a", 1));
+      assertEq("a_1_3", h.test21("a", 1, "a", "e", "i")); 
+      assertEq("70-111-", h.test23(new Date(0), new Date(1309777010000)));
+      assertEq("70", "" + h.test24()[0].getYear());   
+      assertEq("true", h.test25(true)); 
+      assertEq("false", h.test25(false)); 
+      assertEq("true", h.test26(3)); 
+      assertEq("true", h.test27(true, true, 3));    
+      
+      var v1 = new $wnd.gwt.Foo();
+      assertEq("foo", v1);
+      var v2 = new $wnd.gwt.Foo("foo2");
+      assertEq("foo2", v2);
+      var v3 = new $wnd.gwt.Foo("foo3", "bbb");
+      assertEq("foo3bbb", v3);
+      assertEq("foo3bbb>ccc", v3.toString("ccc"));
+      assertEq("Hello,Friend", v3.executeJsClosure(function(arg1, arg2) {
+          return arg1 + "," + arg2;
+      }));
+      
+      var m = new $wnd.gwt.MClass();
+      assertEq("om0", m.m0());
+      assertEq("m1", m.m1());
+      assertEq("m1-23", m.m1(2, 3));
+      assertEq("m2", m.m2());
+      assertEq("m2", m.m2());
+      assertEq("m3", m.m3());
+      var m5 = $wnd.gwt.MClass.m5 ? "defined" : "undefined";
+      assertEq("undefined", m5);    
+      assertEq("final", m.f());
+      
+      // exportAll must export B
+      var c = $wnd.gwt.B ? "defined" : "undefined";
+      assertEq("defined", c); 
+      
+      var ch = new $wnd.$$();
+      assertEq("Son", ch.sonName(ch));
+      assertEq("Son", ch.getParentName(ch.parent()));
+      assertEq("$$$", $wnd.$$$());
+      
+      // export overlay
+      var gq = new  $wnd.$('hello'); 
+      assertEq("hello", gq.echo());
+      assertEq("hello", gq.gq().echo());
+       
+      var ex = gq.exports();
+      assertEq("hello", ex[0].echo());
+      
+      assertEq("0", gq.countElements());
+      assertEq("1", gq.countElements(document));
+      assertEq("2", gq.countElements([document, window]));
+      
+      assertEq("object", (typeof gq.element()));
+      assertEq("object", (typeof gq.elements()[0]));
+      
+      assertEq('whatever', gq.executeClosure(function(){return 'whatever';}));
+      assertEq('false', gq.executeFunction(function(e){return e == null;}));
+      assertEq('true', gq.executeFunction(function(e){return false;}, function(e){return e != null;}));
+      assertEq('ret-true', gq.executeFunction2(function(e){return true;}).gq().echo());
+      assertEq('ret-false', gq.executeFunction2(function(e){return false;}).echo());
+      
+      // export static constructors
+      var cs1 = new $wnd.gwt.c('hello');
+      assertEq("hello", cs1.echo());
+      var cs2 = new $wnd.gwt.c('by');
+      assertEq("hello", cs2.echo());
+      
+      // more tests for exportoverlay
+      var child = new $wnd.ex.Child("Bill");
+      var mother = new $wnd.ex.Mother();
+      mother.setChild(child);
+      assertEq("Bill", mother.getChild().name());
+      assertEq("Bill2", mother.getChild().name(2));
+      assertEq("Joe", child.name(new $wnd.ex.Child("Joe")));
+      assertEq("s1-s2-Foo-2", child.foo('s1', 's2', 2));
+      assertEq("s1-Caa", child.foo('s1'));
+      assertEq("null-Caa", child.foo(null));
+      assertEq("s-Cas", $wnd.ex.Child.sfoo('s'));
+      assertEq("2-Cas", $wnd.ex.Child.sfoo(2));    
+      
+      // tests for ExportJsInit
+      var jq = new $wnd.JQ();
+      assertEq("1", "" + jq.length);
+      assertEq("1", "" + jq.size());
+    } catch(e) {
+      assertEq(null, "JS Exception: " + e);
+    }; 
   }-*/;
   
-
 }

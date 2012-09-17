@@ -287,10 +287,14 @@ public class ExportableTypeOracle {
   public boolean isExportAll(String requestedClass) {
     return typeOracle.findType(requestedClass).isAssignableTo(exportAllType);
   }
+  
+  public boolean hasExportableMethods(JClassType type) {
+    return new JExportableClassType(this, type).getExportableMethods().length > 0;
+  }
 
   public List<JClassType> findAllExportableTypes() {
     ArrayList<JClassType> types = new ArrayList<JClassType>();
-    // Closures should be exported first
+    // Closures should be exported the first
     for (JClassType t : typeOracle.getTypes()) {
       if (t.isAssignableTo(exportableType) && isClosure(t)) {
         types.add(t);
@@ -312,10 +316,11 @@ public class ExportableTypeOracle {
           || t.equals(exportableType) || t.equals(exportOverlayType)) {
         continue;
       }
+      // Apart from implementing the Exportable interface, exportable 
+      // classes must have the @Export annotation in either the class
+      // declaration or in one or more methods.
       if (t.isAssignableTo(exportableType)) {
-        if (t.isDefaultInstantiable()
-            && t.isPublic()
-            && new JExportableClassType(this, t).getExportableMethods().length > 0) {
+        if (isExportable(t) || hasExportableMethods(t)) {
           types.add(t);
         }
       }

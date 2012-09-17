@@ -1,6 +1,5 @@
 package org.timepedia.exporter.rebind;
 
-import org.apache.tools.ant.types.CommandlineJava.SysProperties;
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportAfterCreateMethod;
 import org.timepedia.exporter.client.ExportConstructor;
@@ -9,9 +8,11 @@ import org.timepedia.exporter.client.ExportJsInitMethod;
 import org.timepedia.exporter.client.ExportStaticMethod;
 
 import com.google.gwt.core.ext.typeinfo.JAbstractMethod;
+import com.google.gwt.core.ext.typeinfo.JArrayType;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
 import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JParameter;
+import com.google.gwt.core.ext.typeinfo.JType;
 
 /**
  *
@@ -75,12 +76,19 @@ public class JExportableMethod implements JExportable {
   public String getJSQualifiedExportName() {
     return qualifiedExportName;
   }
-
-  public JExportableType getExportableReturnType() {
+  
+  public JExportableType getExportable(JType type, boolean searchComponent) {
     ExportableTypeOracle xTypeOracle = getExportableTypeOracle();
-    String returnTypeName = ((JMethod) method).getReturnType()
-        .getQualifiedSourceName();
-    return xTypeOracle.findExportableType(returnTypeName);
+    JArrayType a = type.isArray();
+    if (searchComponent && a != null) {
+      return xTypeOracle.findExportableType(a.getComponentType().getQualifiedSourceName());
+    } else {
+      return xTypeOracle.findExportableType(type.getQualifiedSourceName());
+    }
+  }
+
+  public JExportableType getExportableReturnType(boolean b) {
+    return method instanceof JMethod ? getExportable(((JMethod)method).getReturnType(), b) : null;
   }
 
   public JExportableParameter[] getExportableParameters() {
@@ -151,8 +159,8 @@ public class JExportableMethod implements JExportable {
         wrap = true;
       } else if (isExportInstanceMethod()) {
         wrap = true;
-      } else if (getExportableReturnType() != null &&
-          "long".equals(getExportableReturnType().getQualifiedSourceName())) {
+      } else if (getExportableReturnType(false) != null &&
+          "long".equals(getExportableReturnType(false).getQualifiedSourceName())) {
         wrap = true;
       } else for (JExportableParameter p : getExportableParameters()) {
         if (p.getTypeName().matches("(long|.*\\[\\])$|java.util.Date")) {

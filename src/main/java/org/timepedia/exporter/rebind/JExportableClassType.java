@@ -181,27 +181,57 @@ public class JExportableClassType implements JExportable, JExportableType {
     return pkg + getJSExportName();
   }
   
+  String exportName;
   public String getJSExportName () {
-    Export ann = type.getAnnotation(Export.class);
-    JClassType type = getTypeToExport();
-    return ann != null && !ann.value().isEmpty() ? ann.value() : type.getName();
-  }
+    if (exportName == null) {
+      // By default we use the name of the class.
+      exportName = getTypeToExport().getName();
+      
+      Export expAnnotation = type.getAnnotation(Export.class);
+      if (expAnnotation != null && !expAnnotation.value().trim().isEmpty()) {
+        // use the annotation value
+        exportName = expAnnotation.value().trim();
+      } else if (type.getEnclosingType() != null) {
+        // Check if the class is defined inside another exported type
+        JExportableClassType encType = exportableTypeOracle
+            .findExportableClassType(
+                type.getEnclosingType().getQualifiedSourceName());
+        
+        // Check if the class has a pkgAnnotation
+        ExportPackage pkgAnnotation = type.getAnnotation(ExportPackage.class);
+        
+        // Remove the enclosing part from the class name
+        if (encType != null || pkgAnnotation != null) {
+          exportName  = exportName.replaceFirst("^.+\\.", "");
+        }
 
-  public String getJSExportPackage() {
-    String requestedPackageName = getPrefix();
-    ExportPackage ann = type.getAnnotation(ExportPackage.class);
-    JClassType type = getTypeToExport();
-    if (ann != null) {
-      requestedPackageName = ann.value();
-    } else if (type.getEnclosingType() != null) {
-      JExportableClassType encType = exportableTypeOracle
-          .findExportableClassType(
-              type.getEnclosingType().getQualifiedSourceName());
-      if (encType != null) {
-        return encType.getJSExportPackage();
+        
       }
     }
-    return requestedPackageName;
+    return exportName;
+  }
+
+  String exportPackage;
+  public String getJSExportPackage() {
+    if (exportPackage == null) {
+      // By default we use the java namespace, but removing the 'client' part 
+      exportPackage = getPrefix();
+      // Check for the @ExportPackage annotation
+      ExportPackage ann = type.getAnnotation(ExportPackage.class);
+      JClassType type = getTypeToExport();
+      if (ann != null) {
+        exportPackage = ann.value().trim();
+      } else if (type.getEnclosingType() != null) {
+        // Check if the class is defined inside another exported type to use it's name as base
+        JExportableClassType encType = exportableTypeOracle
+            .findExportableClassType(
+                type.getEnclosingType().getQualifiedSourceName());
+        if (encType != null) {
+          exportPackage =  encType.getJSQualifiedExportName();
+        }
+      }
+    }
+    return exportPackage;
   }
 
   public String getJSNIReference() {

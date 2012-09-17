@@ -17,8 +17,11 @@ import com.google.gwt.core.client.JsArrayString;
  */
 public class ExporterUtil {
 
-  public interface ExportAll extends Exportable {
-
+  public static abstract class ExportAll implements Exportable, Exporter {
+    public void export() {
+      export(false);
+    }
+    public abstract void export(boolean all);
   }
 
   private static ExporterBaseImpl impl = GWT.create(ExporterBaseImpl.class);
@@ -29,8 +32,28 @@ public class ExporterUtil {
     return impl.declarePackage(qualifiedExportName);
   }
 
+  /**
+   * Automatically export all instantiable and public classes marked with the Exportable
+   * interface.
+   * 
+   * @param all, when this parameter is true it will export additionally all non-instantiable
+   *  classes marked with Exportable
+   */
+  public static void export(boolean all) {
+    ExportAll export = GWT.create(ExportAll.class);
+    export.export(all);
+  }
+  
+  /**
+   * Export all classes marked with the Exportable interface, including those which are not default
+   * instantiable (interfaces, abstracts, without constructor, etc).
+   * 
+   * Use ExporterUtil.export(false) to export just the set of instantiable classes and save some
+   * js size, gwt-exporter will take care of exporting dependent classes when used. 
+   * 
+   */
   public static void exportAll() {
-    GWT.create(ExportAll.class);
+    export(true);
   }
 
 //  public static void exportAllAsync() {

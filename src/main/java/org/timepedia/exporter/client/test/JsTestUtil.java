@@ -61,9 +61,10 @@ public class JsTestUtil {
         && a.toString().equals(sb.toString())) {
       print("OK -> " + sb);
     } else {
-      String atype = (a != null ? a.getClass().getName() : String.valueOf(a));
       String btype = (b != null ? b.getClass().getName() : String.valueOf(b));
-      String msg = "ERROR -> [" + atype + "] " + a + " <=> [" + btype + "] " + sb;
+      String amsg = a == null ? "" : ("[" + a.getClass().getName() + "] " + a + " <=> [" + btype + "] ");
+      String msg = "ERROR -> " + amsg + sb;
+      print(msg);
       failed += (failed.isEmpty() ? "" : "\n") + msg;
     }
   }
