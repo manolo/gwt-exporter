@@ -9,10 +9,13 @@ import java.util.StringTokenizer;
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.ConstructorDoc;
+import com.sun.javadoc.ExecutableMemberDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.PackageDoc;
+import com.sun.javadoc.ParamTag;
 import com.sun.javadoc.Parameter;
 import com.sun.javadoc.RootDoc;
+import com.sun.javadoc.Tag;
 import com.sun.javadoc.Type;
 import com.sun.tools.doclets.formats.html.ConfigurationImpl;
 import com.sun.tools.doclets.formats.html.HtmlDoclet;
@@ -172,9 +175,11 @@ public class JsDoclet extends HtmlDoclet {
         writeParameters(writer, cd.parameters());
         writer.print(")");
         writer.br();
-        writer.print("<span class=jsdocComment>"
-            + filter(cd.commentText()) + "</span>");
-
+        
+        String comment = filter(cd.commentText());
+        comment += getCommentTags(cd);
+        writer.print("<span class=jsdocComment>" + comment + "</span>");
+        
         writer.tdEnd();
         writer.trEnd();
       }
@@ -273,17 +278,35 @@ public class JsDoclet extends HtmlDoclet {
       }
       if (comments.isEmpty()) {
         id = getMethodInSuperclass(cd.superclass(), md);
+      } else {
+        md = id;
       }
       if (id != null) {
         comments = id.commentText();
+        md = id;
       }
     }
-    
+    comments += getCommentTags(md);
     if (!comments.isEmpty()) {
       writer.print("<span class=jsdocComment>" + filter(comments) + "</span>");
     }
     writer.tdEnd();
     writer.trEnd();
+  }
+  
+  private String getCommentTags(ExecutableMemberDoc doc) {
+    String ret = "";
+    if (doc != null) {
+      ret += "<ul class='params'>";
+      for (ParamTag t : doc.paramTags() ){
+        ret +="<li><span class='paramName'>" + t.parameterName() + "</span> " + t.parameterComment();
+      }
+      for (Tag t : doc.tags("return") ){
+        ret += "<li><span class='return'>return</span> " + t.text();
+      }
+      ret += "</ul>";
+    }
+    return ret;
   }
   
   private boolean hasClassMethods(ClassDoc clz) {
@@ -575,6 +598,11 @@ public class JsDoclet extends HtmlDoclet {
     + "  a:hover {"
     + "    color: #666666;"
     + "    text-decoration: underline;"
+    + "  }"
+    + "  .params li {"
+    + "  }"
+    + "  .paramName, .return {"
+    + "    font-weight: bold;"
     + "  }"
     + "</style>";
   }

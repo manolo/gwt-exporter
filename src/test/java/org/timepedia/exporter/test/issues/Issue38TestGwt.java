@@ -34,12 +34,26 @@ public class Issue38TestGwt extends GWTTestCase {
     public String method() {
       return "Hello: " + name + ",";
     }
+    
+    /**
+     * Just an empty method used to test JsDoclet
+     * @param theName Any string should work
+     * @return always null.
+     */
+    public String method(String theName) {
+      return null;
+    }
   }
   
   // Should be exported as pkg.Person2
   @ExportPackage("pkg")
   @Export(all = true)
   public static class Person2 extends Person {
+    /**
+     * This comment is here to test JsDoclet
+     * 
+     * @param name the name of the person
+     */
     public Person2(String name) {
       super(name);
     }
