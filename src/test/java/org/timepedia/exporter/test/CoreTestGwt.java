@@ -630,7 +630,7 @@ public class CoreTestGwt extends GWTTestCase {
       assertEq("a_b_1", h.test19("a", "b", ["c"]));
       assertEq("a_1_0", h.test21("a", 1));
       assertEq("a_1_3", h.test21("a", 1, "a", "e", "i")); 
-      assertEq("70-111-", h.test23(new Date(0), new Date(1309777010000)));
+      assertEq("70-111-", h.test23(new Date(50680), new Date(1309777010000)));
       assertEq("70", "" + h.test24()[0].getYear());   
       assertEq("true", h.test25(true)); 
       assertEq("false", h.test25(false)); 
@@ -716,5 +716,47 @@ public class CoreTestGwt extends GWTTestCase {
       assertEq(null, "JS Exception: " + e);
     }; 
   }-*/;
+  
+  
+  
+  
+  public static class Person {
+    private String name;
+
+    public Person(String cname) {
+      name = cname;
+    }
+
+    public String getName() {
+      return name;
+    }
+  }
+
+  @ExportPackage("ex")
+  @Export("Man")
+  public static class XPerson implements ExportOverlay<Person>{
+    
+    public XPerson(String s) {
+    }
+
+    public String getName() {
+      return null;
+    }
+
+    @ExportConstructor
+    public static Person constructor(String name, String surname) {
+      return new Person(name + " " + surname);
+    }
+
+    @ExportInstanceMethod("foo")
+    public static String instanceMethod(Person instance, String surname) {
+      return instance.getName() + "-" + surname + " foo";
+    }
+    
+    @ExportStaticMethod("sfoo")
+    public static String staticMethod(String name)  {
+      return name + " sfoo";
+    }
+  }
   
 }
