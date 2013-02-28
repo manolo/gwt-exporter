@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.timepedia.exporter</groupId>
-  <artifactId>gwtexporter-simpledemo</artifactId>
+  <artifactId>gwtexporter-testdemo</artifactId>
   <packaging>war</packaging>
   <version>2.5.0-SNAPSHOT</version>
 
@@ -26,7 +26,7 @@
             <extraJvmArgs>-Xmx256m</extraJvmArgs>
             <inplace>${gwt.inplace}</inplace>
             <modules>
-              <module>simpledemo.SimpleDemo</module>
+              <module>testdemo.TestDemo</module>
             </modules>
           </configuration>
           <executions>
@@ -94,7 +94,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <gwtversion>2.5.1-rc1</gwtversion>
-    <gwtmaven>2.5.0</gwtmaven>
+    <gwtmaven>2.5.1-rc1</gwtmaven>
     <gwt.loglevel>INFO</gwt.loglevel>
     <gwt.outputstyle>PRETTY</gwt.outputstyle>
     <gwt.modulesuffix />
