@@ -93,8 +93,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <gwtversion>2.5.0-rc1</gwtversion>
-    <gwtmaven>2.5.0-rc1</gwtmaven>
+    <gwtversion>2.5.1-rc1</gwtversion>
+    <gwtmaven>2.5.0</gwtmaven>
     <gwt.loglevel>INFO</gwt.loglevel>
     <gwt.outputstyle>PRETTY</gwt.outputstyle>
     <gwt.modulesuffix />
