@@ -150,19 +150,21 @@ public class ClassExporter {
       }
       
       String rType = retType == null ? "Object" : retType.getQualifiedSourceName();
+      String mName = method.getName();
+      
       sw.print("public " + rType);
 
-      sw.print(" " + method.getName() + "(");
+      sw.print(" " + mName + "(");
       declareParameters(method, -1, true);
       sw.println(") {");
       sw.indent();
-      sw.print((isVoid ? "" : "return ") + "invoke(jso " + (hasParams ? "," : ""));
+      sw.print((isVoid ? "" : "return ") + "invoke_" + mName + "(jso " + (hasParams ? "," : ""));
       declareJavaPassedValues(method, false);
       sw.println(");");
       sw.outdent();
       sw.println("}");
       sw.print("public native " + rType);
-      sw.print(" invoke(" + ExportableTypeOracle.JSO_CLASS + " closure");
+      sw.print(" invoke_" + mName + "(" + ExportableTypeOracle.JSO_CLASS + " closure");
       if (method.getExportableParameters().length > 0) {
         sw.print(", ");
       }
