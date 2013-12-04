@@ -151,9 +151,8 @@
     </repositories>
 
   <scm>
-    <connection>scm:svn:http://gwt-exporter.googlecode.com/svn/trunk</connection>
-    <developerConnection>scm:svn:https://gwt-exporter.googlecode.com/svn/trunk</developerConnection>
+    <connection>scm:git:https://code.google.com/p/gwt-exporter/</connection>
+    <developerConnection>scm:git:git@github.com:manolo/gwt-exporter.git</developerConnection>
     <url>http://code.google.com/p/gwt-exporter/source/browse/</url>
   </scm>
-
 </project>
