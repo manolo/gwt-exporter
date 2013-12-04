@@ -27,7 +27,7 @@ import com.google.gwt.core.ext.typeinfo.JType;
  */
 public class JExportableClassType implements JExportable, JExportableType {
 
-  private static final String IMPL_EXTENSION = "ExporterImpl";
+  private static final String IMPL_EXTENSION = "_ExporterImpl";
 
   private ExportableTypeOracle exportableTypeOracle;
 
@@ -219,7 +219,7 @@ public class JExportableClassType implements JExportable, JExportableType {
   }
 
   public String getExporterImplementationName() {
-    return type.getSimpleSourceName() + IMPL_EXTENSION;
+    return type.getName().replace(".", "_") + IMPL_EXTENSION;
   }
 
   public String getHostedModeJsTypeCast() {
