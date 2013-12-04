@@ -355,4 +355,8 @@ public class ExportableTypeOracle {
     }
     return "@" + type.getQualifiedSourceName() + "::class";
   }
+
+  public JClassType getExportableType() {
+	return exportableType;
+  }
 }

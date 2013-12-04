@@ -7,11 +7,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.typeinfo.JClassType;
+import com.google.gwt.core.ext.typeinfo.JField;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -781,12 +783,38 @@ public class ClassExporter {
    * $wnd.package.className.Foo = JSNI Reference to Foo
    */
   private void exportFields(JExportableClassType requestedType)
-      throws UnableToCompleteException {
-    for (JExportableField field : requestedType.getExportableFields()) {
-      sw.print("$wnd." + field.getJSQualifiedExportName() + " = ");
-      sw.println("@" + field.getJSNIReference() + ";");
-    }
-  }
+	      throws UnableToCompleteException {
+	    for (JExportableField field : requestedType.getExportableFields()) {
+	      sw.print("$wnd." + field.getJSQualifiedExportName() + " = ");
+	      sw.println("@" + field.getJSNIReference() + ";");
+	    }
+	    // if the type is exportable
+	    if (xTypeOracle.isExportable(requestedType)) {
+		    JClassType[] implementedInterfaces = requestedType.getType().getImplementedInterfaces();
+		    // check all its interfaces
+		    for (JClassType intfc : implementedInterfaces) {
+				JClassType[] implInterfaces = intfc.getImplementedInterfaces();
+				for (JClassType implInterface : implInterfaces) {
+					// if a interface of the class extends again Exportable, export all the fields of that interface (and super types)
+					if (implInterface.equals(xTypeOracle.getExportableType())) {
+						Set<? extends JClassType> flattenedSupertypeHierarchy = intfc.getFlattenedSupertypeHierarchy();
+						for (JClassType superType : flattenedSupertypeHierarchy) {
+							if (!superType.equals(xTypeOracle.getExportableType())) {
+								for (JField field : superType.getFields()) {
+									if (field.isFinal() && field.isStatic() && field.isPublic()) {
+										JExportableField exportableField = new JExportableField(requestedType, field);
+										sw.print("$wnd." + exportableField.getJSQualifiedExportName() + " = ");
+									    sw.println("@" + exportableField.getJSNIReference() + ";");
+									}
+								}
+								
+							}
+						}
+					}
+				}
+		    }
+		}
+	  }
   
   /**
    * Create a static wrapper for a method which can not be exported in JSNI.
