@@ -52,7 +52,7 @@ public class JExportableParameter {
             + argName 
             + "))";
       } else if (xTypeOracle.isExportable((JExportableClassType) type)) {
-        return argName + "." + ClassExporter.GWT_INSTANCE;
+        return "(" + argName + " == null ? null : " + argName + "." + ClassExporter.GWT_INSTANCE + ")";
       }
     }
     

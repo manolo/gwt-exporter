@@ -240,7 +240,14 @@ public class ExporterBaseActual extends ExporterBaseImpl {
 
   public JavaScriptObject setWrapper(Object type) {
     if (type.getClass().isArray()) {
-      return JavaScriptObject.createArray();
+      // Create arrays for arrays, I wonder if javascript can have circular references..
+      // I should probably implement a map from array to cast
+      Object[] a = (Object[])type;
+      JsArrayObject wrapperArray = JavaScriptObject.createArray().cast();
+      for (int i = 0; i < a.length; i++) {
+        wrapperArray.setObject(i, setWrapper(a[i]));
+      }
+      return wrapperArray;
     }
     JavaScriptObject cons = typeConstructor(type);
     assert cons != null : "No constructor for type: " + type.getClass().getName() + " " + type.getClass().getSuperclass(); 

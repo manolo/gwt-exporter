@@ -880,8 +880,8 @@ public class ClassExporter {
       }
       function +=  " " + argName; 
     }
-
-    sw.println(function + ") {\n  " + body + end + ");\n}" );
+    // TODO: test for issue #54
+    sw.println(function + ") throws Exception {\n  " + body + end + ");\n}" );
   }
   
   /**
