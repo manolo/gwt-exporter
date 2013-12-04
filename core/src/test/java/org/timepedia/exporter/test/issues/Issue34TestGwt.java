@@ -20,7 +20,7 @@ public class Issue34TestGwt extends GWTTestCase {
   }
   
   @ExportPackage("tst")
-  @Export("Test")
+  @Export("Test34")
   public static class Test implements Exportable {
     public int[] method(int i) { return new int[]{1}; }
     public int[] method(String s) { return new int[]{2}; }
@@ -28,9 +28,9 @@ public class Issue34TestGwt extends GWTTestCase {
   
    public static native String runJs() /*-{
      var ret = ""
-     ret += (new $wnd.tst.Test()).method(1)[0];
+     ret += (new $wnd.tst.Test34()).method(1)[0];
      ret += '-';
-     ret += (new $wnd.tst.Test()).method('')[0];
+     ret += (new $wnd.tst.Test34()).method('')[0];
 		return ret;
   }-*/;
 

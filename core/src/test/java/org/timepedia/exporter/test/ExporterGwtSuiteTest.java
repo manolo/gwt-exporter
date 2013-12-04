@@ -2,15 +2,7 @@ package org.timepedia.exporter.test;
 
 import junit.framework.Test;
 
-import org.timepedia.exporter.test.issues.Issue25aTestGwt;
-import org.timepedia.exporter.test.issues.Issue25bTestGwt;
-import org.timepedia.exporter.test.issues.Issue33TestGwt;
-import org.timepedia.exporter.test.issues.Issue34TestGwt;
-import org.timepedia.exporter.test.issues.Issue35TestGwt;
-import org.timepedia.exporter.test.issues.Issue38TestGwt;
-import org.timepedia.exporter.test.issues.Issue44TestGwt;
-import org.timepedia.exporter.test.issues.Issue48TestGwt;
-import org.timepedia.exporter.test.issues.Issue49TestGwt;
+import org.timepedia.exporter.test.issues.*;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
  public class ExporterGwtSuiteTest extends GWTTestSuite
@@ -28,6 +20,8 @@ import com.google.gwt.junit.tools.GWTTestSuite;
           suite.addTestSuite(Issue44TestGwt.class);
           suite.addTestSuite(Issue48TestGwt.class);
           suite.addTestSuite(Issue49TestGwt.class);
+          suite.addTestSuite(Issue50TestGwt.class);
+          suite.addTestSuite(Issue51TestGwt.class);
           return suite;
       }
 }
