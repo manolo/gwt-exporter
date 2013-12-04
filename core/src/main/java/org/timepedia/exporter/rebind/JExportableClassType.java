@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportPackage;
 import org.timepedia.exporter.client.ExporterUtil;
+import org.timepedia.exporter.client.Getter;
 import org.timepedia.exporter.client.SType;
+import org.timepedia.exporter.client.Setter;
 
 import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.core.ext.typeinfo.JConstructor;
@@ -149,6 +153,59 @@ public class JExportableClassType implements JExportable, JExportableType {
     return exportableMethods;
   }
   
+  public Property[] getExportableProperties() {
+	  Map<String, Property> properties = new HashMap<String, Property>();
+	  JExportableMethod[] methods = getExportableMethods();
+	  for (JExportableMethod method : methods) {
+		  Getter getter = method.getMethod().getAnnotation(Getter.class);
+		  if (getter != null) {
+			  Property property = getProperty(properties, method, getter.value());
+			  if (property != null) {
+				  property.setGetter(method);
+			  }
+		  }
+		  Setter setter = method.getMethod().getAnnotation(Setter.class);
+		  if (setter != null) {
+			  Property property = getProperty(properties, method, setter.value());
+			  if (property != null) {
+				  property.setSetter(method);
+			  }
+		  }
+		
+	  }
+	  return properties.values().toArray(new Property[properties.size()]);
+  }
+
+	/**
+	 * @param properties
+	 * @param method
+	 * @param name
+	 */
+	private Property getProperty(Map<String, Property> properties,
+			JExportableMethod method, String name) {
+		Property property = null;
+		  if ("".equals(name)) {
+			  String methodName = method.getName();
+			  if (methodName.startsWith("get")) {
+				  methodName = methodName.substring(3);
+			  }
+			  else if (methodName.startsWith("is")) {
+				  methodName = methodName.substring(2);
+			  }
+			  else if (methodName.startsWith("set")) {
+				  methodName = methodName.substring(3);
+			  }
+			  methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
+			  name = methodName;
+		  }
+		  property = properties.get(name);
+		  if (property == null) {
+			  property = new Property(name);
+			  properties.put(name, property);
+		  }
+		  return property;
+	}
+
   public JExportableMethod getJsInitMethod() {
     return jsInitMethod;
   }

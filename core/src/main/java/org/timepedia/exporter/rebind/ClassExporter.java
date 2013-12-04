@@ -305,6 +305,9 @@ public class ClassExporter {
       if (requestedType.getAfterCreateMethod() != null) {
         sw.println("@" + requestedType.getAfterCreateMethod().getJSNIReference() + "();");
       }
+      
+      exportProperties(requestedType);
+      
       sw.outdent();
       sw.println("}-*/;");
 
@@ -1037,6 +1040,29 @@ public class ClassExporter {
     ClassExporter exporter = new ClassExporter(logger, ctx, visited);
     exporter.exportClass(qualifiedSourceName, true);
     return true;
+  }
+  
+  private void exportProperties(JExportableClassType requestedType) {
+	  Property[] exportableProperties = requestedType.getExportableProperties();
+	  for (Property property : exportableProperties) {
+		  sw.print("Object.defineProperty(_, '");
+		  sw.print(property.getName());
+		  sw.print("', {");
+		  JExportableMethod getter = property.getGetter();
+		  if (getter != null) {
+			  sw.print("get: function() { return this."); 
+			  sw.print(getter.getUnqualifiedExportName());
+			  sw.print("();}");
+		  }
+		  JExportableMethod setter = property.getSetter();
+		  if (setter != null) {
+			  if (getter != null) sw.print(", ");
+			  sw.print("set: function(val) { this."); 
+			  sw.print(setter.getUnqualifiedExportName());
+			  sw.print("(val);}");
+		  }
+		  sw.println("});");
+	  }
   }
 
   /**

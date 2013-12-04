@@ -8,7 +8,9 @@ import java.util.Map;
 import org.timepedia.exporter.client.Export;
 import org.timepedia.exporter.client.ExportClosure;
 import org.timepedia.exporter.client.ExportConstructor;
+import org.timepedia.exporter.client.Getter;
 import org.timepedia.exporter.client.NoExport;
+import org.timepedia.exporter.client.Setter;
 import org.timepedia.exporter.client.StructuralType;
 
 import com.google.gwt.core.ext.TreeLogger;
@@ -68,6 +70,14 @@ public class ExportableTypeOracle {
   public static <T> boolean isExportable(Export annotation) {
     return annotation != null;
   }
+
+  public static <T> boolean isExportable(Getter annotation) {
+	return annotation != null;
+  }
+
+  public static <T> boolean isExportable(Setter annotation) {
+	return annotation != null;
+  }
   
   public boolean isExportable(JAbstractMethod method, JExportableClassType type) {
     boolean export = false;
@@ -82,7 +92,7 @@ public class ExportableTypeOracle {
         // method is marked as export in an interface or the entire class
         // is annotated as Export
         export = false;
-      } else if (isExportable(method.getAnnotation(Export.class))) {
+      } else if (isExportable(method.getAnnotation(Export.class)) || isExportable(method.getAnnotation(Setter.class)) || isExportable(method.getAnnotation(Getter.class))) {
         // Export this method if has the Export annotation
         export = true;
       } else if (isExportable(method.getEnclosingType())) {
@@ -97,7 +107,7 @@ public class ExportableTypeOracle {
         for (JClassType c : method.getEnclosingType().getImplementedInterfaces()) {
           for (JMethod m : c.getMethods()) {
             if (!isNotExportable(m.getAnnotation(NoExport.class))
-                && (isExportable(c) || isExportable(m.getAnnotation(Export.class)))
+                && (isExportable(c) || isExportable(m.getAnnotation(Export.class)) || isExportable(method.getAnnotation(Setter.class)) || isExportable(method.getAnnotation(Getter.class)))
                 && m.getName().equals(method.getName())) {
               if (m.getReadableDeclaration(true, true, false, true, true).equals(
                   ((JMethod) method).getReadableDeclaration(true, true, false,

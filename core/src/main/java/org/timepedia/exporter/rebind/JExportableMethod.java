@@ -68,7 +68,11 @@ public class JExportableMethod implements JExportable {
       exportableParameters[i] = new JExportableParameter(this, params[i]);
     }
   }
-
+  
+  public JAbstractMethod getMethod() {
+	return method;
+  }
+  
   public String getUnqualifiedExportName() {
     return exportName;
   }
