@@ -22,7 +22,7 @@ public class Issue33TestGwt extends GWTTestCase {
 
   @ExportPackage("tst")
   @Export
-  public class Test implements Exportable {
+  public static class Test implements Exportable {
     public int[] method(int i) {
       return new int[]{1};
     }
