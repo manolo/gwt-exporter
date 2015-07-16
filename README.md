@@ -92,7 +92,7 @@ Take a look to the [Getting Started Guide](GettingStarted.md) to learn how to us
     });
   </javascript>
 ```
-* Articles and posts *
+# Articles and posts #
 
 Here you have a set of articles, tutorials and links related with GwtExporter:
 
