@@ -6,9 +6,9 @@ Develop an application or library in GWT and use gwtexporter annotations to make
 The project includes a class to generate the Api documentation of the exported javascript.
 
 # Documentation #
-Take a look to the [Getting Started Guide](GettingStarted.md) to learn how to use it.
+Take a look to the [Getting Started Guide](../../wiki/GettingStarted) to learn how to use it.
 
-[Here](Articles.md) you have are a set of useful links you can read as well.
+[Here](#articles-and-posts) you have are a set of useful links you can read as well.
 
 
 # gwt-exporter in action #
