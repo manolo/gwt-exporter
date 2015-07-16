@@ -96,8 +96,8 @@ Take a look to the [Getting Started Guide](GettingStarted.md) to learn how to us
 
 Here you have a set of articles, tutorials and links related with GwtExporter:
 
-  * The [Getting started guide](wiki/GettingStarted) is the official documentation of the library.
-  * [English](Exporting-GWT-to-JS) and [Spanish](Exportando-GWT-a-JS) tutorials.
+  * The [Getting started guide](../../wiki/GettingStarted) is the official documentation of the library.
+  * [English](../../wiki/Exporting-GWT-to-JS) and [Spanish](../../wiki/Exportando-GWT-a-JS) tutorials.
   * [jsQuery](http://code.google.com/p/gwtquery/wiki/JsQuery) is a clone of jquery written in gwt and exported with Gwt. You can take a look to [this presentation](http://www.slideshare.net/dodotis/gquery-a-jquery-clone-for-gwt-rivieradev-2011) to get more information.
   * A list of some posts about gwtexporter in Ray's blog.
     * [Announcemen of a doclet class able to generate js-api documentation using javadoc comments](http://timepedia.blogspot.com/2009/01/gwt-exporter-now-generates-javascript.html)
