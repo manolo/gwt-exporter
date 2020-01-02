@@ -1,3 +1,7 @@
+# Notice: Consider J2CL #
+
+On Nov 22 2018, Google has released J2CL, a new Java to JavaScript transpiler. You should check it out at http://j2cl.io/
+
 # What is gwt-exporter? #
 The project is a GWT module which contains a generator capable of taking GWT classes and exporting them as ordinary Javascript APIs callable from hand-written Javascript, without having to deal with JSNI, and suitable for use in mashups.
 
